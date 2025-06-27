@@ -1,22 +1,5 @@
-import { NativeModules, Platform } from 'react-native';
-
-const LINKING_ERROR =
-  `The package 'io-react-native-iso18013' doesn't seem to be linked. Make sure: \n\n` +
-  Platform.select({ ios: "- You have run 'pod install'\n", default: '' }) +
-  '- You rebuilt the app after installing the package\n' +
-  '- You are not using Expo Go\n';
-
-const IoReactNativeIso18013 = NativeModules.IoReactNativeIso18013
-  ? NativeModules.IoReactNativeIso18013
-  : new Proxy(
-      {},
-      {
-        get() {
-          throw new Error(LINKING_ERROR);
-        },
-      }
-    );
-
-export function multiply(a: number, b: number): Promise<number> {
-  return IoReactNativeIso18013.multiply(a, b);
-}
+import * as CBOR from './cbor/cbor';
+import * as COSE from './cbor/cose';
+import * as ISO18013_5 from './iso18013/iso18013-5';
+import * as ISO18013_7 from './iso18013/iso18013-7';
+export { CBOR, COSE, ISO18013_5, ISO18013_7 };
