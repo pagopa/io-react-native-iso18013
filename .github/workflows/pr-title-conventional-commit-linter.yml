@@ -96,5 +96,5 @@ jobs:
       - name: Fail if Title Invalid
         if: ${{ env.VALIDATION_RESULT == 'failure' }}
         run: |
-          echo "Pull request title (${{ github.event.pull_request.title }}) is not properly formatted."
+          echo "Pull request title ($TITLE) is not properly formatted."
           exit 1
