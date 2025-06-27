@@ -2,13 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Required for Bluetooth usage -->
-  <key>NSBluetoothAlwaysUsageDescription</key>
-  <string>$(PRODUCT_NAME) needs access BLE.</string>
-  <key>NSBluetoothPeripheralUsageDescription</key>
-  <string>$(PRODUCT_NAME) needs access BLE.</string>
-  <key>NSBluetoothScanUsageDescription</key>
-  <string>$(PRODUCT_NAME) needs access to scan for nearby Bluetooth devices.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
