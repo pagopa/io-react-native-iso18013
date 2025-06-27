@@ -1,24 +1,21 @@
-# io-react-native-iso18013
+# @pagopa/io-react-native-iso18013
 
-React Native bridge for iso18013 methods
+This library provides a React Native module based on [iso18013-android](https://github.com/pagopa/iso18013-android) and [iso18013-ios](https://github.com/pagopa/iso18013-ios) which allows proximity presentation according to the ISO 18013-5 standard, remote presentation according to the ISO 18013-7 standard, decoding of CBOR data and management of COSE verify and sign operations.
 
 ## Installation
 
 ```sh
-npm install io-react-native-iso18013
+npm install @pagopa/io-react-native-proximity
 ```
 
 ## Usage
 
+Each module is documented in its own README file:
 
-```js
-import { multiply } from 'io-react-native-iso18013';
-
-// ...
-
-const result = await multiply(3, 7);
-```
-
+- [ISO18013-5](src/iso18013/iso18013-5/README.md): Proximity presentation according to the ISO 18013-5 standard;
+- [ISO18013-7](src/iso18013/iso18013-7/README.md): Remote presentation according to the ISO 18013-7 standard;
+- [CBOR](src/cbor/cbor/README.md): Decoding of CBOR data into readable objects;
+- [COSE](src/cbor/cose/README.md): Management of COSE verify and sign operations.
 
 ## Contributing
 
