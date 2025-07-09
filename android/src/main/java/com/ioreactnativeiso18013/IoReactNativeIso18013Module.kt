@@ -20,7 +20,6 @@ import it.pagopa.io.wallet.proximity.request.DocRequested
 import it.pagopa.io.wallet.proximity.response.ResponseGenerator
 import it.pagopa.io.wallet.proximity.session_data.SessionDataStatus
 import it.pagopa.io.wallet.proximity.wrapper.DeviceRetrievalHelperWrapper
-import it.pagopa.io.wallet.proximity.ProximityLogger
 
 
 class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
@@ -32,8 +31,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
   private var qrEngagement: QrEngagement? = null
   private var deviceRetrievalHelper: DeviceRetrievalHelperWrapper? = null
-
-
 
   /**
    * Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
@@ -53,8 +50,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     promise: Promise
   ) {
     try {
-      println(BuildConfig.DEBUG)
-      ProximityLogger.enabled = BuildConfig.DEBUG
       val retrievalMethod = BleRetrievalMethod(
         peripheralServerMode = peripheralMode,
         centralClientMode = centralClientMode,
@@ -308,7 +303,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           }
 
           override fun onError(message: String) {
-            ModuleException.GENERATE_OID4VP_DEVICE_RESPONSE_FAILED.reject(promise, Pair(
+            ModuleException.UNABLE_TO_GENERATE_RESPONSE.reject(promise, Pair(
               ERROR_USER_INFO_KEY, message))
           }
         }
@@ -420,6 +415,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     CLOSE_ERROR(Exception("CLOSE_ERROR")),
 
     /** ISO18013-7 related errors **/
+    UNABLE_TO_GENERATE_RESPONSE(Exception("UNABLE_TO_GENERATE_RESPONSE")),
     UNABLE_TO_GENERATE_TRANSCRIPT(Exception("UNABLE_TO_GENERATE_TRANSCRIPT")),
     INVALID_DOC_REQUESTED(Exception("INVALID_DOC_REQUESTED")),
     GENERATE_OID4VP_DEVICE_RESPONSE_FAILED(Exception("GENERATE_OID4VP_DEVICE_RESPONSE_FAILED"));
