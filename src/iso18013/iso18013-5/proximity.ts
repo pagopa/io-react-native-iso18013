@@ -28,7 +28,10 @@ export type Events = keyof EventsPayload;
 
 /**
  * Documents type to be used in the {@link generateResponse} method.
- * It contains the issuer signed, the alias of the bound key and the document type.
+ * It contains:
+ * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+ * - alias which is the alias of the key used to sign the credential;
+ * - docType which is the type of the document.
  */
 export type Document = {
   issuerSignedContent: string;

@@ -106,7 +106,7 @@ class IoReactNativeProximity: RCTEventEmitter {
    The result can be fed to ``IOWalletProximity.generateResponse``.
    
    - Parameters:
-      - documents: An array of any elements. In order to be added to the result array each element must be a dictionary with `issuerSignedContent`, `alias` and `docType` as keys and strings as values.
+      - documents: An array of any elements. In order to be added to the result array each element must be a dictionary with `issuerSignedContent` encoded in base64 or base64url, `alias` and `docType` as keys and strings as values.
    
    - Throws: `NSError` if result array is empty
    
@@ -124,9 +124,9 @@ class IoReactNativeProximity: RCTEventEmitter {
         let issuerSignedContent = dict["issuerSignedContent"] as? String,
         let alias = dict["alias"] as? String,
         let docType = dict["docType"] as? String,
-        let decodedIssuerSignedContent = Data(base64Encoded: issuerSignedContent)
+        let decodedIssuerSignedContent = try? Base64Utils.decodeBase64OrBase64URL(base: issuerSignedContent)
       else {
-        throw NSError(domain: "ParseDocument", code: -1, userInfo: [NSLocalizedDescriptionKey: "The document must provide issuerSignedContent, alias and docType"])
+        throw NSError(domain: "ParseDocument", code: -1, userInfo: [NSLocalizedDescriptionKey: "The document must provide issuerSignedContent as base64 or base64url, alias and docType"])
       }
       
       guard let document = ProximityDocument(
@@ -445,7 +445,7 @@ class IoReactNativeProximity: RCTEventEmitter {
         let issuerSignedContent = dict["issuerSignedContent"] as? String,
         let alias = dict["alias"] as? String,
         let docType = dict["docType"] as? String,
-        let issuerSignedBytesData = Data(base64Encoded: issuerSignedContent)
+        let issuerSignedBytesData = try? Base64Utils.decodeBase64OrBase64URL(base: issuerSignedContent)
       else { throw ModuleException.invalidDocRequested.error() }
   
       return DocRequested(issuerSignedContent: Array(issuerSignedBytesData), alias: alias, docType: docType)
