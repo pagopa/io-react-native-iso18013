@@ -1,16 +1,18 @@
-import { Alert, Button } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Button, ScrollView } from 'react-native';
 import { generateKeyIfNotExists } from './utils';
 import { KEYTAG } from './mocks/proximity';
 import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
-import deviceRequest, {
-  incompleteDocRequest,
-  wrongDocRequest,
-  wrongFieldRequestedAndAccepted,
-} from './mocks/deviceRequest';
 import { styles } from '../styles';
+import {
+  DEVICE_REQUEST_BASE64,
+  DEVICE_REQUEST_BASE64URL,
+  INCOMPLETE_DOC_REQUEST,
+  WRONG_DOC_REQUEST,
+  WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST,
+  type DeviceRequest,
+} from './mocks/deviceRequest';
 
-const handleGenerateResponse = async () => {
+const handleGenerateResponse = async (deviceRequest: DeviceRequest) => {
   try {
     await generateKeyIfNotExists(KEYTAG);
     const result = await ISO18013_7.generateOID4VPDeviceResponse(
@@ -36,12 +38,12 @@ const handleGenerateResponseWrongDocRequested = async () => {
   try {
     await generateKeyIfNotExists(KEYTAG);
     const result = await ISO18013_7.generateOID4VPDeviceResponse(
-      wrongDocRequest.request.clientId,
-      wrongDocRequest.request.responseUri,
-      wrongDocRequest.request.authorizationRequestNonce,
-      wrongDocRequest.request.mdocGeneratedNonce,
-      wrongDocRequest.documents,
-      wrongDocRequest.fieldRequestedAndAccepted
+      WRONG_DOC_REQUEST.request.clientId,
+      WRONG_DOC_REQUEST.request.responseUri,
+      WRONG_DOC_REQUEST.request.authorizationRequestNonce,
+      WRONG_DOC_REQUEST.request.mdocGeneratedNonce,
+      WRONG_DOC_REQUEST.documents,
+      WRONG_DOC_REQUEST.fieldRequestedAndAccepted
     );
     console.log(result);
     Alert.alert('❌ Device Response Generation Success');
@@ -58,17 +60,17 @@ const handleGenerateResponseIncompleteDocRequested = async () => {
   try {
     await generateKeyIfNotExists(KEYTAG);
     const result = await ISO18013_7.generateOID4VPDeviceResponse(
-      incompleteDocRequest.request.clientId,
-      incompleteDocRequest.request.responseUri,
-      incompleteDocRequest.request.authorizationRequestNonce,
-      incompleteDocRequest.request.mdocGeneratedNonce,
+      INCOMPLETE_DOC_REQUEST.request.clientId,
+      INCOMPLETE_DOC_REQUEST.request.responseUri,
+      INCOMPLETE_DOC_REQUEST.request.authorizationRequestNonce,
+      INCOMPLETE_DOC_REQUEST.request.mdocGeneratedNonce,
       //Cast needed to induce error scenario
-      incompleteDocRequest.documents as {
+      INCOMPLETE_DOC_REQUEST.documents as {
         alias: string;
         docType: string;
         issuerSignedContent: string;
       }[],
-      incompleteDocRequest.fieldRequestedAndAccepted
+      INCOMPLETE_DOC_REQUEST.fieldRequestedAndAccepted
     );
     console.log(result);
     Alert.alert('❌ Device Response Generation Success');
@@ -85,12 +87,13 @@ const handleGenerateResponseWrongFieldRequestedAndAccepted = async () => {
   try {
     await generateKeyIfNotExists(KEYTAG);
     const result = await ISO18013_7.generateOID4VPDeviceResponse(
-      wrongFieldRequestedAndAccepted.request.clientId,
-      wrongFieldRequestedAndAccepted.request.responseUri,
-      wrongFieldRequestedAndAccepted.request.authorizationRequestNonce,
-      wrongFieldRequestedAndAccepted.request.mdocGeneratedNonce,
-      wrongFieldRequestedAndAccepted.documents,
-      wrongFieldRequestedAndAccepted.fieldRequestedAndAccepted
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.clientId,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.responseUri,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request
+        .authorizationRequestNonce,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.mdocGeneratedNonce,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.documents,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.fieldRequestedAndAccepted
     );
     console.log(result);
     Alert.alert('❌ Device Response Generation Success');
@@ -104,10 +107,14 @@ const handleGenerateResponseWrongFieldRequestedAndAccepted = async () => {
 };
 
 const Iso1801357Screen = () => (
-  <SafeAreaView style={styles.container}>
+  <ScrollView contentContainerStyle={styles.container}>
     <Button
-      title="Test Generate OID4VP Response"
-      onPress={handleGenerateResponse}
+      title="Test Generate OID4VP Response (base64 credential)"
+      onPress={() => handleGenerateResponse(DEVICE_REQUEST_BASE64)}
+    />
+    <Button
+      title="Test Generate OID4VP Response (base64url credential)"
+      onPress={() => handleGenerateResponse(DEVICE_REQUEST_BASE64URL)}
     />
     <Button
       title="Test Generate OID4VP Response (wrong DocRequested)"
@@ -121,7 +128,7 @@ const Iso1801357Screen = () => (
       title="Test Generate OID4VP Response (wrong FieldsRequestedAndAccepted)"
       onPress={handleGenerateResponseWrongFieldRequestedAndAccepted}
     />
-  </SafeAreaView>
+  </ScrollView>
 );
 
 export default Iso1801357Screen;

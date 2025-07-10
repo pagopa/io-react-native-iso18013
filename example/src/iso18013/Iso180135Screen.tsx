@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Button, ScrollView } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { KEYTAG, mdlMock, WELL_KNOWN_CREDENTIALS } from './mocks/proximity';
+import {
+  KEYTAG,
+  MDL_BASE64URL,
+  MDL_BASE64,
+  WELL_KNOWN_CREDENTIALS,
+} from './mocks/proximity';
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 import {
   generateAcceptedFields,
@@ -56,7 +60,8 @@ const Iso180135Screen: React.FC = () => {
    * @param verifierRequest - The request object received from the verifier app
    */
   const sendDocument = async (
-    verifierRequest: ISO18013_5.VerifierRequest['request']
+    verifierRequest: ISO18013_5.VerifierRequest['request'],
+    mdl: string
   ) => {
     try {
       console.log('Sending document to verifier app');
@@ -65,10 +70,9 @@ const Iso180135Screen: React.FC = () => {
         {
           alias: KEYTAG,
           docType: WELL_KNOWN_CREDENTIALS.mdl,
-          issuerSignedContent: mdlMock,
+          issuerSignedContent: mdl,
         },
       ];
-      console.log('here');
 
       /*
        * Generate the response to be sent to the verifier app. Currently we blindly accept all the fields requested by the verifier app.
@@ -256,7 +260,7 @@ const Iso180135Screen: React.FC = () => {
   }, [closeFlow, startFlow]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       {status === PROXIMITY_STATUS.STARTING && (
         <Button title="Start Proximity flow" onPress={() => startFlow()} />
       )}
@@ -265,7 +269,14 @@ const Iso180135Screen: React.FC = () => {
       )}
       {status === PROXIMITY_STATUS.PRESENTING && request && (
         <>
-          <Button title="Send document" onPress={() => sendDocument(request)} />
+          <Button
+            title="Send document (base64)"
+            onPress={() => sendDocument(request, MDL_BASE64)}
+          />
+          <Button
+            title="Send document (base64url)"
+            onPress={() => sendDocument(request, MDL_BASE64URL)}
+          />
           <Button
             title={`Send error ${ISO18013_5.ErrorCode.CBOR_DECODING} (${ISO18013_5.ErrorCode[ISO18013_5.ErrorCode.CBOR_DECODING]})`}
             onPress={() => sendError(ISO18013_5.ErrorCode.CBOR_DECODING)}
@@ -292,7 +303,7 @@ const Iso180135Screen: React.FC = () => {
           }
         />
       )}
-    </SafeAreaView>
+    </ScrollView>
   );
 };
 

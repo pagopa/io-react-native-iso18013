@@ -31,9 +31,9 @@ class IoReactNativeCbor: NSObject {
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
-    guard let data = Data(base64Encoded: mdoc) else {
-      ME.invalidEncoding.reject(reject: reject)
-      return
+    guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: mdoc) else {
+        ME.invalidEncoding.reject(reject: reject)
+        return
     }
     
     guard let json = CborCose.decodeCBOR(data: data, true, true) else {
@@ -49,9 +49,9 @@ class IoReactNativeCbor: NSObject {
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
-    guard let data = Data(base64Encoded: issuerSigned) else {
-      ME.invalidEncoding.reject(reject: reject)
-      return
+    guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: issuerSigned) else {
+        ME.invalidEncoding.reject(reject: reject)
+        return
     }
     
     guard let json = CborCose.issuerSignedCborToJson(data: data) else {
@@ -74,7 +74,7 @@ class IoReactNativeCbor: NSObject {
         return
       }
       
-      guard let data = Data(base64Encoded: payloadData) else {
+      guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: payloadData) else {
         ME.invalidEncoding.reject(reject: reject)
         return
       }
@@ -96,7 +96,7 @@ class IoReactNativeCbor: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do {
-      guard let data = Data(base64Encoded: sign1Data) else {
+      guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: sign1Data) else {
         ME.invalidEncoding.reject(reject: reject)
         return
       }
