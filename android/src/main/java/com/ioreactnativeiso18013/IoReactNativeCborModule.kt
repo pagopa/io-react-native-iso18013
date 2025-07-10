@@ -26,18 +26,24 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     val buffer = try {
       kotlin.io.encoding.Base64.decode(data)
     } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.INVALID_ENCODING.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
       return;
     }
 
     try {
       CBorParser(buffer).toJson()?.let {
         promise.resolve(it)
-      }?: run {
+      } ?: run {
         ModuleException.UNABLE_TO_DECODE.reject(promise)
       }
     } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.UNKNOWN_EXCEPTION.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
     }
   }
 
@@ -47,17 +53,26 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     val buffer = try {
       kotlin.io.encoding.Base64.decode(data)
     } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.INVALID_ENCODING.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
       return;
     }
     try {
       CBorParser(buffer).documentsCborToJson(separateElementIdentifier = true, onComplete = {
         promise.resolve(it)
       }) { ex ->
-        ModuleException.UNABLE_TO_DECODE.reject(promise, Pair(ERROR_USER_INFO_KEY, ex.message.orEmpty()))
+        ModuleException.UNABLE_TO_DECODE.reject(
+          promise,
+          Pair(ERROR_USER_INFO_KEY, ex.message.orEmpty())
+        )
       }
     } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.UNKNOWN_EXCEPTION.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
     }
   }
 
@@ -67,19 +82,28 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     val buffer = try {
       kotlin.io.encoding.Base64.decode(issuerSigned)
     } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.INVALID_ENCODING.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
       return;
     }
     try {
       CBorParser(buffer).issuerSignedCborToJson(separateElementIdentifier = true).let {
         if (it == null) {
-          ModuleException.UNABLE_TO_DECODE.reject(promise, Pair(ERROR_USER_INFO_KEY, "Unable to decode passed CBOR"))
+          ModuleException.UNABLE_TO_DECODE.reject(
+            promise,
+            Pair(ERROR_USER_INFO_KEY, "Unable to decode passed CBOR")
+          )
           return
         }
         promise.resolve(it)
       }
     } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.UNKNOWN_EXCEPTION.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
     }
   }
 
@@ -89,7 +113,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     val data = try {
       kotlin.io.encoding.Base64.decode(payload)
     } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.INVALID_ENCODING.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
       return;
     }
 
@@ -123,7 +150,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
         }
       }
     } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.UNKNOWN_EXCEPTION.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
     }
   }
 
@@ -133,7 +163,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     val data = try {
       kotlin.io.encoding.Base64.decode(sign1Data)
     } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.INVALID_ENCODING.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
       return;
     }
 
@@ -144,7 +177,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
       )
       promise.resolve(result)
     } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(promise, Pair(ERROR_USER_INFO_KEY, e.message.orEmpty()))
+      ModuleException.UNKNOWN_EXCEPTION.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
     }
   }
 
