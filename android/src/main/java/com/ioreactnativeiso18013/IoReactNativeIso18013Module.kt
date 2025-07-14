@@ -167,35 +167,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
-   * Utility function which extracts the document shape we expect to receive from the bridge
-   * in the one expected by {DocRequested}.
-   * @param documents - A {ReadableArray} containing the documents receive from the bridge
-   * @returns An array containing a {DocRequested} object for each document in {documents}
-   */
-  private fun getDocRequestedArrayList(documents: ReadableArray): ArrayList<DocRequested> {
-    val res =  ArrayList(
-      (0 until documents.size())
-        .mapNotNull { i ->
-          val doc = documents.getMap(i)
-          val alias = doc?.getString("alias")
-          val issuerSignedContent = doc?.getString("issuerSignedContent")
-          val docType = doc?.getString("docType")
-
-          if (alias != null && issuerSignedContent != null && docType != null) {
-            DocRequested(issuerSignedContent, alias, docType)
-          } else {
-            null
-          }
-        }
-    )
-    if(res.isEmpty()){
-      throw IllegalArgumentException("An error occurred while parsing documents")
-    }
-
-    return res
-  }
-
-  /**
    * Generates a response which can later be sent with {sendResponse} with the provided
    * CBOR documents and the requested attributes.
    * @param documents - A ReadableArray containing a map with alias, issuerSignedContent and docType as strings.
@@ -212,11 +183,11 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     try {
       deviceRetrievalHelper?.let { devHelper ->
         // Get the DocRequested list and if it's empty then reject the promise and return
-        val docRequestedList = getDocRequestedArrayList(documents)
+        val docRequestedList = parseDocRequested(documents)
 
         val sessionTranscript = devHelper.sessionTranscript()
         val responseGenerator = ResponseGenerator(sessionTranscript)
-        responseGenerator.createResponse(docRequestedList.toTypedArray(),
+        responseGenerator.createResponse(docRequestedList,
           fieldRequestedAndAccepted.toString(),
           object : ResponseGenerator.Response {
             override fun onResponseGenerated(response: ByteArray) {
@@ -314,28 +285,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     }
   }
 
-  private fun parseDocRequested(array: ReadableArray): Array<DocRequested> {
-    val retVal = mutableListOf<DocRequested>()
-    for (i in 0..<array.size()) {
-      val entry = array.getMap(i)
-      if(entry === null){
-        throw Exception("Entry in ReadableMap is null")
-      }
-      if (
-        !entry.hasKey("alias") || entry.getType("alias") != ReadableType.String ||
-        !entry.hasKey("issuerSignedContent") || entry.getType("issuerSignedContent") != ReadableType.String ||
-        !entry.hasKey("docType") || entry.getType("docType") != ReadableType.String
-      ) throw IllegalArgumentException("Unable to decode the provided documents")
-      retVal.add(DocRequested(
-        alias = entry.getString("alias")!!,
-        issuerSignedContent = entry.getString("issuerSignedContent")!!,
-        docType = entry.getString("docType")!!
-      ))
-    }
-    return retVal.toTypedArray()
-  }
-
-
   /**
    * Sets the proximity handler along with the possible dispatched events and their callbacks.
    * The events are then sent to React Native via `RCTEventEmitter`.
@@ -375,6 +324,36 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         sendEvent("onDeviceDisconnected", transportSpecificTermination.toString())
       }
     })
+  }
+
+  /**
+   * Utility function which extracts the document shape we expect to receive from the bridge
+   * in the one expected by {DocRequested}.
+   * @param documents - A {ReadableArray} containing the documents receive from the bridge
+   * @returns An array containing a {DocRequested} object for each document in {documents}
+   * @throws IllegalArgumentException if the provided document doesn't adhere to the expected format
+   */
+  private fun parseDocRequested(documents: ReadableArray): Array<DocRequested> {
+    return (0 until documents.size()).map { i ->
+      val entry = documents.getMap(i)
+        ?: throw IllegalArgumentException("Entry in ReadableArray is null")
+
+      val alias = entry.getString("alias")
+      val issuerSignedContent = entry.getString("issuerSignedContent")
+      val docType = entry.getString("docType")
+
+      if (
+        alias == null || entry.getType("alias") != ReadableType.String ||
+        issuerSignedContent == null || entry.getType("issuerSignedContent") != ReadableType.String ||
+        docType == null || entry.getType("docType") != ReadableType.String
+      ) throw IllegalArgumentException("Unable to decode the provided documents")
+
+      DocRequested(
+        issuerSignedContent,
+        alias,
+        docType
+      )
+    }.toTypedArray()
   }
 
   /**
