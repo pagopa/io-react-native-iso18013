@@ -373,7 +373,7 @@ class IoReactNativeProximity: RCTEventEmitter {
     responseUri: String,
     authorizationRequestNonce: String,
     mdocGeneratedNonce: String,
-    documents: NSArray,
+    documents: [Any],
     fieldRequestedAndAccepted: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
@@ -387,12 +387,7 @@ class IoReactNativeProximity: RCTEventEmitter {
           mdocGeneratedNonce: mdocGeneratedNonce
       )
 
-      let documentsAsProximityDocument : [ProximityDocument] = try parseDocRequested(documents).reduce(into: []) { partialResult, document in
-        guard let proximityDocument = ProximityDocument(docType: document.docType, issuerSigned: document.issuerSignedContent, deviceKeyTag: document.alias) else {
-          throw ME.invalidDocRequested.error()
-        }
-        partialResult.append(proximityDocument)
-      }
+      let documentsAsProximityDocument = try parseDocuments(documents: documents)
       
       let items = try JSONDecoder().decode([String : [String : [String : Bool]]].self, from: Data(fieldRequestedAndAccepted.utf8))
       
@@ -409,32 +404,6 @@ class IoReactNativeProximity: RCTEventEmitter {
       ME.invalidItems.reject(reject: reject)
     } catch {
       ME.unexpected.reject(reject: reject)
-    }
-  }
-  
-  private class DocRequested {
-    var issuerSignedContent : [UInt8]
-    var alias : String
-    var docType : String
-    
-    public init(issuerSignedContent: [UInt8], alias: String, docType: String) {
-      self.issuerSignedContent = issuerSignedContent
-      self.alias = alias
-      self.docType = docType
-    }
-  }
-  
-  private func parseDocRequested(_ array : NSArray) throws -> [DocRequested] {
-    return try array.compactMap { (element) -> DocRequested in
-      guard let dict : NSDictionary = element as? NSDictionary else { throw ModuleException.unableToDecode.error() }
-      guard
-        let issuerSignedContent = dict["issuerSignedContent"] as? String,
-        let alias = dict["alias"] as? String,
-        let docType = dict["docType"] as? String,
-        let issuerSignedBytesData = Data(base64Encoded: issuerSignedContent)
-      else { throw ModuleException.invalidDocRequested.error() }
-  
-      return DocRequested(issuerSignedContent: Array(issuerSignedBytesData), alias: alias, docType: docType)
     }
   }
   
