@@ -40,12 +40,12 @@ class IoReactNativeProximity: RCTEventEmitter {
   /**
    Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
    Resolves to true or rejects if an error occurs.
-   
+    
    - Parameters:
-   - certificates: Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
-   - resolve: The promise to be resolved
-   - reject: The promise to be rejected
-   */
+      - certificates: Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
+      - resolve: The promise to be resolved
+      - reject: The promise to be rejected
+  */
   @objc(start:withResolver:withRejecter:)
   func start(
     certificates: Array<Any>,
@@ -65,10 +65,10 @@ class IoReactNativeProximity: RCTEventEmitter {
    Utility function to parse an array coming from the React Native Bridge into an array of Data representing DER encoded X.509 certificates.
    
    - Parameters:
-   - certificates:Array of base64 strings representing DER encoded X.509 certificate
+      - certificates:Array of base64 strings representing DER encoded X.509 certificate
    
-   - Returns: An array of Data containing DER ecnoded X.509 certificates.
-   */
+    - Returns: An array of Data containing DER ecnoded X.509 certificates.
+  */
   private func parseCertificates(_ certificates: [Any]) -> [Data] {
     return certificates.compactMap { item in
       guard let certString = item as? String,
@@ -82,11 +82,11 @@ class IoReactNativeProximity: RCTEventEmitter {
   /**
    Creates a QR code to be scanned in order to initialize the presentation.
    Resolves with the QR code strings.
-   
+
    - Parameters:
-   - resolve: The promise to be resolved
-   - reject: The promise to be rejected
-   */
+      - resolve: The promise to be resolved
+      - reject: The promise to be rejected
+  */
   @objc(getQrCodeString:withRejecter:)
   func getQrCodeString(
     _ resolve: @escaping RCTPromiseResolveBlock,
@@ -106,9 +106,9 @@ class IoReactNativeProximity: RCTEventEmitter {
    The result can be fed to ``IOWalletProximity.generateResponse``.
    
    - Parameters:
-   - documents: An array of any elements. In order to be added to the result array each element must be a dictionary with `issuerSignedContent`, `alias` and `docType` as keys and strings as values.
+      - documents: An array of any elements. In order to be added to the result array each element must be a dictionary with `issuerSignedContent`, `alias` and `docType` as keys and strings as values.
    
-   - Throws: `NSError` if result array is empty
+   - Throws: `ModuleException.invalidDocRequested.error()` and `ModuleException.invalidDocRequested.error()` iif an error occurs while parsing the document
    
    - Returns: An array of `ProximityDocument` containg the documents to be presented
    */
@@ -139,7 +139,7 @@ class IoReactNativeProximity: RCTEventEmitter {
    The result can be fed to ``IOWalletProximity.generateResponse``.
    
    - Parameters:
-   - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]]
+      - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]]
    
    - Throws: `NSError` if a value doesn't has the ``AcceptedFieldsDict`` shape or the result dictionary is empty
    
@@ -167,31 +167,31 @@ class IoReactNativeProximity: RCTEventEmitter {
   }
   
   /**
-   Generates a response containing the documents and the fields which the user decided to present.
-   It parses the untyped ``documents`` and ``acceptedFields`` parameters and feeds them to the ``IOWalletProximity.generateDeviceResponse`` function.
-   It resolves the promise with the response as a base64 encoded string.
-   It rejects the promise if an error occurs during the parameters parsing or while generating the device response.
-   
-   - Parameters:
-   - documents: An array of documents which should contain a dictionary with `issuerSignedContent`, `alias` and `docType` as keys and strings as values
-   - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
-   
-   
-   {
-   "org.iso.18013.5.1.mDL": {
-   "org.iso.18013.5.1": {
-   "hair_colour": true,
-   "given_name_national_character": true,
-   "family_name_national_character": true,
-   "given_name": true,
-   }
-   }
-   }
-   
-   - resolve: The promise to be resolved
-   - reject: The promise to be rejected
-   
-   */
+     Generates a response containing the documents and the fields which the user decided to present.
+     It parses the untyped ``documents`` and ``acceptedFields`` parameters and feeds them to the ``IOWalletProximity.generateDeviceResponse`` function.
+     It resolves the promise with the response as a base64 encoded string.
+     It rejects the promise if an error occurs during the parameters parsing or while generating the device response.
+     
+     - Parameters:
+       - documents: An array of documents which should contain a dictionary with `issuerSignedContent`, `alias` and `docType` as keys and strings as values
+       - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
+        
+         
+             {
+                "org.iso.18013.5.1.mDL": {
+                  "org.iso.18013.5.1": {
+                    "hair_colour": true,
+                    "given_name_national_character": true,
+                    "family_name_national_character": true,
+                    "given_name": true,
+                  }
+                }
+             }
+    
+       - resolve: The promise to be resolved
+       - reject: The promise to be rejected
+     
+     */
   @objc(generateResponse:withAcceptedFields:withResolver:withRejecter:)
   func generateResponse(
     documents: Array<Any>,
@@ -216,9 +216,9 @@ class IoReactNativeProximity: RCTEventEmitter {
    Currently there's not evidence of the verifier app responding to this request, thus we don't handle the response.
    
    - Parameters:
-   - response: A base64 encoded string containing the response generated by ``generateResponse``
-   - resolve: The promise to be resolved
-   - reject: The promise to be rejected
+     - response: A base64 encoded string containing the response generated by ``generateResponse``
+     - resolve: The promise to be resolved
+     - reject: The promise to be rejected
    */
   @objc(sendResponse:withResolver:withRejecter:)
   func sendResponse(
@@ -240,18 +240,18 @@ class IoReactNativeProximity: RCTEventEmitter {
   /**
    Sends an error response during the presentation according to the SessionData status codes defined in table 20 of the ISO18013-5 standard.
    - Parameters:
-   - status: The status error to be sent is an integer of type ``SessionDataStatus``:
-   ```
-   10 -> Error: session encryption
-   11 -> Error: CBOR decoding
-   20 -> Session termination
-   ```
-   - resolve: The promise to be resolved
-   - reject: The promise to be rejected
+     - status: The status error to be sent is an integer of type ``SessionDataStatus``:
+       ```
+         10 -> Error: session encryption
+         11 -> Error: CBOR decoding
+         20 -> Session termination
+       ```
+     - resolve: The promise to be resolved
+     - reject: The promise to be rejected
    */
   @objc(sendErrorResponse:withResolver:withRejecter:)
   func sendErrorResponse(status: UInt64, _ resolve: @escaping RCTPromiseResolveBlock,
-                         reject: @escaping RCTPromiseRejectBlock){
+                               reject: @escaping RCTPromiseRejectBlock){
     do{
       if let statusEnum = SessionDataStatus(rawValue: status) {
         try Proximity.shared.errorPresentation(statusEnum)
@@ -270,8 +270,8 @@ class IoReactNativeProximity: RCTEventEmitter {
    It resolves to true after closing the connection.
    
    - Parameters:
-   - resolve: The promise to be resolved
-   - reject:  The promise to be rejected
+     - resolve: The promise to be resolved
+     - reject:  The promise to be rejected
    
    */
   @objc(close:withRejecter:)
@@ -284,13 +284,13 @@ class IoReactNativeProximity: RCTEventEmitter {
   }
   
   /**
-   Converts a device requested from the `onDocumentRequestReceived` callback into a serializable JSON.
-   
-   - Parameters:
-   - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces and the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the dataß
-   
-   - Returns: A JSON string representing the device request or nil if an error occurs
-   */
+     Converts a device requested from the `onDocumentRequestReceived` callback into a serializable JSON.
+     
+     - Parameters:
+        - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces and the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the dataß
+     
+     - Returns: A JSON string representing the device request or nil if an error occurs
+    */
   private func deviceRequestToJson(request: [(docType: String, nameSpaces: [String: [String: Bool]], isAuthenticated: Bool)]?) -> String? {
     var jsonRequest : [String: AnyHashable] = [:]
     request?.forEach({
@@ -339,15 +339,15 @@ class IoReactNativeProximity: RCTEventEmitter {
           /**
            The outermost key represents the credential doctype, the inner key represents the namespace and the innermost key represents the requested fields with a boolean value. Example:
            {
-           "org.iso.18013.5.1.mDL": {
-           "isAuthenticated": true,
-           "org.iso.18013.5.1": {
-           "hair_colour": true,
-           "given_name_national_character": true,
-           "family_name_national_character": true,
-           "given_name": true,
-           }
-           }
+             "org.iso.18013.5.1.mDL": {
+               "isAuthenticated": true,
+               "org.iso.18013.5.1": {
+                 "hair_colour": true,
+                 "given_name_national_character": true,
+                 "family_name_national_character": true,
+                 "given_name": true,
+               }
+             }
            }
            */
           let jsonString = deviceRequestToJson(request: request)
@@ -373,7 +373,7 @@ class IoReactNativeProximity: RCTEventEmitter {
     responseUri: String,
     authorizationRequestNonce: String,
     mdocGeneratedNonce: String,
-    documents: [Any],
+    documents: NSArray,
     fieldRequestedAndAccepted: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
@@ -381,13 +381,18 @@ class IoReactNativeProximity: RCTEventEmitter {
     
     do {
       let sessionTranscript = Proximity.shared.generateOID4VPSessionTranscriptCBOR(
-        clientId: clientId,
-        responseUri: responseUri,
-        authorizationRequestNonce: authorizationRequestNonce,
-        mdocGeneratedNonce: mdocGeneratedNonce
+          clientId: clientId,
+          responseUri: responseUri,
+          authorizationRequestNonce: authorizationRequestNonce,
+          mdocGeneratedNonce: mdocGeneratedNonce
       )
-      
-      let documentsAsProximityDocument = try parseDocuments(documents: documents)
+
+      let documentsAsProximityDocument : [ProximityDocument] = try parseDocRequested(documents).reduce(into: []) { partialResult, document in
+        guard let proximityDocument = ProximityDocument(docType: document.docType, issuerSigned: document.issuerSignedContent, deviceKeyTag: document.alias) else {
+          throw ME.invalidDocRequested.error()
+        }
+        partialResult.append(proximityDocument)
+      }
       
       let items = try JSONDecoder().decode([String : [String : [String : Bool]]].self, from: Data(fieldRequestedAndAccepted.utf8))
       
@@ -419,7 +424,19 @@ class IoReactNativeProximity: RCTEventEmitter {
     }
   }
   
+  private func parseDocRequested(_ array : NSArray) throws -> [DocRequested] {
+    return try array.compactMap { (element) -> DocRequested in
+      guard let dict : NSDictionary = element as? NSDictionary else { throw ModuleException.unableToDecode.error() }
+      guard
+        let issuerSignedContent = dict["issuerSignedContent"] as? String,
+        let alias = dict["alias"] as? String,
+        let docType = dict["docType"] as? String,
+        let issuerSignedBytesData = Data(base64Encoded: issuerSignedContent)
+      else { throw ModuleException.invalidDocRequested.error() }
   
+      return DocRequested(issuerSignedContent: Array(issuerSignedBytesData), alias: alias, docType: docType)
+    }
+  }
   
   /**
    Wrapper for rejecting with an error.
@@ -464,14 +481,14 @@ class IoReactNativeProximity: RCTEventEmitter {
       }
     }
     
-    /**
-     Rejects the provided promise with the appropriate error message and additional data.
-     
-     - Parameters:
-     - reject:  the promise to be rejected.
-     - moreUserInfo: additional key-value pairs of data to be passed along with the error.
-     
-     */
+     /**
+      Rejects the provided promise with the appropriate error message and additional data.
+      
+      - Parameters:
+        - reject:  the promise to be rejected.
+        - moreUserInfo: additional key-value pairs of data to be passed along with the error.
+      
+      */
     func reject(
       reject: RCTPromiseRejectBlock,
       _ moreUserInfo: (String, Any)...
