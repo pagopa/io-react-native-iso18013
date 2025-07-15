@@ -7,7 +7,6 @@ export {
 } from './schema';
 
 export {
-  type Document,
   ErrorCode,
   type Events,
   type EventsPayload,
@@ -20,3 +19,5 @@ export {
   sendResponse,
   start,
 } from './proximity';
+
+export { type RequestedDocument } from '../types';

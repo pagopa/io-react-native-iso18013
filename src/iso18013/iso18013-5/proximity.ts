@@ -1,6 +1,7 @@
 import { NativeEventEmitter, Platform } from 'react-native';
 import { IoReactNativeProximity } from '..';
 import type { AcceptedFields } from './schema';
+import type { RequestedDocument } from '../types';
 
 const eventEmitter = new NativeEventEmitter(IoReactNativeProximity);
 
@@ -25,16 +26,6 @@ export type EventsPayload = {
  * Events emitted by the native module.
  */
 export type Events = keyof EventsPayload;
-
-/**
- * Documents type to be used in the {@link generateResponse} method.
- * It contains the issuer signed, the alias of the bound key and the document type.
- */
-export type Document = {
-  issuerSignedContent: string;
-  alias: string;
-  docType: string;
-};
 
 /**
  * Error codes that can be used with the `sendErrorResponse` method.
@@ -106,7 +97,7 @@ export function sendErrorResponse(code: ErrorCode): Promise<boolean> {
  * @returns A base64 encoded response to be sent to the verifier app via `sendResponse`
  */
 export function generateResponse(
-  documents: Array<Document>,
+  documents: Array<RequestedDocument>,
   acceptedFields: AcceptedFields
 ): Promise<string> {
   return IoReactNativeProximity.generateResponse(documents, acceptedFields);

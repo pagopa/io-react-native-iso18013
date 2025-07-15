@@ -1,9 +1,5 @@
 import { CBOR, COSE } from '@pagopa/io-react-native-iso18013';
-import {
-  generate,
-  getPublicKey,
-  type PublicKey,
-} from '@pagopa/io-react-native-crypto';
+import { getPublicKey, type PublicKey } from '@pagopa/io-react-native-crypto';
 import { Alert, Button, SafeAreaView, Text } from 'react-native';
 import mdlCbor from './mocks/mdl';
 import moreDocsCbor from './mocks/moreDocs';
@@ -12,6 +8,7 @@ import oneDocCbor from './mocks/oneDoc';
 import oneDocIssuerAuth from './mocks/oneDocIssuerAuth';
 
 import { styles } from '../styles';
+import { generateKeyIfNotExists } from '../iso18013/utils';
 
 const KEYTAG = 'TEST_KEYTAG';
 
@@ -30,14 +27,6 @@ const TEST_KEY: PublicKey = {
 };
 
 const CborScreen = () => {
-  const generateKeyIfNotExists = async (keyTag: string) => {
-    try {
-      await getPublicKey(keyTag);
-    } catch (error: any) {
-      await generate(keyTag);
-    }
-  };
-
   const handleDecode = (data: string) => async () => {
     try {
       const decoded = await CBOR.decodeDocuments(data);
