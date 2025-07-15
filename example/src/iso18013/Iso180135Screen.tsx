@@ -61,7 +61,7 @@ const Iso180135Screen: React.FC = () => {
     try {
       console.log('Sending document to verifier app');
       await generateKeyIfNotExists(KEYTAG);
-      const documents: Array<ISO18013_5.Document> = [
+      const documents: Array<ISO18013_5.RequestedDocument> = [
         {
           alias: KEYTAG,
           docType: WELL_KNOWN_CREDENTIALS.mdl,
