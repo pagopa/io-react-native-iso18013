@@ -85,15 +85,3 @@ export type AcceptedFields = {
     [namespace: string]: { [field: string]: boolean };
   };
 };
-
-/**
- * Object that encapsulates information about an mDoc's
- * issuerSigned and docType and a keytag identifier that
- * allows retrieving its private key
- */
-const DocRequested = z.object({
-  issuerSignedContent: z.string(),
-  alias: z.string(),
-  docType: z.string(),
-});
-export type DocRequested = z.infer<typeof DocRequested>;

@@ -32,7 +32,7 @@ try {
 #### Signature
 
 ```typescript
-type DocRequested = {
+type RequestedDocument = {
     issuerSignedContent : string,
     alias : string,
     docType : string
@@ -43,7 +43,7 @@ export const generateOID4VPDeviceResponse = async (
   responseUri: string,
   authorizationRequestNonce: string,
   mdocGeneratedNonce: string,
-  documents: DocRequested[],
+  documents: Array<RequestedDocument>,
   fieldRequestedAndAccepted: Record<string, any> | string
 ) : Promise<string> => {...};
 ```

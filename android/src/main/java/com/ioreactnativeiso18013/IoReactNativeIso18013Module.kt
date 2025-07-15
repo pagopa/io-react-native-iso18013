@@ -142,14 +142,14 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @param promise - The promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
-  fun sendErrorResponse(code:Double, promise: Promise) {
+  fun sendErrorResponse(code: Double, promise: Promise) {
     try {
       qrEngagement?.let { it ->
         val sessionDataStatus = SessionDataStatus.entries.find { it.value == code.toLong() }
-        if(sessionDataStatus != null){
+        if (sessionDataStatus != null) {
           it.sendErrorResponse(sessionDataStatus)
           promise.resolve(true)
-        }else {
+        } else {
           ModuleException.SEND_ERROR_RESPONSE_ERROR.reject(
             promise,
             Pair(ERROR_KEY, "Invalid status code")
@@ -239,9 +239,11 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun generateOID4VPDeviceResponse(clientId : String, responseUri : String, authorizationRequestNonce : String,
-                                   mdocGeneratedNonce : String, documents : ReadableArray,
-                                   fieldRequestedAndAccepted : String, promise : Promise) {
+  fun generateOID4VPDeviceResponse(
+    clientId: String, responseUri: String, authorizationRequestNonce: String,
+    mdocGeneratedNonce: String, documents: ReadableArray,
+    fieldRequestedAndAccepted: String, promise: Promise
+  ) {
     val sessionTranscript = try {
       OpenID4VP(
         clientId,
@@ -249,17 +251,21 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         authorizationRequestNonce,
         mdocGeneratedNonce
       ).createSessionTranscript()
-    } catch (e : Exception) {
-     ModuleException.UNABLE_TO_GENERATE_TRANSCRIPT.reject(promise, Pair(
-        ERROR_USER_INFO_KEY, e.message.orEmpty()))
+    } catch (e: Exception) {
+      ModuleException.UNABLE_TO_GENERATE_TRANSCRIPT.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
       return
     }
 
     val documentsParsed = try {
       parseDocRequested(documents)
-    } catch (e : Exception) {
-     ModuleException.INVALID_DOC_REQUESTED.reject(promise, Pair(
-        ERROR_USER_INFO_KEY, e.message.orEmpty()))
+    } catch (e: Exception) {
+      ModuleException.INVALID_DOC_REQUESTED.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
       return
     }
 
@@ -270,20 +276,49 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         fieldRequestedAndAccepted,
         object : ResponseGenerator.Response {
           override fun onResponseGenerated(response: ByteArray) {
-            promise.resolve(Base64.encode(response, Base64.DEFAULT))
+            promise.resolve(Base64.encodeToString(response, Base64.DEFAULT))
           }
 
           override fun onError(message: String) {
-            ModuleException.UNABLE_TO_GENERATE_RESPONSE.reject(promise, Pair(
-              ERROR_USER_INFO_KEY, message))
+            ModuleException.UNABLE_TO_GENERATE_RESPONSE.reject(
+              promise,
+              Pair(ERROR_USER_INFO_KEY, message)
+            )
           }
         }
       )
-    } catch (e : Exception) {
-      ModuleException.GENERATE_OID4VP_DEVICE_RESPONSE_FAILED.reject(promise, Pair(
-        ERROR_USER_INFO_KEY, e.message.orEmpty()))
+    } catch (e: Exception) {
+      ModuleException.UNABLE_TO_GENERATE_RESPONSE.reject(
+        promise,
+        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
+      )
     }
   }
+
+  private fun parseDocRequested(array: ReadableArray): Array<DocRequested> {
+    val retVal = mutableListOf<DocRequested>()
+    for (i in 0..<array.size()) {
+      val entry = array.getMap(i)
+      if (entry === null) {
+        throw Exception("Entry in ReadableMap is null")
+      }
+      if (
+        !entry.hasKey("alias") || entry.getType("alias") != ReadableType.String ||
+        !entry.hasKey("issuerSignedContent") || entry.getType("issuerSignedContent") != ReadableType.String ||
+        !entry.hasKey("docType") || entry.getType("docType") != ReadableType.String
+      ) throw IllegalArgumentException("Unable to decode the provided documents")
+      retVal.add(
+        DocRequested(
+          alias = entry.getString("alias")!!,
+          issuerSignedContent = entry.getString("issuerSignedContent")!!,
+          docType = entry.getString("docType")!!
+        )
+      )
+    }
+
+    return retVal.toTypedArray()
+  }
+
 
   /**
    * Sets the proximity handler along with the possible dispatched events and their callbacks.
@@ -314,7 +349,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         sendEvent("onError", data)
       }
 
-      override fun onDocumentRequestReceived(request: String?, sessionsTranscript: ByteArray){
+      override fun onDocumentRequestReceived(request: String?, sessionsTranscript: ByteArray) {
         val data: WritableMap = Arguments.createMap()
         data.putString("data", request)
         sendEvent("onDocumentRequestReceived", data)
