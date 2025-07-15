@@ -119,7 +119,7 @@ class IoReactNativeProximity: RCTEventEmitter {
         let issuerSignedContent = dict["issuerSignedContent"] as? String,
         let alias = dict["alias"] as? String,
         let docType = dict["docType"] as? String,
-        let decodedIssuerSignedContent = Data(base64Encoded: issuerSignedContent)
+        let decodedIssuerSignedContent = try? Base64Utils.decodeBase64OrBase64URL(base: issuerSignedContent)
       else { throw ModuleException.invalidDocRequested.error() }
       
       guard let document = ProximityDocument(

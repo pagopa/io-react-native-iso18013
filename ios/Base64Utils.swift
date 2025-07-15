@@ -19,7 +19,8 @@ class Base64Utils {
    - Returns: A `Data` buffer.
    */
   static func decodeBase64OrBase64URL(base: String) throws -> Data {
-    if let data = Data(base64UrlEncoded: base) {
+    print("here")
+    if let data = dataFromBase64Url(base64url: base) {
       return data
     } else if let data = Data(base64Encoded: base) {
       return data
@@ -28,4 +29,14 @@ class Base64Utils {
     }
   }
   
+  static private func dataFromBase64Url(base64url: String) -> Data? {
+    var base64 = base64url
+        .replacingOccurrences(of: "-", with: "+")
+        .replacingOccurrences(of: "_", with: "/")
+    if base64.count % 4 != 0 {
+        base64.append(String(repeating: "=", count: 4 - base64.count % 4))
+    }
+    print(base64)
+    return Data(base64Encoded: base64)
+  }
 }

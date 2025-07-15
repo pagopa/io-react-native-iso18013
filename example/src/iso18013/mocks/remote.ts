@@ -1,5 +1,7 @@
 import { MDL_BASE64, MDL_BASE64URL } from './proximity';
 
+export const TEST_REMOTE_KEYTAG = 'TEST_REMOTE_KEYTAG';
+
 export const DEVICE_REQUEST_BASE64 = {
   request: {
     clientId:
@@ -11,7 +13,7 @@ export const DEVICE_REQUEST_BASE64 = {
   },
   documents: [
     {
-      alias: 'TEST_KEYTAG',
+      alias: TEST_REMOTE_KEYTAG,
       docType: 'org.iso.18013.5.1.mDL',
       issuerSignedContent: MDL_BASE64,
     },
@@ -31,7 +33,7 @@ export const DEVICE_REQUEST_BASE64URL = {
   },
   documents: [
     {
-      alias: 'TEST_KEYTAG',
+      alias: TEST_REMOTE_KEYTAG,
       docType: 'org.iso.18013.5.1.mDL',
       issuerSignedContent: MDL_BASE64URL,
     },
@@ -45,7 +47,7 @@ export const WRONG_DOC_REQUEST = {
   documents: [
     {
       ...DEVICE_REQUEST_BASE64.documents[0]!,
-      alias: 'AAA',
+      alias: 'WRONG_KEYTAG_ALIAS',
     },
   ],
 };
@@ -54,7 +56,7 @@ export const INCOMPLETE_DOC_REQUEST = {
   ...DEVICE_REQUEST_BASE64,
   documents: [
     {
-      alias: 'AAA',
+      alias: 'WRONG_KEYTAG_ALIAS',
     },
   ],
 };

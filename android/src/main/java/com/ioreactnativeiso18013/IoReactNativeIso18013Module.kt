@@ -337,14 +337,16 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         ?: throw IllegalArgumentException("Entry in ReadableArray is null")
 
       val alias = entry.getString("alias")
-      val issuerSignedContent = entry.getString("issuerSignedContent")
+      val issuerSignedContentStr = entry.getString("issuerSignedContent")
       val docType = entry.getString("docType")
 
       if (
         alias == null || entry.getType("alias") != ReadableType.String ||
-        issuerSignedContent == null || entry.getType("issuerSignedContent") != ReadableType.String ||
+        issuerSignedContentStr == null || entry.getType("issuerSignedContent") != ReadableType.String ||
         docType == null || entry.getType("docType") != ReadableType.String
       ) throw IllegalArgumentException("Unable to decode the provided documents")
+
+      val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
 
       DocRequested(
         issuerSignedContent,

@@ -1,20 +1,20 @@
 import { Alert, Button, ScrollView } from 'react-native';
 import { generateKeyIfNotExists } from './utils';
-import { KEYTAG } from './mocks/proximity';
 import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
 import { styles } from '../styles';
 import {
   DEVICE_REQUEST_BASE64,
   DEVICE_REQUEST_BASE64URL,
   INCOMPLETE_DOC_REQUEST,
+  TEST_REMOTE_KEYTAG,
   WRONG_DOC_REQUEST,
   WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST,
   type DeviceRequest,
-} from './mocks/deviceRequest';
+} from './mocks/remote';
 
 const handleGenerateResponse = async (deviceRequest: DeviceRequest) => {
   try {
-    await generateKeyIfNotExists(KEYTAG);
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
     const result = await ISO18013_7.generateOID4VPDeviceResponse(
       deviceRequest.request.clientId,
       deviceRequest.request.responseUri,
@@ -36,7 +36,7 @@ const handleGenerateResponse = async (deviceRequest: DeviceRequest) => {
 
 const handleGenerateResponseWrongDocRequested = async () => {
   try {
-    await generateKeyIfNotExists(KEYTAG);
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
     const result = await ISO18013_7.generateOID4VPDeviceResponse(
       WRONG_DOC_REQUEST.request.clientId,
       WRONG_DOC_REQUEST.request.responseUri,
@@ -58,7 +58,7 @@ const handleGenerateResponseWrongDocRequested = async () => {
 
 const handleGenerateResponseIncompleteDocRequested = async () => {
   try {
-    await generateKeyIfNotExists(KEYTAG);
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
     const result = await ISO18013_7.generateOID4VPDeviceResponse(
       INCOMPLETE_DOC_REQUEST.request.clientId,
       INCOMPLETE_DOC_REQUEST.request.responseUri,
@@ -85,7 +85,7 @@ const handleGenerateResponseIncompleteDocRequested = async () => {
 
 const handleGenerateResponseWrongFieldRequestedAndAccepted = async () => {
   try {
-    await generateKeyIfNotExists(KEYTAG);
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
     const result = await ISO18013_7.generateOID4VPDeviceResponse(
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.clientId,
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.responseUri,

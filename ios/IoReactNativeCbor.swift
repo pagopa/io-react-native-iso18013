@@ -12,7 +12,7 @@ class IoReactNativeCbor: NSObject {
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
-    guard let data = Data(base64Encoded: cbor) else {
+    guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: cbor) else {
       ME.invalidEncoding.reject(reject: reject)
       return
     }
