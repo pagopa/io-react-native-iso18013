@@ -5,7 +5,7 @@ This library provides a React Native module based on [iso18013-android](https://
 ## Installation
 
 ```sh
-npm install @pagopa/io-react-native-proximity
+npm install @pagopa/io-react-native-iso18013
 ```
 
 ## Usage
