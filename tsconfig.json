@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "io-react-native-iso18013": ["./src/index"]
+      "@pagopa/io-react-native-iso18013": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
