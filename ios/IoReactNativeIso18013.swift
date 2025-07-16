@@ -407,6 +407,32 @@ class IoReactNativeProximity: RCTEventEmitter {
     }
   }
   
+  private class DocRequested {
+    var issuerSignedContent : [UInt8]
+    var alias : String
+    var docType : String
+    
+    public init(issuerSignedContent: [UInt8], alias: String, docType: String) {
+      self.issuerSignedContent = issuerSignedContent
+      self.alias = alias
+      self.docType = docType
+    }
+  }
+  
+  private func parseDocRequested(_ array : NSArray) throws -> [DocRequested] {
+    return try array.compactMap { (element) -> DocRequested in
+      guard let dict : NSDictionary = element as? NSDictionary else { throw ModuleException.unableToDecode.error() }
+      guard
+        let issuerSignedContent = dict["issuerSignedContent"] as? String,
+        let alias = dict["alias"] as? String,
+        let docType = dict["docType"] as? String,
+        let issuerSignedBytesData = Data(base64Encoded: issuerSignedContent)
+      else { throw ModuleException.invalidDocRequested.error() }
+  
+      return DocRequested(issuerSignedContent: Array(issuerSignedBytesData), alias: alias, docType: docType)
+    }
+  }
+  
   /**
    Wrapper for rejecting with an error.
    Add a new case in order to extend the possible errors.

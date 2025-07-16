@@ -1,6 +1,7 @@
 import { NativeEventEmitter, Platform } from 'react-native';
 import { IoReactNativeProximity } from '..';
 import type { AcceptedFields } from './schema';
+import type { RequestedDocument } from '../types';
 
 const eventEmitter = new NativeEventEmitter(IoReactNativeProximity);
 
@@ -109,7 +110,7 @@ export function sendErrorResponse(code: ErrorCode): Promise<boolean> {
  * @returns A base64 encoded response to be sent to the verifier app via `sendResponse`
  */
 export function generateResponse(
-  documents: Array<Document>,
+  documents: Array<RequestedDocument>,
   acceptedFields: AcceptedFields
 ): Promise<string> {
   return IoReactNativeProximity.generateResponse(documents, acceptedFields);

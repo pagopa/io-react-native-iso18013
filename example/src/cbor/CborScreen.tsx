@@ -1,15 +1,10 @@
 import { CBOR, COSE } from '@pagopa/io-react-native-iso18013';
-import {
-  generate,
-  getPublicKey,
-  type PublicKey,
-} from '@pagopa/io-react-native-crypto';
+import { getPublicKey, type PublicKey } from '@pagopa/io-react-native-crypto';
 import { Alert, Button, ScrollView, Text } from 'react-native';
 import {
   MDL_DOCTYPE_BASE64,
   MDL_DOCTYPE_BASE64URL,
 } from './mocks/mdlWithDocType';
-
 import { styles } from '../styles';
 import {
   MDL_AND_PID_WITH_DOCTYPE_BASE64,
@@ -28,6 +23,7 @@ import {
   VERIFY_PAYLOAD_BASE64,
   VERIFY_PAYLOAD_BASE64URL,
 } from './mocks/verifyPayload';
+import { generateKeyIfNotExists } from '../iso18013/utils';
 
 const TEST_KEY: PublicKey = {
   kty: 'EC',
@@ -37,14 +33,6 @@ const TEST_KEY: PublicKey = {
 };
 
 const CborScreen = () => {
-  const generateKeyIfNotExists = async (keyTag: string) => {
-    try {
-      await getPublicKey(keyTag);
-    } catch (error: any) {
-      await generate(keyTag);
-    }
-  };
-
   const handleDecode = (data: string) => async () => {
     try {
       const decoded = await CBOR.decodeDocuments(data);
