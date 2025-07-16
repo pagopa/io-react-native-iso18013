@@ -295,31 +295,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     }
   }
 
-  private fun parseDocRequested(array: ReadableArray): Array<DocRequested> {
-    val retVal = mutableListOf<DocRequested>()
-    for (i in 0..<array.size()) {
-      val entry = array.getMap(i)
-      if (entry === null) {
-        throw Exception("Entry in ReadableMap is null")
-      }
-      if (
-        !entry.hasKey("alias") || entry.getType("alias") != ReadableType.String ||
-        !entry.hasKey("issuerSignedContent") || entry.getType("issuerSignedContent") != ReadableType.String ||
-        !entry.hasKey("docType") || entry.getType("docType") != ReadableType.String
-      ) throw IllegalArgumentException("Unable to decode the provided documents")
-      retVal.add(
-        DocRequested(
-          alias = entry.getString("alias")!!,
-          issuerSignedContent = entry.getString("issuerSignedContent")!!,
-          docType = entry.getString("docType")!!
-        )
-      )
-    }
-
-    return retVal.toTypedArray()
-  }
-
-
   /**
    * Sets the proximity handler along with the possible dispatched events and their callbacks.
    * The events are then sent to React Native via `RCTEventEmitter`.
