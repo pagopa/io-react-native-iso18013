@@ -32,7 +32,7 @@ export type Events = keyof EventsPayload;
  * It contains:
  * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
  * - alias which is the alias of the key used to sign the credential;
- * - docType which is the type of the document.
+ * - docType which is the document type.
  */
 export type Document = {
   issuerSignedContent: string;

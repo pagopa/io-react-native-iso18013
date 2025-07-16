@@ -32,13 +32,25 @@ object Base64Utils {
     }
   }
 
+  /**
+   * Wrapper method which encodes a ByteArray in a base64 string.
+   * This allows to change the underlying implementation here without changing it in the whole project.
+   * @param buffer - The ByteArray to be converted
+   * @returns A base64 encoded string representing the buffer
+   */
   @OptIn(ExperimentalEncodingApi::class)
   fun encodeBase64(buffer: ByteArray): String {
     return Base64.Default.encode(buffer)
   }
 
+  /**
+   * Wrapper method which decodes a ByteArray in a base64 string.
+   * This allows to change the underlying implementation here without changing it in the whole project.
+   * @param buffer - The string to be converted
+   * @returns A buffer representing the base64 string
+   */
   @OptIn(ExperimentalEncodingApi::class)
-  fun decodeBase64(buffer: String): ByteArray {
-    return Base64.Default.decode(buffer)
+  fun decodeBase64(base64: String): ByteArray {
+    return Base64.Default.decode(base64)
   }
 }

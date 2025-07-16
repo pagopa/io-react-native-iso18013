@@ -7,7 +7,6 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.WritableNativeMap
-import com.ioreactnativeiso18013.Base64Utils.decodeBase64AndBase64Url
 import it.pagopa.io.wallet.cbor.cose.COSEManager
 import it.pagopa.io.wallet.cbor.cose.FailureReason
 import it.pagopa.io.wallet.cbor.cose.SignWithCOSEResult
@@ -23,7 +22,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun decode(data: String, promise: Promise) {
     val buffer = try {
-      decodeBase64AndBase64Url(data)
+      Base64Utils.decodeBase64AndBase64Url(data)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
@@ -49,7 +48,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun decodeDocuments(data: String, promise: Promise) {
     val buffer = try {
-      decodeBase64AndBase64Url(data)
+      Base64Utils.decodeBase64AndBase64Url(data)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
@@ -77,7 +76,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun decodeIssuerSigned(issuerSigned: String, promise: Promise) {
     val buffer = try {
-      decodeBase64AndBase64Url(issuerSigned)
+      Base64Utils.decodeBase64AndBase64Url(issuerSigned)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
@@ -107,7 +106,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun sign(payload: String, keyTag: String, promise: Promise) {
     val data = try {
-      decodeBase64AndBase64Url(payload)
+      Base64Utils.decodeBase64AndBase64Url(payload)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
@@ -156,7 +155,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun verify(sign1Data: String, publicKey: ReadableMap, promise: Promise) {
     val data = try {
-      decodeBase64AndBase64Url(sign1Data)
+      Base64Utils.decodeBase64AndBase64Url(sign1Data)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,

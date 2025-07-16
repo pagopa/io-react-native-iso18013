@@ -16,10 +16,9 @@ class Base64Utils {
    
    - Throws: `Base64DecodingError.invalidBase64` if `base` is not a valid base64 or base64url
    
-   - Returns: A `Data` buffer.
+   - Returns: A `Data` buffer representing `base`.
    */
   static func decodeBase64OrBase64URL(base: String) throws -> Data {
-    print("here")
     if let data = dataFromBase64Url(base64url: base) {
       return data
     } else if let data = Data(base64Encoded: base) {
@@ -29,6 +28,13 @@ class Base64Utils {
     }
   }
   
+  /**
+   Parses a base64url `String` into `Data` buffer by converting it to base64 before feeding it into `Data`.
+   - Parameters:
+    - base64url: the base64url encoded `String` to be converted
+   
+   - Returns: A `Data` buffer representing `base64url`
+   */
   static private func dataFromBase64Url(base64url: String) -> Data? {
     var base64 = base64url
         .replacingOccurrences(of: "-", with: "+")
@@ -36,7 +42,6 @@ class Base64Utils {
     if base64.count % 4 != 0 {
         base64.append(String(repeating: "=", count: 4 - base64.count % 4))
     }
-    print(base64)
     return Data(base64Encoded: base64)
   }
 }

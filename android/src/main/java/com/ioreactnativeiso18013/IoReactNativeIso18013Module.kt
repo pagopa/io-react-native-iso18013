@@ -167,7 +167,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   /**
    * Generates a response which can later be sent with {sendResponse} with the provided
    * CBOR documents and the requested attributes.
-   * @param documents - A ReadableArray containing a map with alias as string, issuerSignedContent encoded as base64 or base64url strings and docType as strings.
+   * @param documents - A {ReadableArray} containing documents. Each document is defined as a map containing:
+   * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+   * - alias which is the alias of the key used to sign the credential;
+   * - docType which is the document type.
    * @param fieldRequestedAndAccepted - The string containing the requested attributes. This is based on the request
    * provided by the {onDocumentRequestReceived} callback.
    * @param promise - The promise which will be resolved in case of success or rejected in case of failure.
@@ -293,31 +296,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     }
   }
 
-  private fun parseDocRequested(array: ReadableArray): Array<DocRequested> {
-    val retVal = mutableListOf<DocRequested>()
-    for (i in 0..<array.size()) {
-      val entry = array.getMap(i)
-      if (entry === null) {
-        throw Exception("Entry in ReadableMap is null")
-      }
-      if (
-        !entry.hasKey("alias") || entry.getType("alias") != ReadableType.String ||
-        !entry.hasKey("issuerSignedContent") || entry.getType("issuerSignedContent") != ReadableType.String ||
-        !entry.hasKey("docType") || entry.getType("docType") != ReadableType.String
-      ) throw IllegalArgumentException("Unable to decode the provided documents")
-      retVal.add(
-        DocRequested(
-          alias = entry.getString("alias")!!,
-          issuerSignedContent = entry.getString("issuerSignedContent")!!,
-          docType = entry.getString("docType")!!
-        )
-      )
-    }
-
-    return retVal.toTypedArray()
-  }
-
-
   /**
    * Sets the proximity handler along with the possible dispatched events and their callbacks.
    * The events are then sent to React Native via `RCTEventEmitter`.
@@ -362,7 +340,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   /**
    * Utility function which extracts the document shape we expect to receive from the bridge
    * in the one expected by {DocRequested}.
-   * @param documents - A {ReadableArray} containing the documents receive from the bridge
+   * @param documents - A {ReadableArray} containing documents. Each document is defined as a map containing:
+   * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+   * - alias which is the alias of the key used to sign the credential;
+   * - docType which is the document type.
    * @returns An array containing a {DocRequested} object for each document in {documents}
    * @throws IllegalArgumentException if the provided document doesn't adhere to the expected format
    */

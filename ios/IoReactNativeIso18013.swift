@@ -106,7 +106,10 @@ class IoReactNativeProximity: RCTEventEmitter {
    The result can be fed to ``IOWalletProximity.generateResponse``.
    
    - Parameters:
-      - documents: An array of any elements. In order to be added to the result array each element must be a dictionary with `issuerSignedContent` encoded in base64 or base64url, `alias` and `docType` as keys and strings as values.
+      - documents: An array containing documents. Each document is defined as a map containing:
+         - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+         - alias which is the alias of the key used to sign the credential;
+         - docType which is the document type.
    
    - Throws: `ModuleException.invalidDocRequested.error()` and `ModuleException.invalidDocRequested.error()` iif an error occurs while parsing the document
    
@@ -173,7 +176,13 @@ class IoReactNativeProximity: RCTEventEmitter {
      It rejects the promise if an error occurs during the parameters parsing or while generating the device response.
      
      - Parameters:
-       - documents: An array of documents which should contain a dictionary with `issuerSignedContent`, `alias` and `docType` as keys and strings as values
+       - documents: An array containing documents. Each document is defined as a map containing:
+           - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+           - alias which is the alias of the key used to sign the credential;
+           - docType which is the document type.
+       - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+       - alias which is the alias of the key used to sign the credential;
+       - docType which is the document type.
        - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
         
          
@@ -416,20 +425,6 @@ class IoReactNativeProximity: RCTEventEmitter {
       self.issuerSignedContent = issuerSignedContent
       self.alias = alias
       self.docType = docType
-    }
-  }
-  
-  private func parseDocRequested(_ array : NSArray) throws -> [DocRequested] {
-    return try array.compactMap { (element) -> DocRequested in
-      guard let dict : NSDictionary = element as? NSDictionary else { throw ModuleException.unableToDecode.error() }
-      guard
-        let issuerSignedContent = dict["issuerSignedContent"] as? String,
-        let alias = dict["alias"] as? String,
-        let docType = dict["docType"] as? String,
-        let issuerSignedBytesData = Data(base64Encoded: issuerSignedContent)
-      else { throw ModuleException.invalidDocRequested.error() }
-  
-      return DocRequested(issuerSignedContent: Array(issuerSignedBytesData), alias: alias, docType: docType)
     }
   }
   
