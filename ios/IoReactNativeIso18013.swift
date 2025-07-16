@@ -108,43 +108,29 @@ class IoReactNativeProximity: RCTEventEmitter {
    - Parameters:
       - documents: An array of any elements. In order to be added to the result array each element must be a dictionary with `issuerSignedContent`, `alias` and `docType` as keys and strings as values.
    
-   - Throws: `NSError` if result array is empty
+   - Throws: `ModuleException.invalidDocRequested.error()` and `ModuleException.invalidDocRequested.error()` iif an error occurs while parsing the document
    
    - Returns: An array of `ProximityDocument` containg the documents to be presented
    */
   private func parseDocuments(documents: [Any]) throws -> [ProximityDocument] {
-    var parsedDocuments: [ProximityDocument] = []
-    
-    for doc in documents {
-      guard let dict = doc as? [String: Any] else {
-        throw NSError(domain: "ParseDocument", code: -1, userInfo: [NSLocalizedDescriptionKey: "Value must be of type [String: Any]"])
-      }
-      
+    return try documents.compactMap{ (element) -> ProximityDocument in
+      guard let dict : [String: Any] = element as? [String: Any] else { throw ModuleException.unableToDecode.error() }
       guard
         let issuerSignedContent = dict["issuerSignedContent"] as? String,
         let alias = dict["alias"] as? String,
         let docType = dict["docType"] as? String,
         let decodedIssuerSignedContent = Data(base64Encoded: issuerSignedContent)
-      else {
-        throw NSError(domain: "ParseDocument", code: -1, userInfo: [NSLocalizedDescriptionKey: "The document must provide issuerSignedContent, alias and docType"])
-      }
+      else { throw ModuleException.invalidDocRequested.error() }
       
       guard let document = ProximityDocument(
         docType: docType,
         issuerSigned: [UInt8](decodedIssuerSignedContent),
         deviceKeyTag: alias
       ) else {
-        throw NSError(domain: "ParseDocument", code: -1, userInfo: [NSLocalizedDescriptionKey: "An error occurred while creating the ProximityDocument"])
+        throw ModuleException.invalidDocRequested.error()
       }
-      
-      parsedDocuments.append(document)
+      return document
     }
-    
-    if parsedDocuments.isEmpty {
-      throw NSError(domain: "ParseDocument", code: -1, userInfo: [NSLocalizedDescriptionKey: "The documents array can't be empty"])
-    }
-    
-    return parsedDocuments
   }
   
   /**
@@ -387,7 +373,7 @@ class IoReactNativeProximity: RCTEventEmitter {
     responseUri: String,
     authorizationRequestNonce: String,
     mdocGeneratedNonce: String,
-    documents: NSArray,
+    documents: [Any],
     fieldRequestedAndAccepted: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
@@ -401,12 +387,7 @@ class IoReactNativeProximity: RCTEventEmitter {
           mdocGeneratedNonce: mdocGeneratedNonce
       )
 
-      let documentsAsProximityDocument : [ProximityDocument] = try parseDocRequested(documents).reduce(into: []) { partialResult, document in
-        guard let proximityDocument = ProximityDocument(docType: document.docType, issuerSigned: document.issuerSignedContent, deviceKeyTag: document.alias) else {
-          throw ME.invalidDocRequested.error()
-        }
-        partialResult.append(proximityDocument)
-      }
+      let documentsAsProximityDocument = try parseDocuments(documents: documents)
       
       let items = try JSONDecoder().decode([String : [String : [String : Bool]]].self, from: Data(fieldRequestedAndAccepted.utf8))
       
