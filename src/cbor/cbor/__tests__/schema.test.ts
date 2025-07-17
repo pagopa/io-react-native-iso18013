@@ -28,12 +28,10 @@ describe('Documents schema', () => {
             issuerAuth: {
               rawValue: '12345',
               protectedHeader: 'QWERTY=',
-              unprotectedHeader: [
-                {
-                  algorithm: '33',
-                  keyId: '311229',
-                },
-              ],
+              unprotectedHeader: {
+                algorithm: '33',
+                keyId: '311229',
+              },
               payload: {
                 docType: DocumentTypeEnum.MDL,
                 version: '1.0.5',
@@ -90,12 +88,10 @@ describe('Documents schema', () => {
             issuerAuth: {
               rawValue: '12345',
               protectedHeader: 'QWERTY=',
-              unprotectedHeader: [
-                {
-                  algorithm: '33',
-                  keyId: '311229',
-                },
-              ],
+              unprotectedHeader: {
+                algorithm: '33',
+                keyId: '311229',
+              },
               payload: {
                 docType: DocumentTypeEnum.MDL,
                 version: '1.0.5',
