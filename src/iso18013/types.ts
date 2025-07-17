@@ -3,8 +3,11 @@
  */
 
 /**
- * Documents type to be used in the {@link generateResponse} for ISO18013-5 and {@link } method.
- * It contains the issuer signed, the alias of the bound key and the document type.
+ * Documents type to be used in the {@link generateResponse} for ISO18013-5 and {@link generateOID4VPDeviceResponse} for ISO18013-7.
+ * It contains:
+ * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+ * - alias which is the alias of the key used to sign the credential;
+ * - docType which is the document type.
  */
 export type RequestedDocument = {
   issuerSignedContent: string;

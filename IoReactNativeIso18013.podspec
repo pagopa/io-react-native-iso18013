@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
   # Module dependencies
-  s.dependency "IOWalletCBOR", "~> 0.1.0"
+  s.dependency "IOWalletCBOR", "~> 0.2.1"
   s.dependency "IOWalletProximity", "~> 1.2.2"
 
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.

@@ -28,19 +28,6 @@ export type EventsPayload = {
 export type Events = keyof EventsPayload;
 
 /**
- * Documents type to be used in the {@link generateResponse} method.
- * It contains:
- * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
- * - alias which is the alias of the key used to sign the credential;
- * - docType which is the document type.
- */
-export type Document = {
-  issuerSignedContent: string;
-  alias: string;
-  docType: string;
-};
-
-/**
  * Error codes that can be used with the `sendErrorResponse` method.
  * These are defined based on the SessionData status code defined in the table 20 of the ISO 18013-5 standard
  * and mirror codes defined in the native module.

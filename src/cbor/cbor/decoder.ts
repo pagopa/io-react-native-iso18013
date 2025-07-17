@@ -35,6 +35,7 @@ export const decode = async (data: string): Promise<any> => {
  */
 export const decodeDocuments = async (data: string): Promise<Documents> => {
   const documentsString = await IoReactNativeCbor.decodeDocuments(data);
+  console.log(documentsString);
   return await DocumentsFromString.parseAsync(documentsString);
 };
 
@@ -52,5 +53,6 @@ export const decodeIssuerSigned = async (
 ): Promise<IssuerSigned> => {
   const decodedIssuerSignedString =
     await IoReactNativeCbor.decodeIssuerSigned(issuerSigned);
+  console.log(decodedIssuerSignedString);
   return await IssuerSignedFromString.parseAsync(decodedIssuerSignedString);
 };
