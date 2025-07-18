@@ -30,7 +30,7 @@ describe('Documents schema', () => {
               protectedHeader: 'QWERTY=',
               unprotectedHeader: {
                 algorithm: '33',
-                keyId: '311229',
+                kid: '311229',
               },
               payload: {
                 docType: DocumentTypeEnum.MDL,
@@ -90,7 +90,7 @@ describe('Documents schema', () => {
               protectedHeader: 'QWERTY=',
               unprotectedHeader: {
                 algorithm: '33',
-                keyId: '311229',
+                kid: '311229',
               },
               payload: {
                 docType: DocumentTypeEnum.MDL,
