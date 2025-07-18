@@ -1,23 +1,29 @@
 import { CBOR, COSE } from '@pagopa/io-react-native-iso18013';
 import { getPublicKey, type PublicKey } from '@pagopa/io-react-native-crypto';
-import { Alert, Button, SafeAreaView, Text } from 'react-native';
-import mdlCbor from './mocks/mdl';
-import moreDocsCbor from './mocks/moreDocs';
-import moreDocsIssuerAuthCbor from './mocks/moreDocsIssuerAuth';
-import oneDocCbor from './mocks/oneDoc';
-import oneDocIssuerAuth from './mocks/oneDocIssuerAuth';
-
+import { Alert, Button, ScrollView, Text } from 'react-native';
+import {
+  MDL_DOCTYPE_BASE64,
+  MDL_DOCTYPE_BASE64URL,
+} from './mocks/mdlWithDocType';
 import { styles } from '../styles';
+import {
+  MDL_AND_PID_WITH_DOCTYPE_BASE64,
+  MDL_AND_PID_WITH_DOCTYPE_BASE64URL,
+} from './mocks/mdlAndPidWithDocType';
+import {
+  MDL_ISSUER_SIGNED_BASE64,
+  MDL_ISSUER_SIGNED_BASE64URL,
+} from './mocks/mdlIssuerSigned';
+import {
+  SIGN_TEST_KEYTAG,
+  SIGN_PAYLOAD_BASE64,
+  SIGN_PAYLOAD_BASE64URL,
+} from './mocks/signPayload';
+import {
+  VERIFY_PAYLOAD_BASE64,
+  VERIFY_PAYLOAD_BASE64URL,
+} from './mocks/verifyPayload';
 import { generateKeyIfNotExists } from '../iso18013/utils';
-
-const KEYTAG = 'TEST_KEYTAG';
-
-// "This is test data" base64 encoded
-const DATA_TO_SIGN = 'VGhpcyBpcyBhIHRlc3QgZGF0YQ==';
-
-// COSE Sign1 object with payload `This is test data`
-const DATA_TO_VERIFY =
-  'hEOhASagU1RoaXMgaXMgYSB0ZXN0IGRhdGFYQDfXLpQpsSZyBJE+0AvBs27tuqIuNEeuRYQACPSLFGT9X18d8RrLkBS0f/AYKbFpW+zd6CmFQ8ry9xkZOT1lkbg=';
 
 const TEST_KEY: PublicKey = {
   kty: 'EC',
@@ -59,11 +65,11 @@ const CborScreen = () => {
     }
   };
 
-  const handleTestSign = async () => {
+  const handleTestSign = async (payload: string) => {
     try {
-      await generateKeyIfNotExists(KEYTAG);
-      const key = await getPublicKey(KEYTAG);
-      const result = await COSE.sign(DATA_TO_SIGN, KEYTAG);
+      await generateKeyIfNotExists(SIGN_TEST_KEYTAG);
+      const key = await getPublicKey(SIGN_TEST_KEYTAG);
+      const result = await COSE.sign(payload, SIGN_TEST_KEYTAG);
       console.log('✅ Sign Success\n', result);
       console.log('🔑 Public Key\n', JSON.stringify(key, null, 2));
       Alert.alert('✅ Sign Success');
@@ -73,9 +79,9 @@ const CborScreen = () => {
     }
   };
 
-  const handleTestVerify = async () => {
+  const handleTestVerify = async (payload: string) => {
     try {
-      const result = await COSE.verify(DATA_TO_VERIFY, TEST_KEY);
+      const result = await COSE.verify(payload, TEST_KEY);
       if (result) {
         Alert.alert('✅ Verification Success');
       } else {
@@ -88,26 +94,50 @@ const CborScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.label}>CBOR</Text>
-      <Button title="Decode MDL" onPress={handleDecode(mdlCbor)} />
       <Button
-        title="Decode multiple docs"
-        onPress={handleDecode(moreDocsCbor)}
+        title="Decode MDL issuerSigned (base64)"
+        onPress={handleDecodeIssuerSigned(MDL_ISSUER_SIGNED_BASE64)}
       />
       <Button
-        title="Decode multiple docs with issuer auth"
-        onPress={handleDecode(moreDocsIssuerAuthCbor)}
+        title="Decode MDL issuerSigned (base64url)"
+        onPress={handleDecodeIssuerSigned(MDL_ISSUER_SIGNED_BASE64URL)}
       />
       <Button
-        title="Decode issuer signed from single doc with decoded issuer auth"
-        onPress={handleDecodeIssuerSigned(oneDocIssuerAuth)}
+        title="Decode MDL (base64)"
+        onPress={handleDecode(MDL_DOCTYPE_BASE64)}
       />
-      <Button title="Decode single doc" onPress={handleDecode(oneDocCbor)} />
+      <Button
+        title="Decode MDL (base64url)"
+        onPress={handleDecode(MDL_DOCTYPE_BASE64URL)}
+      />
+      <Button
+        title="Decode MDL+PID (base64)"
+        onPress={handleDecode(MDL_AND_PID_WITH_DOCTYPE_BASE64)}
+      />
+      <Button
+        title="Decode MDL+PID (base64url)"
+        onPress={handleDecode(MDL_AND_PID_WITH_DOCTYPE_BASE64URL)}
+      />
       <Text style={styles.label}>COSE</Text>
-      <Button title="Test sign" onPress={handleTestSign} />
-      <Button title="Test verify" onPress={handleTestVerify} />
-    </SafeAreaView>
+      <Button
+        title="Test sign (base64)"
+        onPress={() => handleTestSign(SIGN_PAYLOAD_BASE64)}
+      />
+      <Button
+        title="Test sign (base64url)"
+        onPress={() => handleTestSign(SIGN_PAYLOAD_BASE64URL)}
+      />
+      <Button
+        title="Test verify (base64)"
+        onPress={() => handleTestVerify(VERIFY_PAYLOAD_BASE64)}
+      />
+      <Button
+        title="Test verify (base64url)"
+        onPress={() => handleTestVerify(VERIFY_PAYLOAD_BASE64URL)}
+      />
+    </ScrollView>
   );
 };
 

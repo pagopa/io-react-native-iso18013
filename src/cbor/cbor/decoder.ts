@@ -16,7 +16,7 @@ import { coerceToJSON } from './schema.utils';
  * **NOTE**: this method does not handle nested CBOR data, which will need additional
  * parsing.
  *
- * @param data - The base64 encoded CBOR data
+ * @param data - The base64 or base64url encoded CBOR data
  * @returns The decoded data as JSON object
  */
 export const decode = async (data: string): Promise<any> => {
@@ -25,7 +25,7 @@ export const decode = async (data: string): Promise<any> => {
 };
 
 /**
- * Decode base64 encoded CBOR data to mDOC object
+ * Decode base64 or base64url encoded CBOR data to mDOC object
  *
  * If it is not possibile to decode the provided data, the promise will be rejected with
  * an instance of {@link CborFailure}.
@@ -44,7 +44,7 @@ export const decodeDocuments = async (data: string): Promise<Documents> => {
  * If it is not possibile to decode the provided data, the promise will be rejected with
  * an instance of {@link CborFailure}.
  *
- * @param issuerSigned - The base64 encoded MDOC data
+ * @param issuerSigned - The base64 or base64url encoded MDOC data
  * @returns The decoded {@link IssuerSigned} contained in the mDOC object
  */
 export const decodeIssuerSigned = async (

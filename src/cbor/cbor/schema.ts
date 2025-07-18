@@ -101,7 +101,7 @@ export type IssuerAuthPayload = z.infer<typeof IssuerAuthPayload>;
 export const IssuerAuth = z.object({
   rawValue: z.string().optional(),
   protectedHeader: z.string().optional(),
-  unprotectedHeader: z.array(IssuerAuthUnprotectedHeader),
+  unprotectedHeader: IssuerAuthUnprotectedHeader,
   payload: IssuerAuthPayload,
   signature: z.string().optional(),
 });

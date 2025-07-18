@@ -1,0 +1,3 @@
+export const SIGN_PAYLOAD_BASE64 = 'VGhpcyBpcyBhIHRlc3QgZGF0YQ==';
+export const SIGN_PAYLOAD_BASE64URL = 'VGhpcyBpcyBhIHRlc3QgZGF0YQ';
+export const SIGN_TEST_KEYTAG = 'SIGN_TEST_KEYTAG';

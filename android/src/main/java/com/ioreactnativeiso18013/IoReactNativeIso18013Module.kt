@@ -1,6 +1,5 @@
 package com.ioreactnativeiso18013
 
-import android.util.Base64
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -20,7 +19,6 @@ import it.pagopa.io.wallet.proximity.request.DocRequested
 import it.pagopa.io.wallet.proximity.response.ResponseGenerator
 import it.pagopa.io.wallet.proximity.session_data.SessionDataStatus
 import it.pagopa.io.wallet.proximity.wrapper.DeviceRetrievalHelperWrapper
-
 
 class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
@@ -80,14 +78,14 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @returns An ArrayList of ByteArray representing DER encoded X.509 certificates.
    * @throws ClassCastException if the element in the array is not a string
    */
+
   private fun parseCertificates(certificates: ReadableArray): ArrayList<ByteArray> {
     return ArrayList(
-      (0 until certificates.size())
-        .mapNotNull { i ->
-          certificates.getString(i).let { cert ->
-            Base64.decode(cert, Base64.DEFAULT)
-          }
+      (0 until certificates.size()).mapNotNull { i ->
+        certificates.getString(i)?.let { cert ->
+          Base64Utils.decodeBase64(cert)
         }
+      }
     )
   }
 
@@ -169,7 +167,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   /**
    * Generates a response which can later be sent with {sendResponse} with the provided
    * CBOR documents and the requested attributes.
-   * @param documents - A ReadableArray containing a map with alias, issuerSignedContent and docType as strings.
+   * @param documents - A {ReadableArray} containing documents. Each document is defined as a map containing:
+   * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+   * - alias which is the alias of the key used to sign the credential;
+   * - docType which is the document type.
    * @param fieldRequestedAndAccepted - The string containing the requested attributes. This is based on the request
    * provided by the {onDocumentRequestReceived} callback.
    * @param promise - The promise which will be resolved in case of success or rejected in case of failure.
@@ -191,7 +192,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           fieldRequestedAndAccepted.toString(),
           object : ResponseGenerator.Response {
             override fun onResponseGenerated(response: ByteArray) {
-              promise.resolve(Base64.encodeToString(response, Base64.NO_WRAP))
+              promise.resolve(Base64Utils.encodeBase64(response))
             }
 
             override fun onError(message: String) {
@@ -223,7 +224,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   fun sendResponse(response: String, promise: Promise) {
     try {
       qrEngagement?.let { qrEng ->
-        val responseBytes = Base64.decode(response, Base64.NO_WRAP)
+        val responseBytes = Base64Utils.decodeBase64(response)
         qrEng.sendResponse(responseBytes)
         promise.resolve(true)
       }
@@ -276,7 +277,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         fieldRequestedAndAccepted,
         object : ResponseGenerator.Response {
           override fun onResponseGenerated(response: ByteArray) {
-            promise.resolve(Base64.encodeToString(response, Base64.DEFAULT))
+            promise.resolve(Base64Utils.encodeBase64(response))
           }
 
           override fun onError(message: String) {
@@ -339,7 +340,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   /**
    * Utility function which extracts the document shape we expect to receive from the bridge
    * in the one expected by {DocRequested}.
-   * @param documents - A {ReadableArray} containing the documents receive from the bridge
+   * @param documents - A {ReadableArray} containing documents. Each document is defined as a map containing:
+   * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+   * - alias which is the alias of the key used to sign the credential;
+   * - docType which is the document type.
    * @returns An array containing a {DocRequested} object for each document in {documents}
    * @throws IllegalArgumentException if the provided document doesn't adhere to the expected format
    */
@@ -349,14 +353,16 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         ?: throw IllegalArgumentException("Entry in ReadableArray is null")
 
       val alias = entry.getString("alias")
-      val issuerSignedContent = entry.getString("issuerSignedContent")
+      val issuerSignedContentStr = entry.getString("issuerSignedContent")
       val docType = entry.getString("docType")
 
       if (
         alias == null || entry.getType("alias") != ReadableType.String ||
-        issuerSignedContent == null || entry.getType("issuerSignedContent") != ReadableType.String ||
+        issuerSignedContentStr == null || entry.getType("issuerSignedContent") != ReadableType.String ||
         docType == null || entry.getType("docType") != ReadableType.String
       ) throw IllegalArgumentException("Unable to decode the provided documents")
+
+      val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
 
       DocRequested(
         issuerSignedContent,

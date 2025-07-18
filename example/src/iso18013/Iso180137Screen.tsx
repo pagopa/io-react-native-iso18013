@@ -1,129 +1,134 @@
-import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
-import { Alert, Button, SafeAreaView } from 'react-native';
-import deviceRequest, {
-  wrongDocRequest,
-  wrongFieldRequestedAndAccepted,
-  incompleteDocRequest,
-} from './mocks/deviceRequest';
-import { styles } from '../styles';
+import { Alert, Button, ScrollView } from 'react-native';
 import { generateKeyIfNotExists } from './utils';
+import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
+import { styles } from '../styles';
+import {
+  DEVICE_REQUEST_BASE64,
+  DEVICE_REQUEST_BASE64URL,
+  INCOMPLETE_DOC_REQUEST,
+  TEST_REMOTE_KEYTAG,
+  WRONG_DOC_REQUEST,
+  WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST,
+  type DeviceRequest,
+} from './mocks/remote';
 
-const KEYTAG = 'TEST_KEYTAG';
-
-const Iso1801357Screen = () => {
-  const handleGenerateResponse = async () => {
-    try {
-      await generateKeyIfNotExists(KEYTAG);
-      const result = await ISO18013_7.generateOID4VPDeviceResponse(
-        deviceRequest.request.clientId,
-        deviceRequest.request.responseUri,
-        deviceRequest.request.authorizationRequestNonce,
-        deviceRequest.request.mdocGeneratedNonce,
-        deviceRequest.documents,
-        deviceRequest.fieldRequestedAndAccepted
-      );
-      console.log(result);
-      Alert.alert('✅ Device Response Generation Success');
-    } catch (error: any) {
-      console.log(
-        '❌ Device Response Generation Error\n',
-        JSON.stringify(error, null, 2)
-      );
-      Alert.alert('❌ Device Response Generation Error', error.message);
-    }
-  };
-
-  const handleGenerateResponseWrongDocRequested = async () => {
-    try {
-      await generateKeyIfNotExists(KEYTAG);
-      const result = await ISO18013_7.generateOID4VPDeviceResponse(
-        wrongDocRequest.request.clientId,
-        wrongDocRequest.request.responseUri,
-        wrongDocRequest.request.authorizationRequestNonce,
-        wrongDocRequest.request.mdocGeneratedNonce,
-        wrongDocRequest.documents,
-        wrongDocRequest.fieldRequestedAndAccepted
-      );
-      console.log(result);
-      Alert.alert('❌ Device Response Generation Success');
-    } catch (error: any) {
-      console.log(
-        '✅ Device Response Generation Error\n',
-        JSON.stringify(error, null, 2)
-      );
-      Alert.alert('✅ Device Response Generation Error', error.message);
-    }
-  };
-
-  const handleGenerateResponseIncompleteDocRequested = async () => {
-    try {
-      await generateKeyIfNotExists(KEYTAG);
-      const result = await ISO18013_7.generateOID4VPDeviceResponse(
-        incompleteDocRequest.request.clientId,
-        incompleteDocRequest.request.responseUri,
-        incompleteDocRequest.request.authorizationRequestNonce,
-        incompleteDocRequest.request.mdocGeneratedNonce,
-        //Cast needed to induce error scenario
-        incompleteDocRequest.documents as {
-          alias: string;
-          docType: string;
-          issuerSignedContent: string;
-        }[],
-        incompleteDocRequest.fieldRequestedAndAccepted
-      );
-      console.log(result);
-      Alert.alert('❌ Device Response Generation Success');
-    } catch (error: any) {
-      console.log(
-        '✅ Device Response Generation Error\n',
-        JSON.stringify(error, null, 2)
-      );
-      Alert.alert('✅ Device Response Generation Error', error.message);
-    }
-  };
-
-  const handleGenerateResponseWrongFieldRequestedAndAccepted = async () => {
-    try {
-      await generateKeyIfNotExists(KEYTAG);
-      const result = await ISO18013_7.generateOID4VPDeviceResponse(
-        wrongFieldRequestedAndAccepted.request.clientId,
-        wrongFieldRequestedAndAccepted.request.responseUri,
-        wrongFieldRequestedAndAccepted.request.authorizationRequestNonce,
-        wrongFieldRequestedAndAccepted.request.mdocGeneratedNonce,
-        wrongFieldRequestedAndAccepted.documents,
-        wrongFieldRequestedAndAccepted.fieldRequestedAndAccepted
-      );
-      console.log(result);
-      Alert.alert('❌ Device Response Generation Success');
-    } catch (error: any) {
-      console.log(
-        '✅ Device Response Generation Error\n',
-        JSON.stringify(error, null, 2)
-      );
-      Alert.alert('✅ Device Response Generation Error', error.message);
-    }
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <Button
-        title="Test Generate OID4VP Response"
-        onPress={handleGenerateResponse}
-      />
-      <Button
-        title="Test Generate OID4VP Response (wrong DocRequested)"
-        onPress={handleGenerateResponseWrongDocRequested}
-      />
-      <Button
-        title="Test Generate OID4VP Response (incomplete DocRequested)"
-        onPress={handleGenerateResponseIncompleteDocRequested}
-      />
-      <Button
-        title="Test Generate OID4VP Response (wrong FieldsRequestedAndAccepted)"
-        onPress={handleGenerateResponseWrongFieldRequestedAndAccepted}
-      />
-    </SafeAreaView>
-  );
+const handleGenerateResponse = async (deviceRequest: DeviceRequest) => {
+  try {
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
+    const result = await ISO18013_7.generateOID4VPDeviceResponse(
+      deviceRequest.request.clientId,
+      deviceRequest.request.responseUri,
+      deviceRequest.request.authorizationRequestNonce,
+      deviceRequest.request.mdocGeneratedNonce,
+      deviceRequest.documents,
+      deviceRequest.fieldRequestedAndAccepted
+    );
+    console.log(result);
+    Alert.alert('✅ Device Response Generation Success');
+  } catch (error: any) {
+    console.log(
+      '❌ Device Response Generation Error\n',
+      JSON.stringify(error, null, 2)
+    );
+    Alert.alert('❌ Device Response Generation Error', error.message);
+  }
 };
+
+const handleGenerateResponseWrongDocRequested = async () => {
+  try {
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
+    const result = await ISO18013_7.generateOID4VPDeviceResponse(
+      WRONG_DOC_REQUEST.request.clientId,
+      WRONG_DOC_REQUEST.request.responseUri,
+      WRONG_DOC_REQUEST.request.authorizationRequestNonce,
+      WRONG_DOC_REQUEST.request.mdocGeneratedNonce,
+      WRONG_DOC_REQUEST.documents,
+      WRONG_DOC_REQUEST.fieldRequestedAndAccepted
+    );
+    console.log(result);
+    Alert.alert('❌ Device Response Generation Success');
+  } catch (error: any) {
+    console.log(
+      '✅ Device Response Generation Error\n',
+      JSON.stringify(error, null, 2)
+    );
+    Alert.alert('✅ Device Response Generation Error', error.message);
+  }
+};
+
+const handleGenerateResponseIncompleteDocRequested = async () => {
+  try {
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
+    const result = await ISO18013_7.generateOID4VPDeviceResponse(
+      INCOMPLETE_DOC_REQUEST.request.clientId,
+      INCOMPLETE_DOC_REQUEST.request.responseUri,
+      INCOMPLETE_DOC_REQUEST.request.authorizationRequestNonce,
+      INCOMPLETE_DOC_REQUEST.request.mdocGeneratedNonce,
+      //Cast needed to induce error scenario
+      INCOMPLETE_DOC_REQUEST.documents as {
+        alias: string;
+        docType: string;
+        issuerSignedContent: string;
+      }[],
+      INCOMPLETE_DOC_REQUEST.fieldRequestedAndAccepted
+    );
+    console.log(result);
+    Alert.alert('❌ Device Response Generation Success');
+  } catch (error: any) {
+    console.log(
+      '✅ Device Response Generation Error\n',
+      JSON.stringify(error, null, 2)
+    );
+    Alert.alert('✅ Device Response Generation Error', error.message);
+  }
+};
+
+const handleGenerateResponseWrongFieldRequestedAndAccepted = async () => {
+  try {
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
+    const result = await ISO18013_7.generateOID4VPDeviceResponse(
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.clientId,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.responseUri,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request
+        .authorizationRequestNonce,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.mdocGeneratedNonce,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.documents,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.fieldRequestedAndAccepted
+    );
+    console.log(result);
+    Alert.alert('❌ Device Response Generation Success');
+  } catch (error: any) {
+    console.log(
+      '✅ Device Response Generation Error\n',
+      JSON.stringify(error, null, 2)
+    );
+    Alert.alert('✅ Device Response Generation Error', error.message);
+  }
+};
+
+const Iso1801357Screen = () => (
+  <ScrollView contentContainerStyle={styles.container}>
+    <Button
+      title="Test Generate OID4VP Response (base64 credential)"
+      onPress={() => handleGenerateResponse(DEVICE_REQUEST_BASE64)}
+    />
+    <Button
+      title="Test Generate OID4VP Response (base64url credential)"
+      onPress={() => handleGenerateResponse(DEVICE_REQUEST_BASE64URL)}
+    />
+    <Button
+      title="Test Generate OID4VP Response (wrong DocRequested)"
+      onPress={handleGenerateResponseWrongDocRequested}
+    />
+    <Button
+      title="Test Generate OID4VP Response (incomplete DocRequested)"
+      onPress={handleGenerateResponseIncompleteDocRequested}
+    />
+    <Button
+      title="Test Generate OID4VP Response (wrong FieldsRequestedAndAccepted)"
+      onPress={handleGenerateResponseWrongFieldRequestedAndAccepted}
+    />
+  </ScrollView>
+);
 
 export default Iso1801357Screen;

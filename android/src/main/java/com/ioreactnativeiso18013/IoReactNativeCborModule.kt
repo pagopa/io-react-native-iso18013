@@ -11,7 +11,6 @@ import it.pagopa.io.wallet.cbor.cose.COSEManager
 import it.pagopa.io.wallet.cbor.cose.FailureReason
 import it.pagopa.io.wallet.cbor.cose.SignWithCOSEResult
 import it.pagopa.io.wallet.cbor.parser.CBorParser
-import kotlin.io.encoding.ExperimentalEncodingApi
 
 class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
@@ -20,11 +19,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     return NAME
   }
 
-  @OptIn(ExperimentalEncodingApi::class)
   @ReactMethod
   fun decode(data: String, promise: Promise) {
     val buffer = try {
-      kotlin.io.encoding.Base64.decode(data)
+      Base64Utils.decodeBase64AndBase64Url(data)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
@@ -47,11 +45,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  @OptIn(ExperimentalEncodingApi::class)
   @ReactMethod
   fun decodeDocuments(data: String, promise: Promise) {
     val buffer = try {
-      kotlin.io.encoding.Base64.decode(data)
+      Base64Utils.decodeBase64AndBase64Url(data)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
@@ -76,11 +73,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  @OptIn(ExperimentalEncodingApi::class)
   @ReactMethod
   fun decodeIssuerSigned(issuerSigned: String, promise: Promise) {
     val buffer = try {
-      kotlin.io.encoding.Base64.decode(issuerSigned)
+      Base64Utils.decodeBase64AndBase64Url(issuerSigned)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
@@ -107,11 +103,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  @OptIn(ExperimentalEncodingApi::class)
   @ReactMethod
   fun sign(payload: String, keyTag: String, promise: Promise) {
     val data = try {
-      kotlin.io.encoding.Base64.decode(payload)
+      Base64Utils.decodeBase64AndBase64Url(payload)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
@@ -146,7 +141,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
         }
 
         is SignWithCOSEResult.Success -> {
-          promise.resolve(kotlin.io.encoding.Base64.encode(result.signature))
+          promise.resolve(Base64Utils.encodeBase64(result.signature))
         }
       }
     } catch (e: Exception) {
@@ -157,11 +152,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  @OptIn(ExperimentalEncodingApi::class)
   @ReactMethod
   fun verify(sign1Data: String, publicKey: ReadableMap, promise: Promise) {
     val data = try {
-      kotlin.io.encoding.Base64.decode(sign1Data)
+      Base64Utils.decodeBase64AndBase64Url(sign1Data)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
