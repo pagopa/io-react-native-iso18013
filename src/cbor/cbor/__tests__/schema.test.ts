@@ -31,6 +31,7 @@ describe('Documents schema', () => {
               unprotectedHeader: {
                 algorithm: '33',
                 kid: '311229',
+                x5chain: ['a'],
               },
               payload: {
                 docType: DocumentTypeEnum.MDL,
@@ -91,6 +92,7 @@ describe('Documents schema', () => {
               unprotectedHeader: {
                 algorithm: '33',
                 kid: '311229',
+                x5chain: ['a'],
               },
               payload: {
                 docType: DocumentTypeEnum.MDL,

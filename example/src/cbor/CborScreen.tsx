@@ -45,29 +45,26 @@ const CborScreen = () => {
     }
   };
 
-  const handleDecodeIssuerSigned =
-    (data: string, assertPostDecode?: (decoded: CBOR.IssuerSigned) => void) =>
-    async () => {
-      try {
-        const decoded = await CBOR.decodeIssuerSigned(data);
-        assertPostDecode && assertPostDecode(decoded);
-        console.log(
-          '✅ CBOR Issuer Signed With Decoded Issuer Auth Decode Success\n',
-          JSON.stringify(decoded, null, 2)
-        );
-        Alert.alert(
-          '✅ CBOR Issuer Signed With Decoded Issuer Auth Decode Success'
-        );
-      } catch (error: any) {
-        console.log(
-          '❌ CBOR Issuer Signed With Decoded Issuer Auth Decode Error\n',
-          JSON.stringify(error, null, 2)
-        );
-        Alert.alert(
-          '❌ CBOR Issuer Signed With Decoded Issuer Auth Decode Error'
-        );
-      }
-    };
+  const handleDecodeIssuerSigned = (data: string) => async () => {
+    try {
+      const decoded = await CBOR.decodeIssuerSigned(data);
+      console.log(
+        '✅ CBOR Issuer Signed With Decoded Issuer Auth Decode Success\n',
+        JSON.stringify(decoded, null, 2)
+      );
+      Alert.alert(
+        '✅ CBOR Issuer Signed With Decoded Issuer Auth Decode Success'
+      );
+    } catch (error: any) {
+      console.log(
+        '❌ CBOR Issuer Signed With Decoded Issuer Auth Decode Error\n',
+        JSON.stringify(error, null, 2)
+      );
+      Alert.alert(
+        '❌ CBOR Issuer Signed With Decoded Issuer Auth Decode Error'
+      );
+    }
+  };
 
   const handleTestSign = async (payload: string) => {
     try {
@@ -127,16 +124,7 @@ const CborScreen = () => {
       <Button
         title="Decode MDL with x5c and kid in uprotectedHeader (base64)"
         onPress={handleDecodeIssuerSigned(
-          MDL_WITH_X5C_AND_KID_UNPROTECTED_HEADER,
-          (decoded) => {
-            const unprotectedHeader = decoded.issuerAuth.unprotectedHeader;
-            if (!unprotectedHeader.kid || !unprotectedHeader.x5chain)
-              throw {
-                message:
-                  'The CBOR does not contain both the kid and x5c params.',
-                issuerSigned: decoded,
-              };
-          }
+          MDL_WITH_X5C_AND_KID_UNPROTECTED_HEADER
         )}
       />
       <Text style={styles.label}>COSE</Text>
