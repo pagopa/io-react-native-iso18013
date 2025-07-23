@@ -36,14 +36,14 @@ class IoReactNativeProximity: RCTEventEmitter {
   typealias AcceptedFieldsDict = [String: [String: [String: Bool]]]
   
   /**
-  Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
-  Resolves to true or rejects if an error occurs.
-   
-  - Parameters:
-     - certificates: Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
-     - resolve: The promise to be resolved
-     - reject: The promise to be rejected
- */
+   Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
+   Resolves to true or rejects if an error occurs.
+    
+   - Parameters:
+      - certificates: Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
+      - resolve: The promise to be resolved
+      - reject: The promise to be rejected
+  */
   @objc(start:withResolver:withRejecter:)
   func start(
     certificates: Array<Any>,
@@ -84,10 +84,10 @@ class IoReactNativeProximity: RCTEventEmitter {
   /**
    Creates a QR code to be scanned in order to initialize the presentation.
    Resolves with the QR code strings.
-   
+
    - Parameters:
-     - resolve: The promise to be resolved
-     - reject: The promise to be rejected
+      - resolve: The promise to be resolved
+      - reject: The promise to be rejected
   */
   @objc(getQrCodeString:withRejecter:)
   func getQrCodeString(
