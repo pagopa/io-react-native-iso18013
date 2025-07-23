@@ -258,14 +258,14 @@ class IoReactNativeProximity: RCTEventEmitter {
   /**
    Sends an error response during the presentation according to the SessionData status codes defined in table 20 of the ISO18013-5 standard.
    - Parameters:
-   - status: The status error to be sent is an integer of type ``SessionDataStatus``:
-   ```
-   10 -> Error: session encryption
-   11 -> Error: CBOR decoding
-   20 -> Session termination
-   ```
-   - resolve: The promise to be resolved
-   - reject: The promise to be rejected
+     - status: The status error to be sent is an integer of type ``SessionDataStatus``:
+       ```
+         10 -> Error: session encryption
+         11 -> Error: CBOR decoding
+         20 -> Session termination
+       ```
+     - resolve: The promise to be resolved
+     - reject: The promise to be rejected
    */
   @objc(sendErrorResponse:withResolver:withRejecter:)
   func sendErrorResponse(status: UInt64, _ resolve: @escaping RCTPromiseResolveBlock,
@@ -274,11 +274,11 @@ class IoReactNativeProximity: RCTEventEmitter {
       if let statusEnum = SessionDataStatus(rawValue: status) {
         try Proximity.shared.errorPresentation(statusEnum)
       } else {
-        reject(ModuleErrorCodes.sendErrorResponse.rawValue, "Invalid status code provided: \(status)", nil)
+        reject(ModuleErrorCodes.sendErrorResponseError.rawValue, "Invalid status code provided: \(status)", nil)
       }
       resolve(true)
     }catch let error{
-      reject(ModuleErrorCodes.sendErrorResponse.rawValue, error.localizedDescription, error)
+      reject(ModuleErrorCodes.sendErrorResponseError.rawValue, error.localizedDescription, error)
     }
   }
   
@@ -457,7 +457,7 @@ class IoReactNativeProximity: RCTEventEmitter {
     case startError = "START_ERROR"
     case getQrCodeError = "GET_QR_CODE_ERROR"
     case sendResponseError = "SEND_RESPONSE_ERROR"
-    case sendErrorResponse = "SEND_ERROR_RESPONSE_ERROR"
+    case sendErrorResponseError = "SEND_ERROR_RESPONSE_ERROR"
     case generateResponseError = "GENERATE_RESPONSE_ERROR"
     
     // ISO18013-7 related errors
