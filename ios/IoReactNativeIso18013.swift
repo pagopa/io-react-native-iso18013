@@ -40,9 +40,9 @@ class IoReactNativeProximity: RCTEventEmitter {
    Resolves to true or rejects if an error occurs.
    
    - Parameters:
-   - certificates: Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
-   - resolve: The promise to be resolved
-   - reject: The promise to be rejected
+     - certificates: Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
+     - resolve: The promise to be resolved
+     - reject: The promise to be rejected
    */
   @objc(start:withResolver:withRejecter:)
   func start(
@@ -67,17 +67,17 @@ class IoReactNativeProximity: RCTEventEmitter {
    Utility function to parse an array coming from the React Native Bridge into an array of Data representing DER encoded X.509 certificates.
    
    - Parameters:
-   - certificates:Array of base64 strings representing DER encoded X.509 certificate
+      - certificates:Array of base64 strings representing DER encoded X.509 certificate
    
    - Returns: An array of Data containing DER ecnoded X.509 certificates.
    */
   private func parseCertificates(_ certificates: [Any]) throws -> [Data] {
     return try certificates.map { item in
-       guard let certString = item as? String,
-             let data = Data(base64Encoded: certString) else {
-           throw ParsingError.certificatesNotValid("The provided certificates are not valid base64 strings")
-       }
-       return data
+      guard let certString = item as? String,
+            let data = Data(base64Encoded: certString) else {
+        throw ParsingError.certificatesNotValid("The provided certificates are not valid base64 strings")
+     }
+     return data
     }
   }
   
@@ -86,9 +86,9 @@ class IoReactNativeProximity: RCTEventEmitter {
    Resolves with the QR code strings.
    
    - Parameters:
-   - resolve: The promise to be resolved
-   - reject: The promise to be rejected
-   */
+     - resolve: The promise to be resolved
+     - reject: The promise to be rejected
+  */
   @objc(getQrCodeString:withRejecter:)
   func getQrCodeString(
     _ resolve: @escaping RCTPromiseResolveBlock,
@@ -145,7 +145,7 @@ class IoReactNativeProximity: RCTEventEmitter {
    The result can be fed to ``IOWalletProximity.generateResponse``.
    
    - Parameters:
-   - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]]
+      - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]]
    
    - Throws: `NSError` if a value doesn't has the ``AcceptedFieldsDict`` shape or the result dictionary is empty
    
@@ -173,37 +173,36 @@ class IoReactNativeProximity: RCTEventEmitter {
   }
   
   /**
-     Generates a response containing the documents and the fields which the user decided to present.
-     It parses the untyped ``documents`` and ``acceptedFields`` parameters and feeds them to the ``IOWalletProximity.generateDeviceResponse`` function.
-     It resolves the promise with the response as a base64 encoded string.
-     It rejects the promise if an error occurs during the parameters parsing or while generating the device response.
-     
-     - Parameters:
-       - documents: An array containing documents. Each document is defined as a map containing:
-           - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-           - alias which is the alias of the key used to sign the credential;
-           - docType which is the document type.
-       - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-       - alias which is the alias of the key used to sign the credential;
-       - docType which is the document type.
-       - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
-        
-         
-             {
-                "org.iso.18013.5.1.mDL": {
-                  "org.iso.18013.5.1": {
-                    "hair_colour": true,
-                    "given_name_national_character": true,
-                    "family_name_national_character": true,
-                    "given_name": true,
+       Generates a response containing the documents and the fields which the user decided to present.
+       It parses the untyped ``documents`` and ``acceptedFields`` parameters and feeds them to the ``IOWalletProximity.generateDeviceResponse`` function.
+       It resolves the promise with the response as a base64 encoded string.
+       It rejects the promise if an error occurs during the parameters parsing or while generating the device response.
+       
+       - Parameters:
+         - documents: An array containing documents. Each document is defined as a map containing:
+             - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+             - alias which is the alias of the key used to sign the credential;
+             - docType which is the document type.
+         - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+         - alias which is the alias of the key used to sign the credential;
+         - docType which is the document type.
+         - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
+          
+           
+               {
+                  "org.iso.18013.5.1.mDL": {
+                    "org.iso.18013.5.1": {
+                      "hair_colour": true,
+                      "given_name_national_character": true,
+                      "family_name_national_character": true,
+                      "given_name": true,
+                    }
                   }
-                }
-             }
-    
-       - resolve: The promise to be resolved
-       - reject: The promise to be rejected
-     
-     */
+               }
+      
+         - resolve: The promise to be resolved
+         - reject: The promise to be rejected
+   */
   @objc(generateResponse:withAcceptedFields:withResolver:withRejecter:)
   func generateResponse(
     documents: Array<Any>,
@@ -305,7 +304,7 @@ class IoReactNativeProximity: RCTEventEmitter {
    Converts a device requested from the `onDocumentRequestReceived` callback into a serializable JSON.
    
    - Parameters:
-   - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces and the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the dataß
+      - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces and the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the dataß
    
    - Returns: A JSON string representing the device request or nil if an error occurs
    */
@@ -355,19 +354,19 @@ class IoReactNativeProximity: RCTEventEmitter {
         eventName = "onDocumentRequestReceived"
         if let request = request {
           /**
-           The outermost key represents the credential doctype, the inner key represents the namespace and the innermost key represents the requested fields with a boolean value. Example:
-           {
-           "org.iso.18013.5.1.mDL": {
-           "isAuthenticated": true,
-           "org.iso.18013.5.1": {
-           "hair_colour": true,
-           "given_name_national_character": true,
-           "family_name_national_character": true,
-           "given_name": true,
-           }
-           }
-           }
-           */
+          The outermost key represents the credential doctype, the inner key represents the namespace and the innermost key represents the requested fields with a boolean value. Example:
+          {
+            "org.iso.18013.5.1.mDL": {
+              "isAuthenticated": true,
+              "org.iso.18013.5.1": {
+                "hair_colour": true,
+                "given_name_national_character": true,
+                "family_name_national_character": true,
+                "given_name": true,
+              }
+            }
+          }
+          */
           let jsonString = deviceRequestToJson(request: request)
           // Here we either send the request or an empty string which signals that something went wrong.
           eventBody = ["data": jsonString ?? ""]
