@@ -23,7 +23,7 @@ import {
   VERIFY_PAYLOAD_BASE64,
   VERIFY_PAYLOAD_BASE64URL,
 } from './mocks/verifyPayload';
-import { generateKeyIfNotExists } from '../iso18013/utils';
+import { generateKeyIfNotExists, parseAndPrintError } from '../utils';
 
 const TEST_KEY: PublicKey = {
   kty: 'EC',
@@ -38,9 +38,8 @@ const CborScreen = () => {
       const decoded = await CBOR.decodeDocuments(data);
       console.log('✅ CBOR Decode Success\n', JSON.stringify(decoded, null, 2));
       Alert.alert('✅ CBOR Decode Success');
-    } catch (error: any) {
-      console.log('❌ CBOR Decode Error\n', JSON.stringify(error, null, 2));
-      Alert.alert('❌ CBOR Decode Error');
+    } catch (error) {
+      parseAndPrintError(CBOR.ModuleErrorSchema, error, 'handleDecode error: ');
     }
   };
 
@@ -54,13 +53,11 @@ const CborScreen = () => {
       Alert.alert(
         '✅ CBOR Issuer Signed With Decoded Issuer Auth Decode Success'
       );
-    } catch (error: any) {
-      console.log(
-        '❌ CBOR Issuer Signed With Decoded Issuer Auth Decode Error\n',
-        JSON.stringify(error, null, 2)
-      );
-      Alert.alert(
-        '❌ CBOR Issuer Signed With Decoded Issuer Auth Decode Error'
+    } catch (error) {
+      parseAndPrintError(
+        CBOR.ModuleErrorSchema,
+        error,
+        'handleDecodeIssuerSigned error: '
       );
     }
   };
@@ -73,9 +70,12 @@ const CborScreen = () => {
       console.log('✅ Sign Success\n', result);
       console.log('🔑 Public Key\n', JSON.stringify(key, null, 2));
       Alert.alert('✅ Sign Success');
-    } catch (error: any) {
-      console.log('❌ COSE Sign Error\n', JSON.stringify(error, null, 2));
-      Alert.alert('❌ COSE Sign Error');
+    } catch (error) {
+      parseAndPrintError(
+        COSE.ModuleErrorSchema,
+        error,
+        'handleTestSign error: '
+      );
     }
   };
 
@@ -87,9 +87,12 @@ const CborScreen = () => {
       } else {
         Alert.alert('❌ Verification Failed');
       }
-    } catch (error: any) {
-      console.log('❌ Verify Error\n', JSON.stringify(error, null, 2));
-      Alert.alert('❌ Verify Error', error.message);
+    } catch (error) {
+      parseAndPrintError(
+        COSE.ModuleErrorSchema,
+        error,
+        'handleTestVerify error: '
+      );
     }
   };
 

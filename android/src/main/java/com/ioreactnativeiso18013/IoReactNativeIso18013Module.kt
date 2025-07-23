@@ -9,8 +9,6 @@ import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import com.facebook.react.bridge.WritableMap
-import com.facebook.react.bridge.WritableNativeMap
-import com.ioreactnativeiso18013.IoReactNativeCborModule.Companion.ERROR_USER_INFO_KEY
 import it.pagopa.io.wallet.proximity.OpenID4VP
 import it.pagopa.io.wallet.proximity.bluetooth.BleRetrievalMethod
 import it.pagopa.io.wallet.proximity.qr_code.QrEngagement
@@ -64,10 +62,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       setupProximityHandler()
       promise.resolve(true)
     } catch (e: Exception) {
-      ModuleException.START_ERROR.reject(
-        promise,
-        Pair(ERROR_KEY, getExceptionMessageOrEmpty(e))
-      )
+      promise.reject(ModuleErrorCodes.START_ERROR, e.message, e)
     }
   }
 
@@ -76,14 +71,18 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * of ByteArray representing DER encoded X.509 certificates.
    * @param certificates - Array of base64 strings representing DER encoded X.509 certificate
    * @returns An ArrayList of ByteArray representing DER encoded X.509 certificates.
-   * @throws ClassCastException if the element in the array is not a string
+   * @throws IllegalArgumentException if an element in the array is not base64 encoded
    */
 
   private fun parseCertificates(certificates: ReadableArray): ArrayList<ByteArray> {
     return ArrayList(
       (0 until certificates.size()).mapNotNull { i ->
         certificates.getString(i)?.let { cert ->
-          Base64Utils.decodeBase64(cert)
+          try {
+            Base64Utils.decodeBase64(cert)
+          } catch (e: Exception) {
+            throw IllegalArgumentException("Invalid base64 certificate at index $i", e)
+          }
         }
       }
     )
@@ -101,13 +100,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         val qrCodeString = it.getQrCodeString()
         promise.resolve(qrCodeString)
       } ?: run {
-        ModuleException.QR_ENGAGEMENT_NOT_DEFINED_ERROR.reject(promise)
+        promise.reject(ModuleErrorCodes.QR_ENGAGEMENT_NOT_DEFINED,NOT_INITIALIZED_ERROR_MESSAGE)
       }
     } catch (e: Exception) {
-      ModuleException.GET_QR_CODE_ERROR.reject(
-        promise,
-        Pair(ERROR_KEY, getExceptionMessageOrEmpty(e))
-      )
+      promise.reject(ModuleErrorCodes.GET_QR_CODE_ERROR, e.message, e)
     }
   }
 
@@ -123,10 +119,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       deviceRetrievalHelper?.disconnect()
       promise.resolve(true)
     } catch (e: Exception) {
-      ModuleException.CLOSE_ERROR.reject(
-        promise,
-        Pair(ERROR_KEY, getExceptionMessageOrEmpty(e))
-      )
+      promise.reject(ModuleErrorCodes.CLOSE_ERROR, message=e.message, e)
     }
   }
 
@@ -148,19 +141,13 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           it.sendErrorResponse(sessionDataStatus)
           promise.resolve(true)
         } else {
-          ModuleException.SEND_ERROR_RESPONSE_ERROR.reject(
-            promise,
-            Pair(ERROR_KEY, "Invalid status code")
-          )
+          promise.reject(ModuleErrorCodes.SEND_ERROR_RESPONSE_ERROR, message="Invalid status code")
         }
       } ?: run {
-        ModuleException.QR_ENGAGEMENT_NOT_DEFINED_ERROR.reject(promise)
+        promise.reject(ModuleErrorCodes.QR_ENGAGEMENT_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
       }
     } catch (e: Exception) {
-      ModuleException.SEND_ERROR_RESPONSE_ERROR.reject(
-        promise,
-        Pair(ERROR_KEY, getExceptionMessageOrEmpty(e))
-      )
+      promise.reject(ModuleErrorCodes.SEND_ERROR_RESPONSE_ERROR, message=e.message, e)
     }
   }
 
@@ -196,20 +183,14 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
             }
 
             override fun onError(message: String) {
-              ModuleException.GENERATE_RESPONSE_ERROR.reject(
-                promise,
-                Pair(ERROR_KEY, message)
-              )
+              promise.reject(ModuleErrorCodes.GENERATE_RESPONSE_ERROR, message)
             }
           })
       } ?: run {
-        ModuleException.DRH_NOT_DEFINED.reject(promise)
+        promise.reject(ModuleErrorCodes.DRH_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
       }
     } catch (e: Exception) {
-      ModuleException.GENERATE_RESPONSE_ERROR.reject(
-        promise,
-        Pair(ERROR_KEY, getExceptionMessageOrEmpty(e))
-      )
+      promise.reject(ModuleErrorCodes.GENERATE_RESPONSE_ERROR, message=e.message, e)
     }
   }
 
@@ -229,13 +210,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         promise.resolve(true)
       }
         ?: run {
-          ModuleException.QR_ENGAGEMENT_NOT_DEFINED_ERROR.reject(promise)
+          promise.reject(ModuleErrorCodes.QR_ENGAGEMENT_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
         }
     } catch (e: Exception) {
-      ModuleException.SEND_RESPONSE_ERROR.reject(
-        promise,
-        Pair(ERROR_KEY, getExceptionMessageOrEmpty(e))
-      )
+      promise.reject(ModuleErrorCodes.SEND_RESPONSE_ERROR, e.message, e)
     }
   }
 
@@ -245,32 +223,18 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     mdocGeneratedNonce: String, documents: ReadableArray,
     fieldRequestedAndAccepted: String, promise: Promise
   ) {
-    val sessionTranscript = try {
-      OpenID4VP(
-        clientId,
-        responseUri,
-        authorizationRequestNonce,
-        mdocGeneratedNonce
-      ).createSessionTranscript()
-    } catch (e: Exception) {
-      ModuleException.UNABLE_TO_GENERATE_TRANSCRIPT.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-      return
-    }
-
-    val documentsParsed = try {
-      parseDocRequested(documents)
-    } catch (e: Exception) {
-      ModuleException.INVALID_DOC_REQUESTED.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-      return
-    }
-
     try {
+      val sessionTranscript =
+        OpenID4VP(
+          clientId,
+          responseUri,
+          authorizationRequestNonce,
+          mdocGeneratedNonce
+        ).createSessionTranscript()
+
+      val documentsParsed =
+        parseDocRequested(documents)
+
       val responseGenerator = ResponseGenerator(sessionTranscript)
       responseGenerator.createResponse(
         documentsParsed,
@@ -281,18 +245,12 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           }
 
           override fun onError(message: String) {
-            ModuleException.UNABLE_TO_GENERATE_RESPONSE.reject(
-              promise,
-              Pair(ERROR_USER_INFO_KEY, message)
-            )
+            promise.reject(ModuleErrorCodes.GENERATE_OID4VP_RESPONSE_ERROR, message)
           }
         }
       )
     } catch (e: Exception) {
-      ModuleException.UNABLE_TO_GENERATE_RESPONSE.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
+      promise.reject(ModuleErrorCodes.GENERATE_OID4VP_RESPONSE_ERROR, e.message, e)
     }
   }
 
@@ -350,7 +308,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   private fun parseDocRequested(documents: ReadableArray): Array<DocRequested> {
     return (0 until documents.size()).map { i ->
       val entry = documents.getMap(i)
-        ?: throw IllegalArgumentException("Entry in ReadableArray is null")
+        ?: throw IllegalArgumentException("Entry at index $i in ReadableArray is null")
 
       val alias = entry.getString("alias")
       val issuerSignedContentStr = entry.getString("issuerSignedContent")
@@ -360,7 +318,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         alias == null || entry.getType("alias") != ReadableType.String ||
         issuerSignedContentStr == null || entry.getType("issuerSignedContent") != ReadableType.String ||
         docType == null || entry.getType("docType") != ReadableType.String
-      ) throw IllegalArgumentException("Unable to decode the provided documents")
+      ) throw IllegalArgumentException("Unable to decode the provided documents at index $i")
 
       val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
 
@@ -396,44 +354,23 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     */
   }
 
-  private enum class ModuleException(
-    val ex: Exception
-  ) {
-    /** ISO18013-5 related errors **/
-    DRH_NOT_DEFINED(Exception("DRH_NOT_DEFINED")),
-    QR_ENGAGEMENT_NOT_DEFINED_ERROR(Exception("QR_ENGAGEMENT_NOT_DEFINED_ERROR")),
-    START_ERROR(Exception("START_ERROR")),
-    GET_QR_CODE_ERROR(Exception("GET_QR_CODE_ERROR")),
-    GENERATE_RESPONSE_ERROR(Exception("GENERATE_RESPONSE_ERROR")),
-    SEND_RESPONSE_ERROR(Exception("SEND_RESPONSE_ERROR")),
-    SEND_ERROR_RESPONSE_ERROR(Exception("SEND_ERROR_RESPONSE_ERROR")),
-    CLOSE_ERROR(Exception("CLOSE_ERROR")),
-
-    /** ISO18013-7 related errors **/
-    UNABLE_TO_GENERATE_RESPONSE(Exception("UNABLE_TO_GENERATE_RESPONSE")),
-    UNABLE_TO_GENERATE_TRANSCRIPT(Exception("UNABLE_TO_GENERATE_TRANSCRIPT")),
-    INVALID_DOC_REQUESTED(Exception("INVALID_DOC_REQUESTED")),
-    GENERATE_OID4VP_DEVICE_RESPONSE_FAILED(Exception("GENERATE_OID4VP_DEVICE_RESPONSE_FAILED"));
-
-    fun reject(
-      promise: Promise, vararg args: Pair<String, String>
-    ) {
-      exMap(*args).let {
-        promise.reject(it.first, ex.message, it.second)
-      }
-    }
-
-    private fun exMap(vararg args: Pair<String, String>): Pair<String, WritableMap> {
-      val writableMap = WritableNativeMap()
-      args.forEach { writableMap.putString(it.first, it.second) }
-      return Pair(this.ex.message ?: "UNKNOWN", writableMap)
-    }
-  }
-
-  private fun getExceptionMessageOrEmpty(e: Exception): String = e.message ?: ""
-
   companion object {
     const val NAME = "IoReactNativeIso18013"
-    const val ERROR_KEY = "error"
+    const val NOT_INITIALIZED_ERROR_MESSAGE = "Resources not initialized properly, call the start method before this one."
+
+    private object ModuleErrorCodes {
+      // ISO18013-5 related errors
+      const val DRH_NOT_DEFINED = "DRH_NOT_DEFINED"
+      const val QR_ENGAGEMENT_NOT_DEFINED = "QR_ENGAGEMENT_NOT_DEFINED"
+      const val START_ERROR = "START_ERROR"
+      const val GET_QR_CODE_ERROR = "GET_QR_CODE_ERROR"
+      const val GENERATE_RESPONSE_ERROR = "GENERATE_RESPONSE_ERROR"
+      const val SEND_RESPONSE_ERROR = "SEND_RESPONSE_ERROR"
+      const val SEND_ERROR_RESPONSE_ERROR = "SEND_ERROR_RESPONSE_ERROR"
+      const val CLOSE_ERROR = "CLOSE_ERROR"
+
+      // ISO18013-7 related errors
+      const val GENERATE_OID4VP_RESPONSE_ERROR = "GENERATE_RESPONSE_ERROR"
+    }
   }
 }
