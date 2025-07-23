@@ -2,14 +2,14 @@ import z from 'zod';
 import { GenericModuleErrorSchema } from '../../schema';
 
 /**
- * Zod schema for parsing the payload returned by the `onError` event in Proximity `Events`, along with its type definition.
+ * Schema for parsing the payload returned by the `onError` event in Proximity `Events`, along with its type definition.
  */
 export const OnErrorPayloadSchema = z.string().catch('Unknown error');
 
 export type OnErrorPayload = z.infer<typeof OnErrorPayloadSchema>;
 
 /**
- * Zod schema for pasing an error thrown by the native module whenever a promise is rejected, along with its type definition.
+ * Error codes which the ISO18013_5 module uses to reject a promise.
  */
 const ModuleErrorCodesSchema = z.enum([
   'DRH_NOT_DEFINED', // Android only
@@ -25,6 +25,9 @@ const ModuleErrorCodesSchema = z.enum([
 
 export type ModuleErrorCodes = z.infer<typeof ModuleErrorCodesSchema>;
 
+/**
+ * Schema which can be used to parse a rejected promise error by the ISO18013_5 module.
+ */
 export const ModuleErrorSchema = GenericModuleErrorSchema(
   ModuleErrorCodesSchema
 );

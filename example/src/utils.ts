@@ -135,6 +135,12 @@ export const requestBlePermissions = async (): Promise<boolean> => {
   }
 };
 
+/**
+ * Utility function which parses with the given schema and prints the error message to the console and shows an alert.
+ * @param schema - The schema to use for parsing the error
+ * @param error - The error to parse
+ * @param prefix - An optional prefix to include in the error message
+ */
 export const parseAndPrintError = (
   schema:
     | typeof ISO18013_5.ModuleErrorSchema

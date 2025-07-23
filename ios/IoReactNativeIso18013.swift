@@ -68,7 +68,7 @@ class IoReactNativeProximity: RCTEventEmitter {
    
    - Parameters:
       - certificates:Array of base64 strings representing DER encoded X.509 certificate
-   
+    - Throws: `ParsingError` if the provided certificate is not a valid base64 encoded string
     - Returns: An array of Data containing DER ecnoded X.509 certificates.
   */
   private func parseCertificates(_ certificates: [Any]) throws -> [Data] {
@@ -113,20 +113,24 @@ class IoReactNativeProximity: RCTEventEmitter {
          - alias which is the alias of the key used to sign the credential;
          - docType which is the document type.
    
-   - Throws: `ModuleException.invalidDocRequested.error()` and `ModuleException.invalidDocRequested.error()` iif an error occurs while parsing the document
+   - Throws: `ParsingError`:
+      - If the provided documents array do not contain a dictionary;
+      - If the provided dictionary doesn't adhere to the structure we expect;
+      - If the issuerSignedContent is not a valid base64 or base64url encoded string;
+      - If the creation of a ProximityDdocument fails.
    
    - Returns: An array of `ProximityDocument` containg the documents to be presented
    */
   private func parseDocuments(documents: [Any]) throws -> [ProximityDocument] {
     return try documents.map{ (element) -> ProximityDocument in
-      guard let dict : [String: Any] = element as? [String: Any] else { throw ParsingError.documentsNotValid("The provided documents can't be parsed as dictionary") }
+      guard let dict : [String: Any] = element as? [String: Any] else { throw ParsingError.documentsNotValid("The provided documents array element can't be parsed as a dictionary") }
       guard
         let issuerSignedContent = dict["issuerSignedContent"] as? String,
         let alias = dict["alias"] as? String,
         let docType = dict["docType"] as? String,
         let decodedIssuerSignedContent = try? Base64Utils.decodeBase64OrBase64URL(base: issuerSignedContent)
       else {
-        throw ParsingError.documentsNotValid ("The provided documents are not valid base64 or base64url or don't contain the required fields alas, doctype and issuerSignedContent")
+        throw ParsingError.documentsNotValid ("The provided issuerSignedContent is not a valid base64 or base64url or don't contain the required fields alas, doctype and issuerSignedContent")
       }
       guard let document = ProximityDocument(
         docType: docType,
@@ -147,7 +151,7 @@ class IoReactNativeProximity: RCTEventEmitter {
    - Parameters:
       - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]]
    
-   - Throws: `NSError` if a value doesn't has the ``AcceptedFieldsDict`` shape or the result dictionary is empty
+   - Throws: `ParsingError` if a value doesn't has the ``AcceptedFieldsDict`` shape or the result dictionary is empty
    
    - Returns: An ``AcceptedFieldsDict`` containg the accepted fields to be presented
    
@@ -431,6 +435,11 @@ class IoReactNativeProximity: RCTEventEmitter {
     }
   }
   
+  /**
+   Custom Error which is thrown when a parsing error occurs in our utility functions which converts data from the bridge to what
+   our underlying functions expect.
+   This is needed in order to provide a customized description which can include more debug information.
+   */
   enum ParsingError : Error, CustomStringConvertible {
       case documentsNotValid(String)
       case certificatesNotValid(String)
@@ -448,10 +457,7 @@ class IoReactNativeProximity: RCTEventEmitter {
       }
   }
   
-  /**
-   Wrapper for rejecting with an error.
-   Add a new case in order to extend the possible errors.
-   */
+  // Errors which this module uses to reject a promise
   private enum ModuleErrorCodes: String, CaseIterable {
     // ISO18013-5 related errors
     case startError = "START_ERROR"

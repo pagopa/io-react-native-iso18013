@@ -151,10 +151,7 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
-  /**
-   Wrapper for rejecting with an error.
-   Add a new case in order to extend the possible errors.
-   */
+  // Errors which this module uses to reject a promise
   private enum ModuleErrorCodes: String, CaseIterable {
     case decodeError = "DECODE_ERROR"
     case decodeDocumentsError = "DECODE_DOCUMENTS_ERROR"

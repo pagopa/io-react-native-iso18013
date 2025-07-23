@@ -2,7 +2,7 @@ import z from 'zod';
 import { GenericModuleErrorSchema } from '../../schema';
 
 /**
- * All error codes that the module could return.
+ * Error codes which the CBOR module uses to reject a promise.
  */
 const ModuleErrorCodesSchema = z.enum([
   'DECODE_ERROR',
@@ -12,6 +12,9 @@ const ModuleErrorCodesSchema = z.enum([
 
 export type ModuleErrorCodes = z.infer<typeof ModuleErrorCodesSchema>;
 
+/**
+ * Schema which can be used to parse a rejected promise error by the CBOR module.
+ */
 export const ModuleErrorSchema = GenericModuleErrorSchema(
   ModuleErrorCodesSchema
 );
