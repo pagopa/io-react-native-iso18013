@@ -64,13 +64,13 @@ class IoReactNativeProximity: RCTEventEmitter {
   }
   
   /**
-     Utility function to parse an array coming from the React Native Bridge into an array of Data representing DER encoded X.509 certificates.
-     
-     - Parameters:
-        - certificates:Array of base64 strings representing DER encoded X.509 certificate
-     
-      - Returns: An array of Data containing DER ecnoded X.509 certificates.
-    */
+   Utility function to parse an array coming from the React Native Bridge into an array of Data representing DER encoded X.509 certificates.
+   
+   - Parameters:
+      - certificates:Array of base64 strings representing DER encoded X.509 certificate
+   
+    - Returns: An array of Data containing DER ecnoded X.509 certificates.
+  */
   private func parseCertificates(_ certificates: [Any]) throws -> [Data] {
     return try certificates.map { item in
       guard let certString = item as? String,
@@ -288,8 +288,8 @@ class IoReactNativeProximity: RCTEventEmitter {
    It resolves to true after closing the connection.
    
    - Parameters:
-   - resolve: The promise to be resolved
-   - reject:  The promise to be rejected
+     - resolve: The promise to be resolved
+     - reject:  The promise to be rejected
    
    */
   @objc(close:withRejecter:)
