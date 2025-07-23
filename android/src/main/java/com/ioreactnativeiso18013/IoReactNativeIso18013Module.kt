@@ -358,6 +358,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     const val NAME = "IoReactNativeIso18013"
     const val NOT_INITIALIZED_ERROR_MESSAGE = "Resources not initialized properly, call the start method before this one."
 
+    // Errors which this module uses to reject a promise
     private object ModuleErrorCodes {
       // ISO18013-5 related errors
       const val DRH_NOT_DEFINED = "DRH_NOT_DEFINED"

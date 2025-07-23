@@ -99,6 +99,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
   companion object {
     const val NAME = "IoReactNativeCbor"
 
+    // Errors which this module uses to reject a promise
     private object ModuleErrorCodes {
       const val DECODE_ERROR = "DECODE_ERROR"
       const val DECODE_DOCUMENTS_ERROR = "DECODE_DOCUMENTS_ERROR"
