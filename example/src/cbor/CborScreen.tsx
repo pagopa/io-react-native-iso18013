@@ -24,6 +24,7 @@ import {
   VERIFY_PAYLOAD_BASE64URL,
 } from './mocks/verifyPayload';
 import { generateKeyIfNotExists, parseAndPrintError } from '../utils';
+import { MDL_WITH_X5C_AND_KID_UNPROTECTED_HEADER } from './mocks/mdlWithX5cAndKidUnprotectedHeader';
 
 const TEST_KEY: PublicKey = {
   kty: 'EC',
@@ -122,6 +123,12 @@ const CborScreen = () => {
       <Button
         title="Decode MDL+PID (base64url)"
         onPress={handleDecode(MDL_AND_PID_WITH_DOCTYPE_BASE64URL)}
+      />
+      <Button
+        title="Decode MDL with x5c and kid in uprotectedHeader (base64)"
+        onPress={handleDecodeIssuerSigned(
+          MDL_WITH_X5C_AND_KID_UNPROTECTED_HEADER
+        )}
       />
       <Text style={styles.label}>COSE</Text>
       <Button

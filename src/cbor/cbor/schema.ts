@@ -26,7 +26,7 @@ export type DocumentValue = z.infer<typeof DocumentValue>;
  */
 export const IssuerAuthUnprotectedHeader = z.object({
   algorithm: z.coerce.string().optional(),
-  keyId: z.string().optional(),
+  kid: z.string().optional(),
   x5chain: z.array(z.string()).optional(),
 });
 

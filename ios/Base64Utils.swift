@@ -26,7 +26,6 @@ class Base64Utils {
    - Returns: A `Data` buffer representing `base`.
    */
   static func decodeBase64OrBase64URL(base: String) throws -> Data {
-    throw Base64DecodingError.invalidBase64
     if let data = dataFromBase64Url(base64url: base) {
       return data
     } else if let data = Data(base64Encoded: base) {

@@ -108,10 +108,10 @@ class IoReactNativeProximity: RCTEventEmitter {
    The result can be fed to ``IOWalletProximity.generateResponse``.
    
    - Parameters:
-   - documents: An array containing documents. Each document is defined as a map containing:
-   - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-   - alias which is the alias of the key used to sign the credential;
-   - docType which is the document type.
+      - documents: An array containing documents. Each document is defined as a map containing:
+         - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+         - alias which is the alias of the key used to sign the credential;
+         - docType which is the document type.
    
    - Throws: `ModuleException.invalidDocRequested.error()` and `ModuleException.invalidDocRequested.error()` iif an error occurs while parsing the document
    
@@ -173,37 +173,37 @@ class IoReactNativeProximity: RCTEventEmitter {
   }
   
   /**
-   Generates a response containing the documents and the fields which the user decided to present.
-   It parses the untyped ``documents`` and ``acceptedFields`` parameters and feeds them to the ``IOWalletProximity.generateDeviceResponse`` function.
-   It resolves the promise with the response as a base64 encoded string.
-   It rejects the promise if an error occurs during the parameters parsing or while generating the device response.
-   
-   - Parameters:
-   - documents: An array containing documents. Each document is defined as a map containing:
-   - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-   - alias which is the alias of the key used to sign the credential;
-   - docType which is the document type.
-   - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-   - alias which is the alias of the key used to sign the credential;
-   - docType which is the document type.
-   - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
-   
-   
-   {
-   "org.iso.18013.5.1.mDL": {
-   "org.iso.18013.5.1": {
-   "hair_colour": true,
-   "given_name_national_character": true,
-   "family_name_national_character": true,
-   "given_name": true,
-   }
-   }
-   }
-   
-   - resolve: The promise to be resolved
-   - reject: The promise to be rejected
-   
-   */
+     Generates a response containing the documents and the fields which the user decided to present.
+     It parses the untyped ``documents`` and ``acceptedFields`` parameters and feeds them to the ``IOWalletProximity.generateDeviceResponse`` function.
+     It resolves the promise with the response as a base64 encoded string.
+     It rejects the promise if an error occurs during the parameters parsing or while generating the device response.
+     
+     - Parameters:
+       - documents: An array containing documents. Each document is defined as a map containing:
+           - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+           - alias which is the alias of the key used to sign the credential;
+           - docType which is the document type.
+       - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+       - alias which is the alias of the key used to sign the credential;
+       - docType which is the document type.
+       - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
+        
+         
+             {
+                "org.iso.18013.5.1.mDL": {
+                  "org.iso.18013.5.1": {
+                    "hair_colour": true,
+                    "given_name_national_character": true,
+                    "family_name_national_character": true,
+                    "given_name": true,
+                  }
+                }
+             }
+    
+       - resolve: The promise to be resolved
+       - reject: The promise to be rejected
+     
+     */
   @objc(generateResponse:withAcceptedFields:withResolver:withRejecter:)
   func generateResponse(
     documents: Array<Any>,
