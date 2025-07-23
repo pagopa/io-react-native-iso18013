@@ -322,8 +322,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
       val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
 
-      val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
-
       DocRequested(
         issuerSignedContent,
         alias,
