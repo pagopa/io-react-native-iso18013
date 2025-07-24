@@ -159,5 +159,6 @@ export const parseAndPrintError = (
     Alert.alert('An error occurred, check the console for details');
   } catch (e) {
     console.error('Error parsing error:', e);
+    console.log('Error details:', error);
   }
 };

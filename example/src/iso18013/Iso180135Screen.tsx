@@ -102,7 +102,11 @@ const Iso180135Screen: React.FC = () => {
 
       console.log('Response sent');
     } catch (e) {
-      parseAndPrintError(ISO18013_5.ModuleErrorSchema, 'sendDocument error: ');
+      parseAndPrintError(
+        ISO18013_5.ModuleErrorSchema,
+        e,
+        'sendDocument error: '
+      );
     }
   };
 
@@ -285,6 +289,10 @@ const Iso180135Screen: React.FC = () => {
           <Button
             title="Send document (base64url)"
             onPress={() => sendDocument(request, MDL_BASE64URL)}
+          />
+          <Button
+            title="Send broken document"
+            onPress={() => sendDocument(request, MDL_BASE64.slice(0, -10))}
           />
           <Button
             title={`Send error ${ISO18013_5.ErrorCode.CBOR_DECODING} (${ISO18013_5.ErrorCode[ISO18013_5.ErrorCode.CBOR_DECODING]})`}

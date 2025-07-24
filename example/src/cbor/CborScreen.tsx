@@ -33,6 +33,8 @@ const TEST_KEY: PublicKey = {
   x: 'AP06ubTkmvo+U1HeiZ35xKHaox++EX6ViRkGnKHclVJB',
 };
 
+const BROKEN_PAYLOAD = 'broken payload';
+
 const CborScreen = () => {
   const handleDecode = (data: string) => async () => {
     try {
@@ -109,6 +111,12 @@ const CborScreen = () => {
         onPress={handleDecodeIssuerSigned(MDL_ISSUER_SIGNED_BASE64URL)}
       />
       <Button
+        title="Decode broken MDL issuerSigned"
+        onPress={handleDecodeIssuerSigned(
+          MDL_ISSUER_SIGNED_BASE64.slice(0, -10)
+        )}
+      />
+      <Button
         title="Decode MDL (base64)"
         onPress={handleDecode(MDL_DOCTYPE_BASE64)}
       />
@@ -140,12 +148,20 @@ const CborScreen = () => {
         onPress={() => handleTestSign(SIGN_PAYLOAD_BASE64URL)}
       />
       <Button
+        title="Test sign broken payload"
+        onPress={() => handleTestSign(BROKEN_PAYLOAD)}
+      />
+      <Button
         title="Test verify (base64)"
         onPress={() => handleTestVerify(VERIFY_PAYLOAD_BASE64)}
       />
       <Button
         title="Test verify (base64url)"
         onPress={() => handleTestVerify(VERIFY_PAYLOAD_BASE64URL)}
+      />
+      <Button
+        title="Test verify broken payload"
+        onPress={() => handleTestVerify(BROKEN_PAYLOAD)}
       />
     </ScrollView>
   );
