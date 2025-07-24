@@ -7,7 +7,6 @@ import { GenericModuleErrorSchema } from '../../schema';
 const ModuleErrorCodesSchema = z.enum([
   'SIGN_ERROR',
   'VERIFY_ERROR',
-  'THREADING_ERROR',
   'THREADING_ERROR', // iOS only
 ]);
 
