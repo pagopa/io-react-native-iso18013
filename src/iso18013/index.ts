@@ -1,11 +1,4 @@
 import { NativeModules, Platform } from 'react-native';
-export {
-  type AcceptedFields,
-  type EventError,
-  type VerifierRequest,
-  parseEventError,
-  parseVerifierRequest,
-} from './iso18013-5/schema';
 
 const LINKING_ERROR =
   `The package '@pagopa/io-react-native-proximity' doesn't seem to be linked. Make sure: \n\n` +

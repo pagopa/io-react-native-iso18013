@@ -42,12 +42,42 @@ try {
 }
 ```
 
-### Error Codes
+### Error
 
-| Type                 | Platform    | Description                                        |
-| -------------------- | ----------- | -------------------------------------------------- |
-| PUBLIC_KEY_NOT_FOUND | Android/iOS | The public key is missing for the specified keyTag |
-| INVALID_ENCODING     | Android/iOS | Provided payload has incorrect encoding            |
-| UNABLE_TO_SIGN       | Android/iOS | It was not possible to sign the given string       |
-| THREADING_ERROR      | iOS         | Unexpected failure                                 |
-| UNKNOWN_EXCEPTION    | Android/iOS | Unexpected failure                                 |
+This table contains the list of error codes that can be thrown by the `COSE` module which are mapped via the `ModuleErrorCodes` type:
+| Type | Platform | Description |
+| -------------------------- | ----------- | ------------------------------------------------------------ |
+| SIGN_ERROR | Android/iOS | An error occurred while signing the data |
+| VERIFY_ERROR | Android/iOS | An error occurred while verifying the signature |
+| THREADING_ERROR | iOS | An error occurred while performing the sign operation in background |
+
+An error can be parsed using the `ModuleErrorSchema` with type `ModuleErrorCodes` exposed by the `COSE` module. The error can be parsed as follows:
+
+```typescript
+import { COSE } from '@pagopa/io-react-native-iso18013';
+try {
+  await COSE.func();
+} catch (error) {
+  const parsedError = COSE.ModuleErrorSchema.parse(error); // Or ModuleErrorSchema.safeParse(error) for safe parsing
+  console.log(JSON.stringify(parsedError, null, 2));
+}
+```
+
+The parsed object will contain properties from both iOS and Android platforms:
+
+```typescript
+{
+  code: string; // Defined in ModuleErrorCodes
+  message: string;
+  name: string;
+  userInfo?: Record<string, any> | null;
+  nativeStackAndroid?: Array<{
+    lineNumber: number;
+    file: string;
+    methodName: string;
+    class: string;
+  }>;
+  domain?: string;
+  nativeStackIOS?: Array<string>;
+};
+```

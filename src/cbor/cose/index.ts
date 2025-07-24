@@ -1,2 +1,6 @@
 export { sign, verify } from './sign';
-export { type CoseFailure, type CoseFailureCodes } from './failure';
+export {
+  type ModuleErrorCodes,
+  type ModuleError,
+  ModuleErrorSchema,
+} from './error';

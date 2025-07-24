@@ -1,10 +1,16 @@
 export {
   type AcceptedFields,
-  type EventError,
   type VerifierRequest,
-  parseEventError,
   parseVerifierRequest,
-} from './schema';
+} from './request';
+
+export {
+  type OnErrorPayload,
+  OnErrorPayloadSchema,
+  ModuleErrorSchema,
+  type ModuleErrorCodes,
+  type ModuleError,
+} from './error';
 
 export {
   ErrorCode,

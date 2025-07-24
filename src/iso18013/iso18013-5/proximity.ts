@@ -1,6 +1,6 @@
 import { NativeEventEmitter, Platform } from 'react-native';
 import { IoReactNativeProximity } from '..';
-import type { AcceptedFields } from './schema';
+import type { AcceptedFields } from './request';
 import type { RequestedDocument } from '../types';
 
 const eventEmitter = new NativeEventEmitter(IoReactNativeProximity);
