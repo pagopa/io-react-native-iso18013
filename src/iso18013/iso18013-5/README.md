@@ -33,10 +33,9 @@ flowchart LR
     onDeviceConnecting -- "Verifier app connects" --> onDeviceConnected
 
     onDeviceConnected -- "Verifier app sends request" --> onDocumentRequestReceived
-    onDeviceConnected -- "Error status or abrupt disconnection" --> onError
-
     onDeviceConnected -- "Verifier sends END (0x02)" --> onDeviceDisconnected
     onDeviceConnected -- "Error status or abrupt disconnection" --> onError
+
     onDocumentRequestReceived -- "Verifier sends END (0x02)" --> onDeviceDisconnected
     onDocumentRequestReceived -- "Error status or abrupt disconnection" --> onError
 ```
