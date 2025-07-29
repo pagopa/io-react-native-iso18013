@@ -54,16 +54,17 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         clearBleCache = clearBleCache
       )
 
-      val certificatesList = parseCertificates(certificates)
+//      val certificatesList = parseCertificates(certificates)
       qrEngagement = QrEngagement.build(reactApplicationContext, listOf(retrievalMethod)).apply {
-        if (certificatesList.isNotEmpty()) {
-          withReaderTrustStore(certificatesList)
-        }
+//        if (certificatesList.isNotEmpty()) {
+//          withReaderTrustStore(certificatesList)
+//        }
       }
       qrEngagement?.configure()
       setupProximityHandler()
       promise.resolve(true)
     } catch (e: Exception) {
+      print(e)
       ModuleException.START_ERROR.reject(
         promise,
         Pair(ERROR_KEY, getExceptionMessageOrEmpty(e))
@@ -79,15 +80,15 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @throws ClassCastException if the element in the array is not a string
    */
 
-  private fun parseCertificates(certificates: ReadableArray): ArrayList<ByteArray> {
-    return ArrayList(
-      (0 until certificates.size()).mapNotNull { i ->
-        certificates.getString(i)?.let { cert ->
-          Base64Utils.decodeBase64(cert)
-        }
-      }
-    )
-  }
+//  private fun parseCertificates(certificates: ReadableArray): ArrayList<ByteArray> {
+//    return ArrayList(
+//      (0 until certificates.size()).mapNotNull { i ->
+//        certificates.getString(i)?.let { cert ->
+//          Base64Utils.decodeBase64(cert)
+//        }
+//      }
+//    )
+//  }
 
   /**
    * Creates a QR code to be scanned in order to initialize the presentation.
