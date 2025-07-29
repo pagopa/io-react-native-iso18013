@@ -44,6 +44,7 @@ export enum ErrorCode {
  * @param config.centralClientMode (Android only) - Whether the device is in central client mode. Defaults to false
  * @param config.clearBleCache (Android only) - Whether the BLE cache should be cleared. Defaults to true
  * @param config.certificates - Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function start(
   config: {
@@ -69,6 +70,7 @@ export function start(
 
 /**
  * Gets the QR code string this method is responsible for initializing the connection and retrieving the QR code string
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function getQrCodeString(): Promise<string> {
   return IoReactNativeProximity.getQrCodeString();
@@ -76,6 +78,7 @@ export function getQrCodeString(): Promise<string> {
 
 /**
  * Closes the QR engagement
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function close(): Promise<boolean> {
   return IoReactNativeProximity.close();
@@ -85,6 +88,7 @@ export function close(): Promise<boolean> {
  * Sends an error response to the verifier app.
  * The error code must be one of the `ErrorCode` enum values.
  * @param code - The error code to be sent to the verifier app.
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function sendErrorResponse(code: ErrorCode): Promise<boolean> {
   return IoReactNativeProximity.sendErrorResponse(code);
@@ -92,8 +96,9 @@ export function sendErrorResponse(code: ErrorCode): Promise<boolean> {
 
 /**
  * Generates a response that will be sent to the verifier app containing the requested data
- * @param documents - An array of `Document` which contains the requested data received from the `onDocumentRequestReceived` event
+ * @param documents - An array of `RequestedDocument` which contains the requested data received from the `onDocumentRequestReceived` event
  * @param acceptedFields - The accepted fields which will be presented to the verifier app. See the type definition for more details.
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  * @returns A base64 encoded response to be sent to the verifier app via `sendResponse`
  */
 export function generateResponse(
@@ -107,6 +112,7 @@ export function generateResponse(
  * Sends the response generated through the `generateResponse` method to the verifier app.
  * Currently there's not evidence of the verifier app responding to this request, thus we don't handle the response.
  * @param response - The base64 encoded response to be sent to the verifier app.
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function sendResponse(response: string): Promise<boolean> {
   return IoReactNativeProximity.sendResponse(response);

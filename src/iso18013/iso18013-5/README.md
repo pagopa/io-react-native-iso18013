@@ -1,13 +1,15 @@
 # ISO18013-5
 
-This library provides a React Native module based on [iso18013-android](https://github.com/pagopa/iso18013-android) and [iso18013-ios](https://github.com/pagopa/iso18013-ios) which allows mDL proximity presentation according to the
-ISO 18013-5 standard and remote presentation according to the ISO 18013-7 standard.
+This library provides a React Native module based on [iso18013-android](https://github.com/pagopa/iso18013-android) and [iso18013-ios](https://github.com/pagopa/iso18013-ios) which allows mDL proximity presentation according to the ISO 18013-5 standard.
 
 ## Installation
 
-## Usage
+```
+yarn add @pagopa/io-react-native-iso18013
+cd ios && bundle exec pod install && cd ..
+```
 
-### `events`
+## Events
 
 This library emits the following events:
 | Event | Payload | Description |
@@ -15,8 +17,28 @@ This library emits the following events:
 | onDeviceConnecting (iOS only) | `undefined` | Event dispatched when the verifier app is connecting |
 | onDeviceConnected | `undefined` | Event dispatched when the verifier app is connected. |
 | onDocumentRequestReceived | `{ data: string } \| undefined` | Event dispatched when the consumer app receives a new request, contained in the data payload. It can be parsed via the `parseVerifierRequest` provided [here](src/schema.ts). |
-| onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects. |
+| onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects by sending the END (0x02) flag. |
 | onError | `{ error: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed via the `parseError` provided [here](src/schema.ts). |
+
+The events flow is described in the following diagram:
+
+```mermaid
+flowchart LR
+    onDeviceConnecting["onDeviceConnecting *(iOS only)*"]
+    onDeviceConnected["onDeviceConnected"]
+    onDocumentRequestReceived["onDocumentRequestReceived"]
+    onDeviceDisconnected["onDeviceDisconnected"]
+    onError["onError"]
+
+    onDeviceConnecting -- "Verifier app connects" --> onDeviceConnected
+    onDeviceConnecting -- "Error status or abrupt disconnection" --> onError
+
+    onDeviceConnected -- "Verifier app sends request" --> onDocumentRequestReceived
+    onDeviceConnected -- "Error status or abrupt disconnection" --> onError
+
+    onDocumentRequestReceived -- "Verifier sends END (0x02)" --> onDeviceDisconnected
+    onDocumentRequestReceived -- "Abrupt disconnection" --> onError
+```
 
 Listeners can be added using the `addListener` method and removed using the `removeListener` method.
 
@@ -105,7 +127,9 @@ ISO18013_5.addListener(
 );
 ```
 
-### `start`
+## Methods
+
+#### `start`
 
 Starts the proximity flow and starts the bluetooth service. This method also accepts optional parameters to configure the initialization on Android, along with the possibility
 to specify a certificates of array to verify the reader app.
@@ -128,7 +152,7 @@ const qrCodeString = await ISO18013_5.getQrCodeString();
 console.log(qrCodeString);
 ```
 
-### `generateResponse`
+#### `generateResponse`
 
 Generates a response that will be sent to the verifier app containing the requested documents.
 
@@ -146,7 +170,7 @@ const response = await ISO18013_5.generateResponse({
 console.log(response);
 ```
 
-### `sendResponse`
+#### `sendResponse`
 
 Sends the response generate by `generateResponse` to the verifier app.
 
@@ -169,7 +193,7 @@ await ISO18013_5.sendErrorResponse({
 });
 ```
 
-### `close`
+#### `close`
 
 Closes the QR engagement by releasing the resources allocated during the `start` method.
 Before starting a new flow, it is necessary to call this method to ensure that the previous flow is properly closed.
@@ -179,45 +203,6 @@ The listeners can be removed using the `removeListener` method.
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
 await ISO18013_5.close();
-```
-
-## Proximity Flow Schema
-
-This section describes a high level overview of the interactions between an app implementing the `io-react-native-proximity` library and a verifier app.
-
-```mermaid
-sequenceDiagram
-    participant app as Consumer App
-    participant proximity as io-react-native-iso18013
-    participant verifier as Verifier App
-
-    Note over proximity, verifier: If an error occurs during the flow, the onError callback is triggered
-    app->>+proximity: Calls start()
-    app->>+proximity: Calls getQrCode()
-    proximity-->>+app: QR code string
-    app->>+app: Renders the QR code string
-    verifier->>+app: Scans the QR code
-    proximity->>+app: Triggers the onDeviceConnecting callback
-    verifier->>+app: Connects to the verifier app
-    proximity->>+app: Triggers the onDeviceConnected callback
-    verifier->>+app: Requests the credential(s)
-    proximity->>+app: Triggers the onDocumentRequestReceived() callback
-    app->>+proximity: Parses the request by calling parseVerifierRequest()
-    proximity-->>+app: Returns a VerifierRequest
-    app->>+app: Shows the requested data and asks for user consent
-    alt The user accepts
-        app->>+proximity: Calls generateResponse()
-        proximity-->>+app: Returns the response
-        app->>+proximity: Calls sendResponse()
-        proximity->>+verifier: Sends the response
-        verifier->>+verifier: Shows the received credential(s) and the verification result
-    else The user rejects
-        app->>+proximity: Calls sendErrorResponse()
-        proximity->>+verifier: Sends the error response code
-        verifier->>+verifier: Shows the received error response code
-    end
-    verifier->>+app: Closes the connection
-    proximity->>+app: Calls the onDeviceDisconnected callback
 ```
 
 ## Errors
@@ -265,4 +250,50 @@ The parsed object will contain properties from both iOS and Android platforms:
   domain?: string;
   nativeStackIOS?: Array<string>;
 };
+```
+
+## Proximity Sequence Diagram
+
+This section describes a high level overview of the interactions between an app implementing the `io-react-native-proximity` library and a verifier app.
+
+```mermaid
+sequenceDiagram
+    participant app as Consumer App
+    participant proximity as io-react-native-iso18013
+    participant verifier as Verifier App
+
+    Note over proximity, verifier: If an error occurs during the flow, the onError callback is triggered
+    app->>+proximity: Calls start()
+    app->>+proximity: Calls getQrCode()
+    proximity-->>+app: QR code string
+    app->>+app: Renders the QR code string
+    verifier->>+app: Scans the QR code
+    proximity->>+app: Triggers the onDeviceConnecting callback
+    verifier->>+app: Connects to the verifier app
+    proximity->>+app: Triggers the onDeviceConnected callback
+    verifier->>+app: Requests the credential(s)
+    proximity->>+app: Triggers the onDocumentRequestReceived() callback
+    app->>+proximity: Parses the request by calling parseVerifierRequest()
+    proximity-->>+app: Returns a VerifierRequest
+    app->>+app: Shows the requested data and asks for user consent
+    alt The user accepts
+        app->>+proximity: Calls generateResponse()
+        proximity-->>+app: Returns the response
+        app->>+proximity: Calls sendResponse()
+        proximity->>+verifier: Sends the response
+        verifier->>+verifier: Shows the received credential(s) and the verification result
+    else The user rejects
+        app->>+proximity: Calls sendErrorResponse()
+        proximity->>+verifier: Sends the error response code
+        verifier->>+verifier: Shows the received error response code
+    end
+    alt The verifier sends the END (0x02) termination flag
+      verifier->>+app: Closes the connection
+      proximity->>+app: Calls the onDeviceDisconnected callback
+      app->>+proximity: Calls close()
+    else The verifier app closes the connection without the END (0x02) termination flag
+      verifier->>+app: Closes the connection
+      proximity->>+app: Calls the onError callback
+      app->>+proximity: Calls close()
+    end
 ```

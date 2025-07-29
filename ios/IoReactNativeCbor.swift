@@ -6,6 +6,13 @@ import CryptoKit
 class IoReactNativeCbor: NSObject {
   private let keyConfig: KeyConfig = .ec
   
+  /**
+   Decode base64 or base64url encoded CBOR data to JSON object.
+   - Parameters:
+      - cbor: The base64 or base64url encoded CBOR string.
+      - resolve: The promise to be resolved.
+      - reject: The promise to be rejected.
+   */
   @objc func decode(
     _ cbor: String,
     resolver resolve: RCTPromiseResolveBlock,
@@ -25,7 +32,13 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
-  
+  /**
+   Decode base64 or base64url encoded mDOC-CBOR data to a JSON object.
+   - Parameters:
+      - mdoc: The base64 or base64url encoded mDOC-CBOR string.
+      - resolve: The promise to be resolved.
+      - reject: The promise to be rejected.
+   */
   @objc func decodeDocuments(
     _ mdoc: String,
     resolver resolve: RCTPromiseResolveBlock,
@@ -44,6 +57,13 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
+  /**
+   Decode base64 or base64url encoded issuerSigned attribute part of an mDOC-CBOR.
+   - Parameters:
+      - issuerSigned: The base64 or base64url encoded mDOC-CBOR containing the issuerSigned data string.
+      - resolve: The promise to be resolved.
+      - reject: The promise to be rejected.
+   */
   @objc func decodeIssuerSigned(
     _ issuerSigned: String,
     resolver resolve: RCTPromiseResolveBlock,
@@ -62,6 +82,14 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
+  /**
+   Sign base64 encoded data with COSE and return the COSE-Sign1 object in base64 encoding.
+   - Parameters:
+     - payloadData: The base64 or base64url encoded payload to sign.
+     - keyTag: The alias of the key to use for signing.
+     - resolve: The promise to be resolved.
+     - reject: The promise to be rejected.
+   */
   @objc func sign(
     _ payloadData: String,
     keyTag: String,
@@ -90,6 +118,14 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
+  /**
+   Verifies a COSE-Sign1 object with the provided public key
+   - Parameters:
+      - sign1Data: The COSE-Sign1 object in base64 or base64url encoding.
+      - publicKey: The public key in JWK format.
+      - resolve: The promise to be resolved
+      - reject: The promise to be rejected..
+   */
   @objc func verify(
     _ sign1Data: String,
     jwk: NSDictionary,

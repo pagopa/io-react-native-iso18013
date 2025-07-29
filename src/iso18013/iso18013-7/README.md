@@ -1,12 +1,12 @@
-## ISO18013-7
+# ISO18013-7
 
-This module provides methods to obtain data structures necessary for the processes defined in the `ISO-18013` standard.
+This library provides a React Native module based on [iso18013-android](https://github.com/pagopa/iso18013-android) and [iso18013-ios](https://github.com/pagopa/iso18013-ios) which allows mDL remote presentation according to the ISO 18013-7 standard.
 
 ```typescript
 import { ISO18013_7 } from '@pagopa/io-react-native-cbor';
 ```
 
-### Methods
+## Methods
 
 #### `generateOID4VPDeviceResponse`
 
