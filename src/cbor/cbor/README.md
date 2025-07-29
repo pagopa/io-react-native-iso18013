@@ -3,7 +3,7 @@
 This module provides methods to decode CBOR data into readable objects.
 
 ```typescript
-import { CBOR } from '@pagopa/io-react-native-cbor';
+import { CBOR } from '@pagopa/io-react-native-iso18013';
 ```
 
 ### Methods

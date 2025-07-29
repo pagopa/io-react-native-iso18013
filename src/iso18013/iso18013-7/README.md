@@ -3,7 +3,7 @@
 This library provides a React Native module based on [iso18013-android](https://github.com/pagopa/iso18013-android) and [iso18013-ios](https://github.com/pagopa/iso18013-ios) which allows mDL remote presentation according to the ISO 18013-7 standard.
 
 ```typescript
-import { ISO18013_7 } from '@pagopa/io-react-native-cbor';
+import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
 ```
 
 ## Methods
