@@ -31,13 +31,14 @@ flowchart LR
     onError["onError"]
 
     onDeviceConnecting -- "Verifier app connects" --> onDeviceConnected
-    onDeviceConnecting -- "Error status or abrupt disconnection" --> onError
 
     onDeviceConnected -- "Verifier app sends request" --> onDocumentRequestReceived
     onDeviceConnected -- "Error status or abrupt disconnection" --> onError
 
+    onDeviceConnected -- "Verifier sends END (0x02)" --> onDeviceDisconnected
+    onDeviceConnected -- "Error status or abrupt disconnection" --> onError
     onDocumentRequestReceived -- "Verifier sends END (0x02)" --> onDeviceDisconnected
-    onDocumentRequestReceived -- "Abrupt disconnection" --> onError
+    onDocumentRequestReceived -- "Error status or abrupt disconnection" --> onError
 ```
 
 Listeners can be added using the `addListener` method and removed using the `removeListener` method.
@@ -254,7 +255,7 @@ The parsed object will contain properties from both iOS and Android platforms:
 
 ## Proximity Sequence Diagram
 
-This section describes a high level overview of the interactions between an app implementing the `io-react-native-proximity` library and a verifier app.
+This section describes a high level overview of the happy flow interactions between an app implementing the `io-react-native-proximity` library and a verifier app.
 
 ```mermaid
 sequenceDiagram
