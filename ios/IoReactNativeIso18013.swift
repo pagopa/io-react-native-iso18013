@@ -3,7 +3,7 @@ import IOWalletProximity
 import React
 
 @objc(IoReactNativeIso18013)
-class IoReactNativeProximity: RCTEventEmitter {
+class IoReactNativeIso18013: RCTEventEmitter {
   
   private typealias ME = ModuleException
   
