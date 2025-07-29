@@ -43,14 +43,14 @@ export enum ErrorCode {
  * @param config.peripheralMode (Android only) - Whether the device is in peripheral mode. Defaults to true
  * @param config.centralClientMode (Android only) - Whether the device is in central client mode. Defaults to false
  * @param config.clearBleCache (Android only) - Whether the BLE cache should be cleared. Defaults to true
- * @param config.certificates - Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
+ * @param config.certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
  */
 export function start(
   config: {
     peripheralMode?: boolean;
     centralClientMode?: boolean;
     clearBleCache?: boolean;
-    certificates?: string[];
+    certificates?: Array<Array<String>>;
   } = {}
 ): Promise<boolean> {
   const { peripheralMode, centralClientMode, clearBleCache, certificates } =
