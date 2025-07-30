@@ -36,7 +36,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @param peripheralMode - Whether the device is in peripheral mode. Defaults to true
    * @param centralClientMode - Whether the device is in central client mode. Defaults to false
    * @param clearBleCache - Whether the BLE cache should be cleared. Defaults to true
-   * @param certificates - Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
+   * @param certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
    * @param promise - The promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
@@ -54,11 +54,11 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         clearBleCache = clearBleCache
       )
 
-//      val certificatesList = parseCertificates(certificates)
+      val certificatesList = parseCertificates(certificates)
       qrEngagement = QrEngagement.build(reactApplicationContext, listOf(retrievalMethod)).apply {
-//        if (certificatesList.isNotEmpty()) {
-//          withReaderTrustStore(certificatesList)
-//        }
+        if (certificatesList.isNotEmpty()) {
+          withReaderTrustStore(certificatesList)
+        }
       }
       qrEngagement?.configure()
       setupProximityHandler()
@@ -75,20 +75,21 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   /**
    * Utility function to parse an array coming from the React Native Bridge into an ArrayList
    * of ByteArray representing DER encoded X.509 certificates.
-   * @param certificates - Array of base64 strings representing DER encoded X.509 certificate
+   * @param certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate
    * @returns An ArrayList of ByteArray representing DER encoded X.509 certificates.
    * @throws ClassCastException if the element in the array is not a string
    */
-
-//  private fun parseCertificates(certificates: ReadableArray): ArrayList<ByteArray> {
-//    return ArrayList(
-//      (0 until certificates.size()).mapNotNull { i ->
-//        certificates.getString(i)?.let { cert ->
-//          Base64Utils.decodeBase64(cert)
-//        }
-//      }
-//    )
-//  }
+  private fun parseCertificates(certificates: ReadableArray): List<List<ByteArray>> =
+    (0 until certificates.size())
+      .mapNotNull { chainIndex -> certificates.getArray(chainIndex) }
+      .map { chain ->
+        (0 until chain.size())
+          .mapNotNull { certIndex ->
+            chain.takeIf { it.getType(certIndex) == ReadableType.String }
+              ?.getString(certIndex)
+              ?.let { Base64Utils.decodeBase64(it) }
+          }
+      }
 
   /**
    * Creates a QR code to be scanned in order to initialize the presentation.
