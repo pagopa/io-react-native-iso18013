@@ -3,7 +3,7 @@ import IOWalletProximity
 import React
 
 @objc(IoReactNativeIso18013)
-class IoReactNativeProximity: RCTEventEmitter {
+class IoReactNativeIso18013: RCTEventEmitter {
   
   @objc
   override static func requiresMainQueueSetup() -> Bool {
@@ -40,19 +40,19 @@ class IoReactNativeProximity: RCTEventEmitter {
    Resolves to true or rejects if an error occurs.
     
    - Parameters:
-      - certificates: Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
+      - certificates: Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
       - resolve: The promise to be resolved
       - reject: The promise to be rejected
   */
   @objc(start:withResolver:withRejecter:)
   func start(
-    certificates: Array<Any>,
+    certificates: [Any],
     _ resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
-      let certsData = try parseCertificates(certificates)
-      try Proximity.shared.start(certsData.isEmpty ? nil : certsData)
+      let certsData = parseCertificates(certificates)
+      try Proximity.shared.start(certsData)
       resolve(true)
     } catch let proximityError as ProximityError {
       reject(ModuleErrorCodes.generateResponseError.rawValue, proximityError.description, proximityError)
@@ -67,17 +67,19 @@ class IoReactNativeProximity: RCTEventEmitter {
    Utility function to parse an array coming from the React Native Bridge into an array of Data representing DER encoded X.509 certificates.
    
    - Parameters:
-      - certificates:Array of base64 strings representing DER encoded X.509 certificate
-    - Throws: `ParsingError` if the provided certificate is not a valid base64 encoded string
-    - Returns: An array of Data containing DER ecnoded X.509 certificates.
+      - certificates:Two-dimensional array of base64 strings representing DER encoded X.509 certificate
+   
+    - Returns: A two-dimensional array of Data containing DER encoded X.509 certificates.
   */
-  private func parseCertificates(_ certificates: [Any]) throws -> [Data] {
-    return try certificates.map { item in
-      guard let certString = item as? String,
-            let data = Data(base64Encoded: certString) else {
-        throw ParsingError.certificatesNotValid("The provided certificates are not valid base64 strings")
-     }
-     return data
+  private func parseCertificates(_ certificates: Array<Any>) -> [[Data]] {
+    return certificates.compactMap { item in
+      guard let certStrings = item as? [String] else {
+        return nil
+      }
+      let dataArray = certStrings.compactMap { certString in
+          Data(base64Encoded: certString)
+      }
+      return dataArray.isEmpty ? nil : dataArray
     }
   }
   

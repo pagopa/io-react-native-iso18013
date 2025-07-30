@@ -1,4 +1,4 @@
-import { IoReactNativeProximity } from '..';
+import { IoReactNativeIso18013 } from '..';
 import type { RequestedDocument } from '../types';
 
 /**
@@ -21,7 +21,7 @@ export const generateOID4VPDeviceResponse = async (
   documents: Array<RequestedDocument>,
   fieldRequestedAndAccepted: Record<string, any> | string
 ): Promise<string> => {
-  return await IoReactNativeProximity.generateOID4VPDeviceResponse(
+  return await IoReactNativeIso18013.generateOID4VPDeviceResponse(
     clientId,
     responseUri,
     authorizationRequestNonce,
