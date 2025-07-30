@@ -1,9 +1,9 @@
 import { NativeEventEmitter, Platform } from 'react-native';
-import { IoReactNativeProximity } from '..';
+import { IoReactNativeIso18013 } from '..';
 import type { AcceptedFields } from './schema';
 import type { RequestedDocument } from '../types';
 
-const eventEmitter = new NativeEventEmitter(IoReactNativeProximity);
+const eventEmitter = new NativeEventEmitter(IoReactNativeIso18013);
 
 /**
  * Events emitted by the native module:
@@ -56,9 +56,9 @@ export function start(
   const { peripheralMode, centralClientMode, clearBleCache, certificates } =
     config;
   if (Platform.OS === 'ios') {
-    return IoReactNativeProximity.start(certificates ? certificates : []);
+    return IoReactNativeIso18013.start(certificates ? certificates : []);
   } else {
-    return IoReactNativeProximity.start(
+    return IoReactNativeIso18013.start(
       peripheralMode ? peripheralMode : true,
       centralClientMode ? centralClientMode : false,
       clearBleCache ? clearBleCache : true,
@@ -71,14 +71,14 @@ export function start(
  * Gets the QR code string this method is responsible for initializing the connection and retrieving the QR code string
  */
 export function getQrCodeString(): Promise<string> {
-  return IoReactNativeProximity.getQrCodeString();
+  return IoReactNativeIso18013.getQrCodeString();
 }
 
 /**
  * Closes the QR engagement
  */
 export function close(): Promise<boolean> {
-  return IoReactNativeProximity.close();
+  return IoReactNativeIso18013.close();
 }
 
 /**
@@ -87,7 +87,7 @@ export function close(): Promise<boolean> {
  * @param code - The error code to be sent to the verifier app.
  */
 export function sendErrorResponse(code: ErrorCode): Promise<boolean> {
-  return IoReactNativeProximity.sendErrorResponse(code);
+  return IoReactNativeIso18013.sendErrorResponse(code);
 }
 
 /**
@@ -100,7 +100,7 @@ export function generateResponse(
   documents: Array<RequestedDocument>,
   acceptedFields: AcceptedFields
 ): Promise<string> {
-  return IoReactNativeProximity.generateResponse(documents, acceptedFields);
+  return IoReactNativeIso18013.generateResponse(documents, acceptedFields);
 }
 
 /**
@@ -109,7 +109,7 @@ export function generateResponse(
  * @param response - The base64 encoded response to be sent to the verifier app.
  */
 export function sendResponse(response: string): Promise<boolean> {
-  return IoReactNativeProximity.sendResponse(response);
+  return IoReactNativeIso18013.sendResponse(response);
 }
 
 /**
