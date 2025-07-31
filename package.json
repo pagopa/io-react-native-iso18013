@@ -1,6 +1,6 @@
 {
   "name": "@pagopa/io-react-native-iso18013",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React Native bridge for iso18013 methods",
   "source": "./src/index.tsx",
   "main": "./lib/module/index.js",

@@ -1,9 +1,9 @@
 import { NativeEventEmitter, Platform } from 'react-native';
-import { IoReactNativeProximity } from '..';
 import type { AcceptedFields } from './request';
+import { IoReactNativeIso18013 } from '..';
 import type { RequestedDocument } from '../types';
 
-const eventEmitter = new NativeEventEmitter(IoReactNativeProximity);
+const eventEmitter = new NativeEventEmitter(IoReactNativeIso18013);
 
 /**
  * Events emitted by the native module:
@@ -43,7 +43,7 @@ export enum ErrorCode {
  * @param config.peripheralMode (Android only) - Whether the device is in peripheral mode. Defaults to true
  * @param config.centralClientMode (Android only) - Whether the device is in central client mode. Defaults to false
  * @param config.clearBleCache (Android only) - Whether the BLE cache should be cleared. Defaults to true
- * @param config.certificates - Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
+ * @param config.certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
  * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function start(
@@ -51,15 +51,15 @@ export function start(
     peripheralMode?: boolean;
     centralClientMode?: boolean;
     clearBleCache?: boolean;
-    certificates?: string[];
+    certificates?: Array<Array<String>>;
   } = {}
 ): Promise<boolean> {
   const { peripheralMode, centralClientMode, clearBleCache, certificates } =
     config;
   if (Platform.OS === 'ios') {
-    return IoReactNativeProximity.start(certificates ? certificates : []);
+    return IoReactNativeIso18013.start(certificates ? certificates : []);
   } else {
-    return IoReactNativeProximity.start(
+    return IoReactNativeIso18013.start(
       peripheralMode ? peripheralMode : true,
       centralClientMode ? centralClientMode : false,
       clearBleCache ? clearBleCache : true,
@@ -73,7 +73,7 @@ export function start(
  * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function getQrCodeString(): Promise<string> {
-  return IoReactNativeProximity.getQrCodeString();
+  return IoReactNativeIso18013.getQrCodeString();
 }
 
 /**
@@ -81,7 +81,7 @@ export function getQrCodeString(): Promise<string> {
  * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function close(): Promise<boolean> {
-  return IoReactNativeProximity.close();
+  return IoReactNativeIso18013.close();
 }
 
 /**
@@ -91,7 +91,7 @@ export function close(): Promise<boolean> {
  * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function sendErrorResponse(code: ErrorCode): Promise<boolean> {
-  return IoReactNativeProximity.sendErrorResponse(code);
+  return IoReactNativeIso18013.sendErrorResponse(code);
 }
 
 /**
@@ -105,7 +105,7 @@ export function generateResponse(
   documents: Array<RequestedDocument>,
   acceptedFields: AcceptedFields
 ): Promise<string> {
-  return IoReactNativeProximity.generateResponse(documents, acceptedFields);
+  return IoReactNativeIso18013.generateResponse(documents, acceptedFields);
 }
 
 /**
@@ -115,7 +115,7 @@ export function generateResponse(
  * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  */
 export function sendResponse(response: string): Promise<boolean> {
-  return IoReactNativeProximity.sendResponse(response);
+  return IoReactNativeIso18013.sendResponse(response);
 }
 
 /**

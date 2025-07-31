@@ -34,7 +34,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @param peripheralMode - Whether the device is in peripheral mode. Defaults to true
    * @param centralClientMode - Whether the device is in central client mode. Defaults to false
    * @param clearBleCache - Whether the BLE cache should be cleared. Defaults to true
-   * @param certificates - Array of base64 representing DER encoded X.509 certificate which are used to authenticate the verifier app
+   * @param certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
    * @param promise - The promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
@@ -69,24 +69,40 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   /**
    * Utility function to parse an array coming from the React Native Bridge into an ArrayList
    * of ByteArray representing DER encoded X.509 certificates.
-   * @param certificates - Array of base64 strings representing DER encoded X.509 certificate
+   * @param certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate
    * @returns An ArrayList of ByteArray representing DER encoded X.509 certificates.
    * @throws IllegalArgumentException if an element in the array is not base64 encoded
    */
+  private fun parseCertificates(certificates: ReadableArray): List<List<ByteArray>> =
+    /** Map the chain arrays and remove null entries. On each chain call the getArray method which
+    * can throw and if it does rethrow an exception with information on its position
+    */
+    (0 until certificates.size()).mapNotNull { chainIndex ->
+      val chain = runCatching { certificates.getArray(chainIndex) }
+        .getOrElse { throw IllegalArgumentException("Certificate chain at $chainIndex is not an array", it) }
+        ?: throw IllegalArgumentException("Certificate chain at index $chainIndex is null")
 
-  private fun parseCertificates(certificates: ReadableArray): ArrayList<ByteArray> {
-    return ArrayList(
-      (0 until certificates.size()).mapNotNull { i ->
-        certificates.getString(i)?.let { cert ->
-          try {
-            Base64Utils.decodeBase64(cert)
-          } catch (e: Exception) {
-            throw IllegalArgumentException("Invalid base64 certificate at index $i", e)
-          }
+      /**
+       * Map each chain certificate and remove null entries. On each certificate call the getString
+       * method which can throw and if it does rethrow an exception with information on its position
+       */
+      (0 until chain.size()).mapNotNull { certIndex ->
+        val base64 = runCatching { chain.getString(certIndex) }
+          .getOrElse { throw IllegalArgumentException("Failed to get certificate string at chain $chainIndex, cert $certIndex", it) }
+          ?: throw java.lang.IllegalArgumentException("Certificate at index $certIndex is null")
+
+        /**
+         * Decode the base64 string for each mapped certificate and if an error occurs rethrow
+         * an exception with information on its position
+         */
+        runCatching {
+          Base64Utils.decodeBase64(base64)
+        }.getOrElse {
+          throw IllegalArgumentException("Certificate at index $certIndex in the chain at index $chainIndex is not a valid base64 string", it)
         }
       }
-    )
-  }
+    }
+
 
   /**
    * Creates a QR code to be scanned in order to initialize the presentation.
