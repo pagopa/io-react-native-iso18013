@@ -417,19 +417,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
       ME.unexpected.reject(reject: reject)
     }
   }
-  
-  private class DocRequested {
-    var issuerSignedContent : [UInt8]
-    var alias : String
-    var docType : String
     
-    public init(issuerSignedContent: [UInt8], alias: String, docType: String) {
-      self.issuerSignedContent = issuerSignedContent
-      self.alias = alias
-      self.docType = docType
-    }
-  }
-  
   /**
    Wrapper for rejecting with an error.
    Add a new case in order to extend the possible errors.
