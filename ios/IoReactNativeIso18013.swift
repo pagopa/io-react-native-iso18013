@@ -51,7 +51,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
-      let certsData = parseCertificates(certificates)
+      let certsData = try parseCertificates(certificates)
       try Proximity.shared.start(certsData)
       resolve(true)
     } catch let proximityError as ProximityError {
@@ -71,15 +71,17 @@ class IoReactNativeIso18013: RCTEventEmitter {
    
     - Returns: A two-dimensional array of Data containing DER encoded X.509 certificates.
   */
-  private func parseCertificates(_ certificates: Array<Any>) -> [[Data]] {
-    return certificates.compactMap { item in
+  private func parseCertificates(_ certificates: [Any]) throws -> [[Data]] {
+    return try certificates.enumerated().compactMap { (chainIndex, item) in
       guard let certStrings = item as? [String] else {
-        return nil
+        throw ParsingError.certificatesNotValid("Certificate chain at index \(chainIndex) is not an array of strings.")
       }
-      let dataArray = certStrings.compactMap { certString in
-          Data(base64Encoded: certString)
+      return try certStrings.enumerated().map { (certIndex, certString) in
+        guard let data = Data(base64Encoded: certString) else {
+          throw ParsingError.certificatesNotValid("Cartificate at index \(certIndex) in the chain at index \(chainIndex) is not a valid base64 string.")
+        }
+        return data
       }
-      return dataArray.isEmpty ? nil : dataArray
     }
   }
   

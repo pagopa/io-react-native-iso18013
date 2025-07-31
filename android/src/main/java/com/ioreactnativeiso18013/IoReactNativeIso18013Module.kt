@@ -74,16 +74,24 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @throws IllegalArgumentException if an element in the array is not base64 encoded
    */
   private fun parseCertificates(certificates: ReadableArray): List<List<ByteArray>> =
-    (0 until certificates.size())
-      .mapNotNull { chainIndex -> certificates.getArray(chainIndex) }
-      .map { chain ->
-        (0 until chain.size())
-          .mapNotNull { certIndex ->
-            chain.takeIf { it.getType(certIndex) == ReadableType.String }
-              ?.getString(certIndex)
-              ?.let { Base64Utils.decodeBase64(it) }
-          }
+    (0 until certificates.size()).mapNotNull { chainIndex ->
+      val chain = runCatching { certificates.getArray(chainIndex) }
+        .getOrElse { throw IllegalArgumentException("Certificate chain at $chainIndex is not an array", it) }
+        ?: throw IllegalArgumentException("Certificate chain at index $chainIndex is null")
+
+      (0 until chain.size()).map { certIndex ->
+        val base64 = runCatching { chain.getString(certIndex) }
+          .getOrElse { throw IllegalArgumentException("Failed to get certificate string at chain $chainIndex, cert $certIndex", it) }
+          ?: throw java.lang.IllegalArgumentException("Certificate at index $certIndex is null")
+
+        runCatching {
+          Base64Utils.decodeBase64(base64)
+        }.getOrElse {
+          throw IllegalArgumentException("Certificate at index $certIndex in the chain at index $chainIndex is not a valid base64 string", it)
+        }
       }
+    }
+
 
   /**
    * Creates a QR code to be scanned in order to initialize the presentation.
