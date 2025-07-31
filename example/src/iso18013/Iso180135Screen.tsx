@@ -237,7 +237,7 @@ const Iso180135Screen: React.FC = () => {
       return;
     }
     try {
-      await ISO18013_5.start({ certificates: [123] }); // Peripheral mode
+      await ISO18013_5.start(); // Peripheral mode
       // Register listeners
       ISO18013_5.addListener('onDeviceConnecting', handleOnDeviceConnecting);
       ISO18013_5.addListener('onDeviceConnected', handleOnDeviceConnected);

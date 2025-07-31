@@ -74,16 +74,27 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @throws IllegalArgumentException if an element in the array is not base64 encoded
    */
   private fun parseCertificates(certificates: ReadableArray): List<List<ByteArray>> =
+    /** Map the chain arrays and remove null entries. On each chain call the getArray method which
+    * can throw and if it does rethrow an exception with information on its position
+    */
     (0 until certificates.size()).mapNotNull { chainIndex ->
       val chain = runCatching { certificates.getArray(chainIndex) }
         .getOrElse { throw IllegalArgumentException("Certificate chain at $chainIndex is not an array", it) }
         ?: throw IllegalArgumentException("Certificate chain at index $chainIndex is null")
 
-      (0 until chain.size()).map { certIndex ->
+      /**
+       * Map each chain certificate and remove null entries. On each certificate call the getString
+       * method which can throw and if it does rethrow an exception with information on its position
+       */
+      (0 until chain.size()).mapNotNull { certIndex ->
         val base64 = runCatching { chain.getString(certIndex) }
           .getOrElse { throw IllegalArgumentException("Failed to get certificate string at chain $chainIndex, cert $certIndex", it) }
           ?: throw java.lang.IllegalArgumentException("Certificate at index $certIndex is null")
 
+        /**
+         * Decode the base64 string for each mapped certificate and if an error occurs rethrow
+         * an exception with information on its position
+         */
         runCatching {
           Base64Utils.decodeBase64(base64)
         }.getOrElse {
