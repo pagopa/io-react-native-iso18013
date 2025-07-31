@@ -5,7 +5,6 @@ import CryptoKit
 @objc(IoReactNativeCbor)
 class IoReactNativeCbor: NSObject {
   private typealias ME = ModuleException
-  private let keyConfig: KeyConfig = .ec
   
   @objc func decode(
     _ cbor: String,
@@ -112,50 +111,7 @@ class IoReactNativeCbor: NSObject {
       ME.unknownException.reject(reject: reject)
     }
   }
-    
-  private func keyExists(keyTag: String) -> (key: SecKey?, status: OSStatus) {
-    let getQuery = privateKeyKeychainQuery(keyTag: keyTag)
-    var item: CFTypeRef?
-    let status = SecItemCopyMatching(getQuery as CFDictionary, &item)
-    return (status == errSecSuccess ? (item as! SecKey) : nil, status)
-  }
-  
-  private func privateKeyKeychainQuery(
-    keyTag: String
-  ) -> [String : Any] {
-    return [
-      kSecClass as String: kSecClassKey,
-      kSecAttrApplicationTag as String: keyTag,
-      kSecAttrKeyType as String: keyConfig.keyType(),
-      kSecReturnRef as String: true
-    ]
-  }
-  
-  private enum KeyConfig: Int, CaseIterable {
-    case ec
-    
-    func keyType() -> CFString {
-      switch self {
-      case .ec:
-        return kSecAttrKeyTypeECSECPrimeRandom
-      }
-    }
-    
-    func keySizeInBits() -> Int {
-      switch self {
-      case .ec:
-        return 256
-      }
-    }
-    
-    func keySignAlgorithm() -> SecKeyAlgorithm {
-      switch self {
-      case .ec:
-        return .ecdsaSignatureMessageX962SHA256
-      }
-    }
-  }
-  
+   
   private enum ModuleException: String, CaseIterable {
     case unableToDecode = "UNABLE_TO_DECODE"
     case publicKeyNotFound = "PUBLIC_KEY_NOT_FOUND"
