@@ -24,7 +24,6 @@ class IoReactNativeCbor: NSObject {
     resolve(json);
   }
   
-  
   @objc func decodeDocuments(
     _ mdoc: String,
     resolver resolve: RCTPromiseResolveBlock,
@@ -111,7 +110,7 @@ class IoReactNativeCbor: NSObject {
       ME.unknownException.reject(reject: reject)
     }
   }
-   
+  
   private enum ModuleException: String, CaseIterable {
     case unableToDecode = "UNABLE_TO_DECODE"
     case publicKeyNotFound = "PUBLIC_KEY_NOT_FOUND"
