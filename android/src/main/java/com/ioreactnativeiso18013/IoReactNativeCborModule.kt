@@ -16,6 +16,13 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     return NAME
   }
 
+  /**
+   * Decode base64 or base64url encoded CBOR data to JSON object.
+   * Resolves with a string containing the parsed data or rejects with an error code
+   * defined in [ModuleErrorCodes].
+   * This method does not handle nested CBOR data, which will need additional parsing.
+   * @param data - The base64 or base64url encoded CBOR string
+   */
   @ReactMethod
   fun decode(data: String, promise: Promise) {
     try {
@@ -26,6 +33,12 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
       promise.reject(ModuleErrorCodes.DECODE_ERROR, e.message, e)
     }
 
+    /**
+     * Decode base64 or base64url encoded mDOC-CBOR data to a JSON object.
+     * Resolves with a string containing the parsed data or rejects with an error code
+     * defined in [ModuleErrorCodes].
+     * @param data - The base64 or base64url encoded mDOC string
+     */
     @ReactMethod
     fun decodeDocuments(data: String, promise: Promise) {
       try {
@@ -40,6 +53,12 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
       }
     }
 
+    /**
+     * Decode base64 or base64url encoded issuerSigned attribute part of an mDOC-CBOR.
+     * @param issuerSigned - The base64 or base64url encoded mDOC-CBOR containing the issuerSigned data string
+     * Resolves with a string containing the parsed data or rejects with an error code
+     * defined in [ModuleErrorCodes].
+     */
     @ReactMethod
     fun decodeIssuerSigned(issuerSigned: String, promise: Promise) {
       try {
@@ -59,6 +78,13 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
       }
     }
 
+    /**
+     * Sign base64 encoded data with COSE and return the COSE-Sign1 object in base64 encoding.
+     * Resolves with a string containing the COSE-Sign1 object in base64 encoding or rejects with an
+     * error code defined in [ModuleErrorCodes].
+     * @param payload - The base64 or base64url encoded payload to sign
+     * @param keyTag - The alias of the key to use for signing.
+     */
     @ReactMethod
     fun sign(payload: String, keyTag: String, promise: Promise){
     try {
@@ -81,6 +107,13 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
       }
     }
 
+    /**
+     * Verifies a COSE-Sign1 object with the provided public key.
+     * Resolves with boolean indicating whether or not the verification succeeded or not or rejects
+     * with an error code defined in [ModuleErrorCodes].
+     * @param data - The COSE-Sign1 object in base64 or base64url encoding
+     * @param publicKey - The public key in JWK format
+     */
     @ReactMethod
     fun verify(sign1Data: String, publicKey: ReadableMap, promise: Promise) {
       try {

@@ -3,7 +3,7 @@
 This module provides methods to sign and verify data with COSE.
 
 ```typescript
-import { COSE } from '@pagopa/io-react-native-cbor';
+import { COSE } from '@pagopa/io-react-native-iso18013';
 ```
 
 ### Methods
