@@ -31,7 +31,7 @@ RCT_EXTERN_METHOD(generateOID4VPDeviceResponse: (NSString)clientId
                   withAuthorizationRequestNonce: (NSString*)authorizationRequestNonce
                   withMdocGeneratedNonce: (NSString*)mdocGeneratedNonce
                   withDocuments: (NSArray*)documents
-                  withAcceptedFields: (NSDictionary*)acceptedFields
+                  withAcceptedFields: (NSString*)acceptedFields
                   withResolver: (RCTPromiseResolveBlock)resolve
                   withRejecter: (RCTPromiseRejectBlock)reject)
 

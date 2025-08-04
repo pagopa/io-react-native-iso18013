@@ -245,7 +245,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   fun generateOID4VPDeviceResponse(
     clientId: String, responseUri: String, authorizationRequestNonce: String,
     mdocGeneratedNonce: String, documents: ReadableArray,
-    acceptedFields: ReadableMap, promise: Promise
+    acceptedFields: String, promise: Promise
   ) {
     val sessionTranscript = try {
       OpenID4VP(
@@ -276,7 +276,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       val responseGenerator = ResponseGenerator(sessionTranscript)
       responseGenerator.createResponse(
         documentsParsed,
-        acceptedFields.toString(),
+        acceptedFields,
         object : ResponseGenerator.Response {
           override fun onResponseGenerated(response: ByteArray) {
             promise.resolve(Base64Utils.encodeBase64(response))

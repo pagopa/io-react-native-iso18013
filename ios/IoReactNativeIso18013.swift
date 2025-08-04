@@ -386,7 +386,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
     authorizationRequestNonce: String,
     mdocGeneratedNonce: String,
     documents: [Any],
-    acceptedFields: [AnyHashable: Any],
+    acceptedFields: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
@@ -401,7 +401,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
 
       let documentsAsProximityDocument = try parseDocuments(documents: documents)
       
-      let items = try parseAcceptedFields(acceptedFields: acceptedFields)
+      let items = try JSONDecoder().decode([String : [String : [String : Bool]]].self, from: Data(acceptedFields.utf8))
       
       do {
         let response = try Proximity.shared.generateDeviceResponse(items: items, documents: documentsAsProximityDocument, sessionTranscript: sessionTranscript)

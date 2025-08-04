@@ -1,6 +1,7 @@
 import { NativeEventEmitter, Platform } from 'react-native';
 import { IoReactNativeIso18013 } from '..';
-import type { AcceptedFields, RequestedDocument } from '../types';
+import type { RequestedDocument } from '../types';
+import type { AcceptedFields } from './schema';
 
 const eventEmitter = new NativeEventEmitter(IoReactNativeIso18013);
 
