@@ -74,9 +74,9 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun decodeIssuerSigned(issuerSigned: String, promise: Promise) {
+  fun decodeIssuerSigned(data: String, promise: Promise) {
     val buffer = try {
-      Base64Utils.decodeBase64AndBase64Url(issuerSigned)
+      Base64Utils.decodeBase64AndBase64Url(data)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,
@@ -104,9 +104,9 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun sign(payload: String, keyTag: String, promise: Promise) {
+  fun sign(data: String, keyTag: String, promise: Promise) {
     val data = try {
-      Base64Utils.decodeBase64AndBase64Url(payload)
+      Base64Utils.decodeBase64AndBase64Url(data)
     } catch (e: Exception) {
       ModuleException.INVALID_ENCODING.reject(
         promise,

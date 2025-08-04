@@ -1,5 +1,4 @@
 export {
-  type AcceptedFields,
   type EventError,
   type VerifierRequest,
   parseEventError,
@@ -20,4 +19,4 @@ export {
   start,
 } from './proximity';
 
-export { type RequestedDocument } from '../types';
+export { type AcceptedFields, type RequestedDocument } from '../types';

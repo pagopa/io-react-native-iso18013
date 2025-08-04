@@ -21,7 +21,7 @@ const handleGenerateResponse = async (deviceRequest: DeviceRequest) => {
       deviceRequest.request.authorizationRequestNonce,
       deviceRequest.request.mdocGeneratedNonce,
       deviceRequest.documents,
-      deviceRequest.fieldRequestedAndAccepted
+      deviceRequest.acceptedFields
     );
     console.log(result);
     Alert.alert('✅ Device Response Generation Success');
@@ -43,7 +43,7 @@ const handleGenerateResponseWrongDocRequested = async () => {
       WRONG_DOC_REQUEST.request.authorizationRequestNonce,
       WRONG_DOC_REQUEST.request.mdocGeneratedNonce,
       WRONG_DOC_REQUEST.documents,
-      WRONG_DOC_REQUEST.fieldRequestedAndAccepted
+      WRONG_DOC_REQUEST.acceptedFields
     );
     console.log(result);
     Alert.alert('❌ Device Response Generation Success');
@@ -70,7 +70,7 @@ const handleGenerateResponseIncompleteDocRequested = async () => {
         docType: string;
         issuerSignedContent: string;
       }[],
-      INCOMPLETE_DOC_REQUEST.fieldRequestedAndAccepted
+      INCOMPLETE_DOC_REQUEST.acceptedFields
     );
     console.log(result);
     Alert.alert('❌ Device Response Generation Success');
@@ -83,7 +83,7 @@ const handleGenerateResponseIncompleteDocRequested = async () => {
   }
 };
 
-const handleGenerateResponseWrongFieldRequestedAndAccepted = async () => {
+const handleGenerateResponseWrongAcceptedFields = async () => {
   try {
     await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
     const result = await ISO18013_7.generateOID4VPDeviceResponse(
@@ -93,7 +93,7 @@ const handleGenerateResponseWrongFieldRequestedAndAccepted = async () => {
         .authorizationRequestNonce,
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.mdocGeneratedNonce,
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.documents,
-      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.fieldRequestedAndAccepted
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.acceptedFields
     );
     console.log(result);
     Alert.alert('❌ Device Response Generation Success');
@@ -125,8 +125,8 @@ const Iso1801357Screen = () => (
       onPress={handleGenerateResponseIncompleteDocRequested}
     />
     <Button
-      title="Test Generate OID4VP Response (wrong FieldsRequestedAndAccepted)"
-      onPress={handleGenerateResponseWrongFieldRequestedAndAccepted}
+      title="Test Generate OID4VP Response (wrong acceptedFields)"
+      onPress={handleGenerateResponseWrongAcceptedFields}
     />
   </ScrollView>
 );

@@ -7,12 +7,13 @@ class IoReactNativeCbor: NSObject {
   private typealias ME = ModuleException
   private let keyConfig: KeyConfig = .ec
   
-  @objc func decode(
-    _ cbor: String,
+  @objc(decode:withResolver:withRejecter:)
+  func decode(
+    data: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
-    guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: cbor) else {
+    guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: data) else {
       ME.invalidEncoding.reject(reject: reject)
       return
     }
@@ -26,12 +27,13 @@ class IoReactNativeCbor: NSObject {
   }
   
   
-  @objc func decodeDocuments(
-    _ mdoc: String,
+  @objc(decodeDocuments:withResolver:withRejecter:)
+  func decodeDocuments(
+    data: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
-    guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: mdoc) else {
+    guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: data) else {
         ME.invalidEncoding.reject(reject: reject)
         return
     }
@@ -44,12 +46,13 @@ class IoReactNativeCbor: NSObject {
     resolve(json);
   }
   
-  @objc func decodeIssuerSigned(
-    _ issuerSigned: String,
+  @objc(decodeIssuerSigned:withResolver:withRejecter:)
+  func decodeIssuerSigned(
+    data: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
-    guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: issuerSigned) else {
+    guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: data) else {
         ME.invalidEncoding.reject(reject: reject)
         return
     }
@@ -62,8 +65,9 @@ class IoReactNativeCbor: NSObject {
     resolve(json);
   }
   
-  @objc func sign(
-    _ payloadData: String,
+  @objc(sign:withKeyTag:withResolver:withRejecter:)
+  func sign(
+    data: String,
     keyTag: String,
     resolver resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
@@ -74,7 +78,7 @@ class IoReactNativeCbor: NSObject {
         return
       }
       
-      guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: payloadData) else {
+      guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: data) else {
         ME.invalidEncoding.reject(reject: reject)
         return
       }
@@ -89,14 +93,15 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
-  @objc func verify(
-    _ sign1Data: String,
+  @objc(verify:withJwk:withResolver:withRejecter:)
+  func verify(
+    data: String,
     jwk: NSDictionary,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do {
-      guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: sign1Data) else {
+      guard let data = try? Base64Utils.decodeBase64OrBase64URL(base: data) else {
         ME.invalidEncoding.reject(reject: reject)
         return
       }

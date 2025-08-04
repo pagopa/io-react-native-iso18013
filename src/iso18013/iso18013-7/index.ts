@@ -4,4 +4,4 @@ export {
   type OID4VPFailureCodes,
 } from './remote';
 
-export { type RequestedDocument } from '../types';
+export { type RequestedDocument, type AcceptedFields } from '../types';

@@ -173,14 +173,14 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
    * - alias which is the alias of the key used to sign the credential;
    * - docType which is the document type.
-   * @param fieldRequestedAndAccepted - The string containing the requested attributes. This is based on the request
+   * @param acceptedFields - The string containing the requested attributes. This is based on the request
    * provided by the {onDocumentRequestReceived} callback.
    * @param promise - The promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
   fun generateResponse(
     documents: ReadableArray,
-    fieldRequestedAndAccepted: ReadableMap,
+    acceptedFields: ReadableMap,
     promise: Promise
   ) {
     try {
@@ -191,7 +191,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         val sessionTranscript = devHelper.sessionTranscript()
         val responseGenerator = ResponseGenerator(sessionTranscript)
         responseGenerator.createResponse(docRequestedList,
-          fieldRequestedAndAccepted.toString(),
+          acceptedFields.toString(),
           object : ResponseGenerator.Response {
             override fun onResponseGenerated(response: ByteArray) {
               promise.resolve(Base64Utils.encodeBase64(response))
@@ -245,7 +245,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   fun generateOID4VPDeviceResponse(
     clientId: String, responseUri: String, authorizationRequestNonce: String,
     mdocGeneratedNonce: String, documents: ReadableArray,
-    fieldRequestedAndAccepted: String, promise: Promise
+    acceptedFields: ReadableMap, promise: Promise
   ) {
     val sessionTranscript = try {
       OpenID4VP(
@@ -276,7 +276,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       val responseGenerator = ResponseGenerator(sessionTranscript)
       responseGenerator.createResponse(
         documentsParsed,
-        fieldRequestedAndAccepted,
+        acceptedFields.toString(),
         object : ResponseGenerator.Response {
           override fun onResponseGenerated(response: ByteArray) {
             promise.resolve(Base64Utils.encodeBase64(response))

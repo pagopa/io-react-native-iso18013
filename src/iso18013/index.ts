@@ -1,6 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
 export {
-  type AcceptedFields,
   type EventError,
   type VerifierRequest,
   parseEventError,
