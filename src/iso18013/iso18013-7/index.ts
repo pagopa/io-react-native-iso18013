@@ -5,4 +5,4 @@ export {
   type ModuleErrorCodes,
 } from './error';
 
-export { type RequestedDocument } from '../types';
+export { type RequestedDocument, type AcceptedFields } from '../types';

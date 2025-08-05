@@ -1,4 +1,5 @@
 import { IoReactNativeIso18013 } from '..';
+import type { AcceptedFields } from '../iso18013-5';
 import type { RequestedDocument } from '../types';
 
 /**
@@ -19,7 +20,7 @@ export const generateOID4VPDeviceResponse = async (
   authorizationRequestNonce: string,
   mdocGeneratedNonce: string,
   documents: Array<RequestedDocument>,
-  fieldRequestedAndAccepted: Record<string, any> | string
+  fieldRequestedAndAccepted: AcceptedFields
 ): Promise<string> => {
   return await IoReactNativeIso18013.generateOID4VPDeviceResponse(
     clientId,
@@ -27,8 +28,6 @@ export const generateOID4VPDeviceResponse = async (
     authorizationRequestNonce,
     mdocGeneratedNonce,
     documents,
-    typeof fieldRequestedAndAccepted === 'string'
-      ? fieldRequestedAndAccepted
-      : JSON.stringify(fieldRequestedAndAccepted)
+    fieldRequestedAndAccepted
   );
 };
