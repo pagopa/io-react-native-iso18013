@@ -6,4 +6,8 @@ export {
   IssuerSigned,
   MDOC,
 } from './schema';
-export { type CborFailure, type CborFailureCodes } from './failure';
+export {
+  type ModuleError,
+  type ModuleErrorCodes,
+  ModuleErrorSchema,
+} from './error';

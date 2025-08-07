@@ -1,25 +1,6 @@
 import { IoReactNativeIso18013 } from '..';
+import type { AcceptedFields } from '../iso18013-5';
 import type { RequestedDocument } from '../types';
-
-/**
- * All error codes that the module could return.
- */
-export type OID4VPFailureCodes =
-  | 'UNABLE_TO_GENERATE_RESPONSE'
-  | 'UNABLE_TO_GENERATE_TRANSCRIPT'
-  | 'INVALID_DOC_REQUESTED'
-  | 'GENERATE_OID4VP_DEVICE_RESPONSE_FAILED';
-
-/**
- * Error type returned by a rejected promise.
- *
- * If additional error information are available,
- * they are stored in the {@link OID4VPFailure["userInfo"]} field.
- */
-export type OID4VPFailure = {
-  message: OID4VPFailureCodes;
-  userInfo: Record<string, string>;
-};
 
 /**
  *
@@ -39,7 +20,7 @@ export const generateOID4VPDeviceResponse = async (
   authorizationRequestNonce: string,
   mdocGeneratedNonce: string,
   documents: Array<RequestedDocument>,
-  fieldRequestedAndAccepted: Record<string, any> | string
+  fieldRequestedAndAccepted: AcceptedFields
 ): Promise<string> => {
   return await IoReactNativeIso18013.generateOID4VPDeviceResponse(
     clientId,
@@ -47,8 +28,6 @@ export const generateOID4VPDeviceResponse = async (
     authorizationRequestNonce,
     mdocGeneratedNonce,
     documents,
-    typeof fieldRequestedAndAccepted === 'string'
-      ? fieldRequestedAndAccepted
-      : JSON.stringify(fieldRequestedAndAccepted)
+    fieldRequestedAndAccepted
   );
 };

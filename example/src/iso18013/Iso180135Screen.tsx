@@ -12,8 +12,9 @@ import {
   generateAcceptedFields,
   generateKeyIfNotExists,
   isRequestMdl,
+  parseAndPrintError,
   requestBlePermissions,
-} from './utils';
+} from '../utils';
 import { styles } from '../styles';
 
 /**
@@ -101,7 +102,11 @@ const Iso180135Screen: React.FC = () => {
 
       console.log('Response sent');
     } catch (e) {
-      console.error('Error sending response:', e);
+      parseAndPrintError(
+        ISO18013_5.ModuleErrorSchema,
+        e,
+        'sendDocument error: '
+      );
     }
   };
 
@@ -126,7 +131,7 @@ const Iso180135Screen: React.FC = () => {
       setRequest(null);
       setStatus(PROXIMITY_STATUS.STOPPED);
     } catch (e) {
-      console.log('Error closing the proximity flow', e);
+      parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'closeFlow error: ');
     }
   }, []);
 
@@ -134,7 +139,6 @@ const Iso180135Screen: React.FC = () => {
    * Callback function to handle device disconnection.
    */
   const onDeviceDisconnected = useCallback(async () => {
-    console.log('onDeviceDisconnected');
     Alert.alert('Device disconnected', 'Check the verifier app');
     await closeFlow();
   }, [closeFlow]);
@@ -149,10 +153,10 @@ const Iso180135Screen: React.FC = () => {
         if (!data || !data.error) {
           throw new Error('No error data received');
         }
-        const parsedError = ISO18013_5.parseEventError(data.error);
+        const parsedError = ISO18013_5.OnErrorPayloadSchema.parse(data.error);
         console.error(`onError: ${parsedError}`);
       } catch (e) {
-        console.error('Error parsing onError data:', e);
+        parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'onError error: ');
       } finally {
         // Close the flow on error
         await closeFlow();
@@ -172,8 +176,11 @@ const Iso180135Screen: React.FC = () => {
       setStatus(PROXIMITY_STATUS.STOPPED);
       console.log('Error response sent');
     } catch (error) {
-      console.error('Error sending error response:', error);
-      Alert.alert('Failed to send error response');
+      parseAndPrintError(
+        ISO18013_5.ModuleErrorSchema,
+        error,
+        'sendError error: '
+      );
     }
   }, []);
 
@@ -204,7 +211,11 @@ const Iso180135Screen: React.FC = () => {
         setRequest(parsedResponse.request);
         setStatus(PROXIMITY_STATUS.PRESENTING);
       } catch (error) {
-        console.error('Error handling new device request:', error);
+        parseAndPrintError(
+          ISO18013_5.ModuleErrorSchema,
+          error,
+          'onDocumentRequestReceived error: '
+        );
         sendError(ISO18013_5.ErrorCode.SESSION_TERMINATED);
       }
     },
@@ -244,9 +255,11 @@ const Iso180135Screen: React.FC = () => {
       setQrCode(qrString);
       setStatus(PROXIMITY_STATUS.STARTED);
     } catch (error) {
-      console.log('Error starting the proximity flow', error);
-      Alert.alert('Failed to initialize QR engagement');
-      setStatus(PROXIMITY_STATUS.STOPPED);
+      parseAndPrintError(
+        ISO18013_5.ModuleErrorSchema,
+        error,
+        'startFlow error: '
+      );
     }
   }, [onDeviceDisconnected, onDocumentRequestReceived, onError]);
 
@@ -276,6 +289,10 @@ const Iso180135Screen: React.FC = () => {
           <Button
             title="Send document (base64url)"
             onPress={() => sendDocument(request, MDL_BASE64URL)}
+          />
+          <Button
+            title="Send broken document"
+            onPress={() => sendDocument(request, MDL_BASE64.slice(0, -10))}
           />
           <Button
             title={`Send error ${ISO18013_5.ErrorCode.CBOR_DECODING} (${ISO18013_5.ErrorCode[ISO18013_5.ErrorCode.CBOR_DECODING]})`}

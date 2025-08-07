@@ -23,7 +23,7 @@ import {
   VERIFY_PAYLOAD_BASE64,
   VERIFY_PAYLOAD_BASE64URL,
 } from './mocks/verifyPayload';
-import { generateKeyIfNotExists } from '../iso18013/utils';
+import { generateKeyIfNotExists, parseAndPrintError } from '../utils';
 import { MDL_WITH_X5C_AND_KID_UNPROTECTED_HEADER } from './mocks/mdlWithX5cAndKidUnprotectedHeader';
 
 const TEST_KEY: PublicKey = {
@@ -33,15 +33,16 @@ const TEST_KEY: PublicKey = {
   x: 'AP06ubTkmvo+U1HeiZ35xKHaox++EX6ViRkGnKHclVJB',
 };
 
+const BROKEN_PAYLOAD = 'broken payload';
+
 const CborScreen = () => {
   const handleDecode = (data: string) => async () => {
     try {
       const decoded = await CBOR.decodeDocuments(data);
       console.log('✅ CBOR Decode Success\n', JSON.stringify(decoded, null, 2));
       Alert.alert('✅ CBOR Decode Success');
-    } catch (error: any) {
-      console.log('❌ CBOR Decode Error\n', JSON.stringify(error, null, 2));
-      Alert.alert('❌ CBOR Decode Error');
+    } catch (error) {
+      parseAndPrintError(CBOR.ModuleErrorSchema, error, 'handleDecode error: ');
     }
   };
 
@@ -55,13 +56,11 @@ const CborScreen = () => {
       Alert.alert(
         '✅ CBOR Issuer Signed With Decoded Issuer Auth Decode Success'
       );
-    } catch (error: any) {
-      console.log(
-        '❌ CBOR Issuer Signed With Decoded Issuer Auth Decode Error\n',
-        JSON.stringify(error, null, 2)
-      );
-      Alert.alert(
-        '❌ CBOR Issuer Signed With Decoded Issuer Auth Decode Error'
+    } catch (error) {
+      parseAndPrintError(
+        CBOR.ModuleErrorSchema,
+        error,
+        'handleDecodeIssuerSigned error: '
       );
     }
   };
@@ -74,9 +73,12 @@ const CborScreen = () => {
       console.log('✅ Sign Success\n', result);
       console.log('🔑 Public Key\n', JSON.stringify(key, null, 2));
       Alert.alert('✅ Sign Success');
-    } catch (error: any) {
-      console.log('❌ COSE Sign Error\n', JSON.stringify(error, null, 2));
-      Alert.alert('❌ COSE Sign Error');
+    } catch (error) {
+      parseAndPrintError(
+        COSE.ModuleErrorSchema,
+        error,
+        'handleTestSign error: '
+      );
     }
   };
 
@@ -88,9 +90,12 @@ const CborScreen = () => {
       } else {
         Alert.alert('❌ Verification Failed');
       }
-    } catch (error: any) {
-      console.log('❌ Verify Error\n', JSON.stringify(error, null, 2));
-      Alert.alert('❌ Verify Error', error.message);
+    } catch (error) {
+      parseAndPrintError(
+        COSE.ModuleErrorSchema,
+        error,
+        'handleTestVerify error: '
+      );
     }
   };
 
@@ -104,6 +109,12 @@ const CborScreen = () => {
       <Button
         title="Decode MDL issuerSigned (base64url)"
         onPress={handleDecodeIssuerSigned(MDL_ISSUER_SIGNED_BASE64URL)}
+      />
+      <Button
+        title="Decode broken MDL issuerSigned"
+        onPress={handleDecodeIssuerSigned(
+          MDL_ISSUER_SIGNED_BASE64.slice(0, -10)
+        )}
       />
       <Button
         title="Decode MDL (base64)"
@@ -137,12 +148,20 @@ const CborScreen = () => {
         onPress={() => handleTestSign(SIGN_PAYLOAD_BASE64URL)}
       />
       <Button
+        title="Test sign broken payload"
+        onPress={() => handleTestSign(BROKEN_PAYLOAD)}
+      />
+      <Button
         title="Test verify (base64)"
         onPress={() => handleTestVerify(VERIFY_PAYLOAD_BASE64)}
       />
       <Button
         title="Test verify (base64url)"
         onPress={() => handleTestVerify(VERIFY_PAYLOAD_BASE64URL)}
+      />
+      <Button
+        title="Test verify broken payload"
+        onPress={() => handleTestVerify(BROKEN_PAYLOAD)}
       />
     </ScrollView>
   );

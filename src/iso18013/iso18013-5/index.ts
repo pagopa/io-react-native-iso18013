@@ -1,10 +1,12 @@
+export { type VerifierRequest, parseVerifierRequest } from './request';
+
 export {
-  type AcceptedFields,
-  type EventError,
-  type VerifierRequest,
-  parseEventError,
-  parseVerifierRequest,
-} from './schema';
+  type OnErrorPayload,
+  OnErrorPayloadSchema,
+  ModuleErrorSchema,
+  type ModuleErrorCodes,
+  type ModuleError,
+} from './error';
 
 export {
   ErrorCode,
@@ -20,4 +22,4 @@ export {
   start,
 } from './proximity';
 
-export { type RequestedDocument } from '../types';
+export { type RequestedDocument, type AcceptedFields } from '../types';
