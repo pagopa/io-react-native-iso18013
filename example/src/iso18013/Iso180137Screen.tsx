@@ -1,5 +1,5 @@
 import { Alert, Button, ScrollView } from 'react-native';
-import { generateKeyIfNotExists } from './utils';
+import { generateKeyIfNotExists, parseAndPrintError } from '../utils';
 import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
 import { styles } from '../styles';
 import {
@@ -26,11 +26,11 @@ const handleGenerateResponse = async (deviceRequest: DeviceRequest) => {
     console.log(result);
     Alert.alert('✅ Device Response Generation Success');
   } catch (error: any) {
-    console.log(
-      '❌ Device Response Generation Error\n',
-      JSON.stringify(error, null, 2)
+    parseAndPrintError(
+      ISO18013_7.ModuleErrorSchema,
+      error,
+      'handleGenerateResponse error: '
     );
-    Alert.alert('❌ Device Response Generation Error', error.message);
   }
 };
 
@@ -46,13 +46,13 @@ const handleGenerateResponseWrongDocRequested = async () => {
       WRONG_DOC_REQUEST.acceptedFields
     );
     console.log(result);
-    Alert.alert('❌ Device Response Generation Success');
+    Alert.alert('❌ Device Response Generation Success, something is wrong');
   } catch (error: any) {
-    console.log(
-      '✅ Device Response Generation Error\n',
-      JSON.stringify(error, null, 2)
+    parseAndPrintError(
+      ISO18013_7.ModuleErrorSchema,
+      error,
+      'handleGenerateResponseWrongDocRequested error: '
     );
-    Alert.alert('✅ Device Response Generation Error', error.message);
   }
 };
 
@@ -73,13 +73,13 @@ const handleGenerateResponseIncompleteDocRequested = async () => {
       INCOMPLETE_DOC_REQUEST.acceptedFields
     );
     console.log(result);
-    Alert.alert('❌ Device Response Generation Success');
+    Alert.alert('❌ Device Response Generation Success, something is wrong');
   } catch (error: any) {
-    console.log(
-      '✅ Device Response Generation Error\n',
-      JSON.stringify(error, null, 2)
+    parseAndPrintError(
+      ISO18013_7.ModuleErrorSchema,
+      error,
+      'handleGenerateResponseIncompleteDocRequested error: '
     );
-    Alert.alert('✅ Device Response Generation Error', error.message);
   }
 };
 
@@ -96,13 +96,13 @@ const handleGenerateResponseWrongAcceptedFields = async () => {
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.acceptedFields
     );
     console.log(result);
-    Alert.alert('❌ Device Response Generation Success');
+    Alert.alert('❌ Device Response Generation Success, something is wrong');
   } catch (error: any) {
-    console.log(
-      '✅ Device Response Generation Error\n',
-      JSON.stringify(error, null, 2)
+    parseAndPrintError(
+      ISO18013_7.ModuleErrorSchema,
+      error,
+      'handleGenerateResponseWrongFieldRequestedAndAccepted error: '
     );
-    Alert.alert('✅ Device Response Generation Error', error.message);
   }
 };
 

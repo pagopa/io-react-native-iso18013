@@ -1,10 +1,4 @@
 import { NativeModules, Platform } from 'react-native';
-export {
-  type EventError,
-  type VerifierRequest,
-  parseEventError,
-  parseVerifierRequest,
-} from './iso18013-5/schema';
 
 const LINKING_ERROR =
   `The package '@pagopa/io-react-native-iso18013' (IoReactNativeIso18013) doesn't seem to be linked. Make sure: \n\n` +
