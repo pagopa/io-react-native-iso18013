@@ -25,6 +25,8 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.DECODE_ERROR, e.message, e)
     }
+  }
+
 
     @ReactMethod
     fun decodeDocuments(data: String, promise: Promise) {
@@ -94,7 +96,6 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
        promise.reject(ModuleErrorCodes.VERIFY_ERROR, e.message, e)
       }
     }
-  }
 
   companion object {
     const val NAME = "IoReactNativeCbor"
