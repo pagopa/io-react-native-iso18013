@@ -337,28 +337,31 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @throws IllegalArgumentException if the provided document doesn't adhere to the expected format
    */
   private fun parseDocRequested(documents: ReadableArray): Array<DocRequested> {
-    return (0 until documents.size()).map { i ->
-      val entry = documents.getMap(i)
-        ?: throw IllegalArgumentException("Entry at index $i in ReadableArray is null")
+    return try {
+      (0 until documents.size()).map { i ->
+        val entry = documents.getMap(i)
+          ?: throw IllegalArgumentException("Entry at index $i in ReadableArray is null")
+        val alias = entry.getString("alias")
+        val issuerSignedContentStr = entry.getString("issuerSignedContent")
+        val docType = entry.getString("docType")
 
-      val alias = entry.getString("alias")
-      val issuerSignedContentStr = entry.getString("issuerSignedContent")
-      val docType = entry.getString("docType")
+        if (
+          alias == null || entry.getType("alias") != ReadableType.String ||
+          issuerSignedContentStr == null || entry.getType("issuerSignedContent") != ReadableType.String ||
+          docType == null || entry.getType("docType") != ReadableType.String
+        ) throw IllegalArgumentException("Unable to decode the provided documents at index $i")
 
-      if (
-        alias == null || entry.getType("alias") != ReadableType.String ||
-        issuerSignedContentStr == null || entry.getType("issuerSignedContent") != ReadableType.String ||
-        docType == null || entry.getType("docType") != ReadableType.String
-      ) throw IllegalArgumentException("Unable to decode the provided documents at index $i")
+        val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
 
-      val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
-
-      DocRequested(
-        issuerSignedContent,
-        alias,
-        docType
-      )
-    }.toTypedArray()
+        DocRequested(
+          issuerSignedContent,
+          alias,
+          docType
+        )
+      }.toTypedArray()
+    } catch (e: Exception) {
+      throw IllegalArgumentException("Failed to parse documents: ${e.message}", e)
+    }
   }
 
   /**
@@ -458,7 +461,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       const val CLOSE_ERROR = "CLOSE_ERROR"
 
       // ISO18013-7 related errors
-      const val GENERATE_OID4VP_RESPONSE_ERROR = "GENERATE_RESPONSE_ERROR"
+      const val GENERATE_OID4VP_RESPONSE_ERROR = "GENERATE_OID4VP_RESPONSE_ERROR"
     }
   }
 }
