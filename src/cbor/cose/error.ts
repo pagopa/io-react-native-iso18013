@@ -8,6 +8,7 @@ const ModuleErrorCodesSchema = z.enum([
   'SIGN_ERROR',
   'VERIFY_ERROR',
   'THREADING_ERROR', // iOS only
+  'EUNSPECIFIED', // Android only default when no other error is specified
 ]);
 
 export type ModuleErrorCodes = z.infer<typeof ModuleErrorCodesSchema>;
