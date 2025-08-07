@@ -5,8 +5,6 @@ import React
 @objc(IoReactNativeIso18013)
 class IoReactNativeIso18013: RCTEventEmitter {
   
-  private typealias ME = ModuleException
-  
   @objc
   override static func requiresMainQueueSetup() -> Bool {
     return true
@@ -53,11 +51,15 @@ class IoReactNativeIso18013: RCTEventEmitter {
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
-      let certsData = parseCertificates(certificates)
+      let certsData = try parseCertificates(certificates)
       try Proximity.shared.start(certsData)
       resolve(true)
-    } catch let error {
-      ME.startError.reject(reject: reject, ("error", error.localizedDescription))
+    } catch let proximityError as ProximityError {
+      reject(ModuleErrorCodes.generateResponseError.rawValue, proximityError.description, proximityError)
+    } catch let parsingError as ParsingError{
+      reject(ModuleErrorCodes.generateResponseError.rawValue, parsingError.description, parsingError)
+    } catch {
+      reject(ModuleErrorCodes.generateResponseError.rawValue, error.localizedDescription, error)
     }
   }
   
@@ -69,15 +71,17 @@ class IoReactNativeIso18013: RCTEventEmitter {
    
     - Returns: A two-dimensional array of Data containing DER encoded X.509 certificates.
   */
-  private func parseCertificates(_ certificates: Array<Any>) -> [[Data]] {
-    return certificates.compactMap { item in
+  private func parseCertificates(_ certificates: [Any]) throws -> [[Data]] {
+    return try certificates.enumerated().compactMap { (chainIndex, item) in
       guard let certStrings = item as? [String] else {
-        return nil
+        throw ParsingError.certificatesNotValid("Certificate chain at index \(chainIndex) is not an array of strings.")
       }
-      let dataArray = certStrings.compactMap { certString in
-          Data(base64Encoded: certString)
+      return try certStrings.enumerated().map { (certIndex, certString) in
+        guard let data = Data(base64Encoded: certString) else {
+          throw ParsingError.certificatesNotValid("Certificate at index \(certIndex) in the chain at index \(chainIndex) is not a valid base64 string.")
+        }
+        return data
       }
-      return dataArray.isEmpty ? nil : dataArray
     }
   }
   
@@ -97,8 +101,8 @@ class IoReactNativeIso18013: RCTEventEmitter {
     do{
       let qrCodeString = try Proximity.shared.getQrCode()
       resolve(qrCodeString)
-    } catch let error {
-      ME.qrCodeError.reject(reject: reject, ("error", error.localizedDescription))
+    } catch {
+      reject(ModuleErrorCodes.getQrCodeError.rawValue, error.localizedDescription, error)
     }
   }
   
@@ -113,26 +117,31 @@ class IoReactNativeIso18013: RCTEventEmitter {
          - alias which is the alias of the key used to sign the credential;
          - docType which is the document type.
    
-   - Throws: `ModuleException.invalidDocRequested.error()` and `ModuleException.invalidDocRequested.error()` iif an error occurs while parsing the document
+   - Throws: `ParsingError`:
+      - If the provided documents array do not contain a dictionary;
+      - If the provided dictionary doesn't adhere to the structure we expect;
+      - If the issuerSignedContent is not a valid base64 or base64url encoded string;
+      - If the creation of a ProximityDdocument fails.
    
    - Returns: An array of `ProximityDocument` containg the documents to be presented
    */
   private func parseDocuments(documents: [Any]) throws -> [ProximityDocument] {
-    return try documents.compactMap{ (element) -> ProximityDocument in
-      guard let dict : [String: Any] = element as? [String: Any] else { throw ModuleException.unableToDecode.error() }
+    return try documents.map{ (element) -> ProximityDocument in
+      guard let dict : [String: Any] = element as? [String: Any] else { throw ParsingError.documentsNotValid("The provided documents array element can't be parsed as a dictionary") }
       guard
         let issuerSignedContent = dict["issuerSignedContent"] as? String,
         let alias = dict["alias"] as? String,
         let docType = dict["docType"] as? String,
         let decodedIssuerSignedContent = try? Base64Utils.decodeBase64OrBase64URL(base: issuerSignedContent)
-      else { throw ModuleException.invalidDocRequested.error() }
-      
+      else {
+        throw ParsingError.documentsNotValid ("The provided issuerSignedContent is not a valid base64 or base64url or don't contain the required fields alas, doctype and issuerSignedContent")
+      }
       guard let document = ProximityDocument(
         docType: docType,
         issuerSigned: [UInt8](decodedIssuerSignedContent),
         deviceKeyTag: alias
       ) else {
-        throw ModuleException.invalidDocRequested.error()
+        throw ParsingError.documentsNotValid("The parsing for the document with docType \(docType) failed")
       }
       return document
     }
@@ -146,26 +155,26 @@ class IoReactNativeIso18013: RCTEventEmitter {
    - Parameters:
       - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]]
    
-   - Throws: `NSError` if a value doesn't has the ``AcceptedFieldsDict`` shape or the result dictionary is empty
+   - Throws: `ParsingError` if a value doesn't has the ``AcceptedFieldsDict`` shape or the result dictionary is empty
    
    - Returns: An ``AcceptedFieldsDict`` containg the accepted fields to be presented
    
    */
-  private func parseAcceptedFields(acceptedFields: [AnyHashable: Any]) throws -> AcceptedFieldsDict {
+  private func parseAcceptedFields(acceptedFields: [AnyHashable: Any]) throws(ParsingError) -> AcceptedFieldsDict {
     var result: AcceptedFieldsDict = [:]
     
     for (key, value) in acceptedFields {
       guard let keyString = key as? String else {
-        throw NSError(domain: "ParseAcceptedFields", code: -1, userInfo: [NSLocalizedDescriptionKey: "Key must be a String."])
+        throw ParsingError.acceptedFieldsNotValid("The accepted fields keys must be a String")
       }
       guard let valueDict = value as? [String: [String: Bool]] else {
-        throw NSError(domain: "ParseAcceptedFields", code: -1, userInfo: [NSLocalizedDescriptionKey: "Value must be of type [String: [String: Bool]]."])
+        throw ParsingError.acceptedFieldsNotValid("The accepted fields values must be of type [String: [String: Bool]]")
       }
       result[keyString] = valueDict
     }
     
     if(result.isEmpty){
-      throw NSError(domain: "ParseAcceptedFields", code: -1, userInfo: [NSLocalizedDescriptionKey: "Error parsing documents"])
+      throw ParsingError.acceptedFieldsNotValid("Empty accepted fields cannot be empty")
     }
     
     return result
@@ -216,8 +225,14 @@ class IoReactNativeIso18013: RCTEventEmitter {
       let deviceResponse = try Proximity.shared.generateDeviceResponse(items: items, documents: parsedDocuments, sessionTranscript: nil)
       let strDeviceResponse = Data(deviceResponse).base64EncodedString()
       resolve(strDeviceResponse)
-    }catch{
-      ME.generateDeviceResponseError.reject(reject: reject, ("error", error.localizedDescription))
+    }
+    catch let proximityError as ProximityError {
+      reject(ModuleErrorCodes.generateResponseError.rawValue, proximityError.description, proximityError)
+    }
+    catch let parsingError as ParsingError {
+      reject(ModuleErrorCodes.generateResponseError.rawValue, parsingError.description, parsingError)
+    } catch {
+      reject(ModuleErrorCodes.generateResponseError.rawValue, error.localizedDescription, error)
     }
   }
   
@@ -244,7 +259,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
         resolve(true)
       }
     }catch let error {
-      ME.sendResponseError.reject(reject: reject, ("error", error.localizedDescription))
+      reject(ModuleErrorCodes.sendResponseError.rawValue, error.localizedDescription, error)
     }
   }
   
@@ -262,16 +277,16 @@ class IoReactNativeIso18013: RCTEventEmitter {
    */
   @objc(sendErrorResponse:withResolver:withRejecter:)
   func sendErrorResponse(status: UInt64, _ resolve: @escaping RCTPromiseResolveBlock,
-                               reject: @escaping RCTPromiseRejectBlock){
+                         reject: @escaping RCTPromiseRejectBlock){
     do{
       if let statusEnum = SessionDataStatus(rawValue: status) {
         try Proximity.shared.errorPresentation(statusEnum)
       } else {
-        ME.sendResponseError.reject(reject: reject, ("error", "Invalid status code"))
+        reject(ModuleErrorCodes.sendErrorResponseError.rawValue, "Invalid status code provided: \(status)", nil)
       }
       resolve(true)
     }catch let error{
-      ME.sendResponseError.reject(reject: reject, ("error", error.localizedDescription))
+      reject(ModuleErrorCodes.sendErrorResponseError.rawValue, error.localizedDescription, error)
     }
   }
   
@@ -392,90 +407,58 @@ class IoReactNativeIso18013: RCTEventEmitter {
     
     do {
       let sessionTranscript = Proximity.shared.generateOID4VPSessionTranscriptCBOR(
-          clientId: clientId,
-          responseUri: responseUri,
-          authorizationRequestNonce: authorizationRequestNonce,
-          mdocGeneratedNonce: mdocGeneratedNonce
+        clientId: clientId,
+        responseUri: responseUri,
+        authorizationRequestNonce: authorizationRequestNonce,
+        mdocGeneratedNonce: mdocGeneratedNonce
       )
-
+      
       let documentsAsProximityDocument = try parseDocuments(documents: documents)
-      
       let items = try JSONDecoder().decode([String : [String : [String : Bool]]].self, from: Data(fieldRequestedAndAccepted.utf8))
-      
-      do {
-        let response = try Proximity.shared.generateDeviceResponse(items: items, documents: documentsAsProximityDocument, sessionTranscript: sessionTranscript)
-        resolve(Data(response).base64EncodedString())
-      } catch {
-        ME.unableToGenerateResponse.reject(reject: reject)
-        return
-      }
-    } catch let error as NSError where error.domain == ME.invalidDocRequested.rawValue {
-      ME.invalidDocRequested.reject(reject: reject)
-    } catch _ as DecodingError {
-      ME.invalidItems.reject(reject: reject)
-    } catch {
-      ME.unexpected.reject(reject: reject)
+      let response = try Proximity.shared.generateDeviceResponse(items: items, documents: documentsAsProximityDocument, sessionTranscript: sessionTranscript)
+      resolve(Data(response).base64EncodedString())
+    } catch let parsingError as ParsingError{
+      reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, parsingError.description, parsingError)
+    } catch let proximityError as ProximityError{
+      reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, proximityError.description, proximityError)
+    }
+    catch {
+      reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, error.localizedDescription, error)
     }
   }
     
   /**
-   Wrapper for rejecting with an error.
-   Add a new case in order to extend the possible errors.
+   Custom Error which is thrown when a parsing error occurs in our utility functions which converts data from the bridge to what
+   our underlying functions expect.
+   This is needed in order to provide a customized description which can include more debug information.
    */
-  private enum ModuleException: String, CaseIterable {
-    case startError = "START_ERROR"
-    case qrCodeError = "QR_CODE_ERROR"
-    case generateDeviceResponseError = "GENERATE_DEVICE_RESPONSE_ERROR"
-    case sendResponseError = "SEND_RESPONSE_ERROR"
-    case sendErrorResponse = "SEND_ERROR_RESPONSE_ERROR"
-    case invalidDocRequested = "DOC_REQUESTED_PARSING_ERROR"
-    case unableToGenerateResponse = "UNABLE_TO_GENERATE_RESPONSE_ERROR"
-    case invalidItems = "REQUESTED_ITEMS_PARSING_ERROR"
-    case unexpected = "UNEXPECTED_ERROR"
-    case unableToDecode = "UNABLE_TO_DECODE"
-    
-    func error(
-      userInfo: [String : Any]? = nil
-    ) -> NSError {
-      switch self {
-      case .startError:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
-      case .qrCodeError:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
-      case .generateDeviceResponseError:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
-      case .sendResponseError:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
-      case .sendErrorResponse:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
-      case .invalidDocRequested:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
-      case .unableToGenerateResponse:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
-      case .invalidItems:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
-      case .unexpected:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
-      case .unableToDecode:
-        return NSError(domain: self.rawValue, code: -1, userInfo: userInfo)
+  enum ParsingError : Error, CustomStringConvertible {
+      case documentsNotValid(String)
+      case certificatesNotValid(String)
+      case acceptedFieldsNotValid(String)
+      
+      public var description: String {
+          switch(self) {
+            case .documentsNotValid(let message):
+                return message
+            case .certificatesNotValid(let message):
+              return message
+            case .acceptedFieldsNotValid(let message):
+              return message
+          }
       }
-    }
+  }
+  
+  // Errors which this module uses to reject a promise
+  private enum ModuleErrorCodes: String, CaseIterable {
+    // ISO18013-5 related errors
+    case startError = "START_ERROR"
+    case getQrCodeError = "GET_QR_CODE_ERROR"
+    case sendResponseError = "SEND_RESPONSE_ERROR"
+    case sendErrorResponseError = "SEND_ERROR_RESPONSE_ERROR"
+    case generateResponseError = "GENERATE_RESPONSE_ERROR"
     
-     /**
-      Rejects the provided promise with the appropriate error message and additional data.
-      
-      - Parameters:
-        - reject:  the promise to be rejected.
-        - moreUserInfo: additional key-value pairs of data to be passed along with the error.
-      
-      */
-    func reject(
-      reject: RCTPromiseRejectBlock,
-      _ moreUserInfo: (String, Any)...
-    ) {
-      let userInfo = [String: Any](uniqueKeysWithValues: moreUserInfo)
-      let error = error(userInfo: userInfo)
-      reject("\(error.code)", error.domain, error)
-    }
+    // ISO18013-7 related errors
+    case generateOID4VPResponseError = "GENERATE_OID4VP_RESPONSE_ERROR"
   }
 }
