@@ -250,7 +250,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   fun generateOID4VPDeviceResponse(
     clientId: String, responseUri: String, authorizationRequestNonce: String,
     mdocGeneratedNonce: String, documents: ReadableArray,
-    acceptedFields: String, promise: Promise
+    acceptedFields: ReadableMap, promise: Promise
   ) {
     try {
       val sessionTranscript =

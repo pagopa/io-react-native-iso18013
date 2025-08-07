@@ -397,7 +397,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
     authorizationRequestNonce: String,
     mdocGeneratedNonce: String,
     documents: [Any],
-    acceptedFields: String,
+    acceptedFields: [AnyHashable: Any],
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
