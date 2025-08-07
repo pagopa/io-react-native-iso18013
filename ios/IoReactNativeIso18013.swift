@@ -415,7 +415,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
       )
       
       let documentsAsProximityDocument = try parseDocuments(documents: documents)
-      let items = try JSONDecoder().decode([String : [String : [String : Bool]]].self, from: Data(fieldRequestedAndAccepted.utf8))
+      let items = try JSONDecoder().decode([String : [String : [String : Bool]]].self, from: Data(acceptedFields.utf8))
       let response = try Proximity.shared.generateDeviceResponse(items: items, documents: documentsAsProximityDocument, sessionTranscript: sessionTranscript)
       resolve(Data(response).base64EncodedString())
     } catch let parsingError as ParsingError{
