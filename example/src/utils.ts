@@ -3,7 +3,7 @@ import {
   generate,
   type CryptoError,
 } from '@pagopa/io-react-native-crypto';
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import {
   checkMultiple,
   type Permission,
@@ -11,8 +11,13 @@ import {
   requestMultiple,
   RESULTS,
 } from 'react-native-permissions';
-import { WELL_KNOWN_CREDENTIALS } from './mocks/proximity';
-import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
+import { WELL_KNOWN_CREDENTIALS } from './iso18013/mocks/proximity';
+import {
+  CBOR,
+  COSE,
+  ISO18013_5,
+  ISO18013_7,
+} from '@pagopa/io-react-native-iso18013';
 
 /**
  * This function generates the accepted fields for the VerifierRequest and sets each requested field to true.
@@ -127,5 +132,33 @@ export const requestBlePermissions = async (): Promise<boolean> => {
   } catch (error) {
     console.error('Permission request error:', error);
     return false;
+  }
+};
+
+/**
+ * Utility function which parses with the given schema and prints the error message to the console and shows an alert.
+ * @param schema - The schema to use for parsing the error
+ * @param error - The error to parse
+ * @param prefix - An optional prefix to include in the error message
+ */
+export const parseAndPrintError = (
+  schema:
+    | typeof ISO18013_5.ModuleErrorSchema
+    | typeof ISO18013_7.ModuleErrorSchema
+    | typeof CBOR.ModuleErrorSchema
+    | typeof COSE.ModuleErrorSchema,
+  error: unknown,
+  prefix?: string
+) => {
+  try {
+    const parsedError = schema.parse(error);
+    const message = prefix
+      ? `${prefix}: ${JSON.stringify(parsedError, null, 2)}`
+      : JSON.stringify(parsedError, null, 2);
+    console.log(message);
+    Alert.alert('An error occurred, check the console for details');
+  } catch (e) {
+    console.error('Error parsing error:', e);
+    console.log('Error details:', error);
   }
 };

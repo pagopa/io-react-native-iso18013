@@ -4,8 +4,15 @@ import Foundation
  * This class contains a set of utilities for encoding and decoding base64 and base64url strings.
  */
 class Base64Utils {
-  enum Base64DecodingError: Error {
-    case invalidBase64(String)
+  enum Base64DecodingError: LocalizedError {
+      case invalidBase64
+
+      var errorDescription: String? {
+          switch self {
+          case .invalidBase64:
+             return "Input is not a valid Base64 or Base64URL string"
+          }
+      }
   }
   
   /**
@@ -24,7 +31,7 @@ class Base64Utils {
     } else if let data = Data(base64Encoded: base) {
       return data
     } else {
-      throw Base64DecodingError.invalidBase64("Input is not valid Base64 or Base64URL")
+      throw Base64DecodingError.invalidBase64
     }
   }
   

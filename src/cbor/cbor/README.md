@@ -88,8 +88,40 @@ enum DocumentTypeEnum {
 
 ### Error Codes
 
-| Type              | Platform    | Description                                   |
-| ----------------- | ----------- | --------------------------------------------- |
-| INVALID_ENCODING  | Android/iOS | Provided payload has incorrect encoding       |
-| UNABLE_TO_DECODE  | Android/iOS | The data does not contain a valid CBOR object |
-| UNKNOWN_EXCEPTION | Android/iOS | Unexpected failure                            |
+This table contains the list of error codes that can be thrown by the `CBOR` module which are mapped via the `ModuleErrorCodes` type:
+| Type | Platform | Description |
+| -------------------------- | ----------- | ------------------------------------------------------------ |
+| DECODE_ERROR | Android/iOS | An error occurred while decoding the CBOR |
+| DECODE_DOCUMENTS_ERROR | Android/iOS | An error occurred while decoding a CBOR mDOC |
+| DECODE_ISSUER_SIGNED_ERROR | Android/iOS | An error occurred while decoding a CBOR Issuer Signed object |
+
+An error can be parsed using the `ModuleErrorSchema` with type `ModuleErrorCodes` exposed by the `ISO18013_5` module. The error can be parsed as follows:
+
+```typescript
+import { CBOR } from '@pagopa/io-react-native-iso18013';
+try {
+  await CBOR.func();
+} catch (error) {
+  const parsedError = CBOR.ModuleErrorSchema.parse(error); // Or ModuleErrorSchema.safeParse(error) for safe parsing
+  console.log(JSON.stringify(parsedError, null, 2));
+}
+```
+
+The parsed object will contain properties from both iOS and Android platforms:
+
+```typescript
+{
+  code: string; // Defined in ModuleErrorCodes
+  message: string;
+  name: string;
+  userInfo?: Record<string, any> | null;
+  nativeStackAndroid?: Array<{
+    lineNumber: number;
+    file: string;
+    methodName: string;
+    class: string;
+  }>;
+  domain?: string;
+  nativeStackIOS?: Array<string>;
+};
+```

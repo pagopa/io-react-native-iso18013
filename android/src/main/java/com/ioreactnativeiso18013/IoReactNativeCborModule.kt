@@ -5,10 +5,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.bridge.WritableMap
-import com.facebook.react.bridge.WritableNativeMap
 import it.pagopa.io.wallet.cbor.cose.COSEManager
-import it.pagopa.io.wallet.cbor.cose.FailureReason
 import it.pagopa.io.wallet.cbor.cose.SignWithCOSEResult
 import it.pagopa.io.wallet.cbor.parser.CBorParser
 
@@ -21,189 +18,95 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun decode(data: String, promise: Promise) {
-    val buffer = try {
-      Base64Utils.decodeBase64AndBase64Url(data)
-    } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-      return;
-    }
-
     try {
-      CBorParser(buffer).toJson()?.let {
-        promise.resolve(it)
-      } ?: run {
-        ModuleException.UNABLE_TO_DECODE.reject(promise)
-      }
-    } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-    }
-  }
-
-  @ReactMethod
-  fun decodeDocuments(data: String, promise: Promise) {
-    val buffer = try {
-      Base64Utils.decodeBase64AndBase64Url(data)
-    } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-      return;
-    }
-    try {
-      CBorParser(buffer).documentsCborToJson(separateElementIdentifier = true, onComplete = {
-        promise.resolve(it)
-      }) { ex ->
-        ModuleException.UNABLE_TO_DECODE.reject(
-          promise,
-          Pair(ERROR_USER_INFO_KEY, ex.message.orEmpty())
-        )
-      }
-    } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-    }
-  }
-
-  @ReactMethod
-  fun decodeIssuerSigned(issuerSigned: String, promise: Promise) {
-    val buffer = try {
-      Base64Utils.decodeBase64AndBase64Url(issuerSigned)
-    } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-      return;
-    }
-    try {
-      CBorParser(buffer).issuerSignedCborToJson(separateElementIdentifier = true).let {
-        if (it == null) {
-          ModuleException.UNABLE_TO_DECODE.reject(
-            promise,
-            Pair(ERROR_USER_INFO_KEY, "Unable to decode passed CBOR")
-          )
-          return
-        }
-        promise.resolve(it)
-      }
-    } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-    }
-  }
-
-  @ReactMethod
-  fun sign(payload: String, keyTag: String, promise: Promise) {
-    val data = try {
-      Base64Utils.decodeBase64AndBase64Url(payload)
-    } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-      return;
-    }
-
-    try {
-      val result = COSEManager().signWithCOSE(
-        data = data,
-        alias = keyTag
-      )
-      when (result) {
-        is SignWithCOSEResult.Failure -> {
-          when (result.reason) {
-            FailureReason.NO_KEY -> ModuleException.PUBLIC_KEY_NOT_FOUND.reject(
-              promise,
-              Pair(ERROR_USER_INFO_KEY, result.reason.msg)
-            )
-
-            FailureReason.FAIL_TO_SIGN -> ModuleException.UNABLE_TO_SIGN.reject(
-              promise,
-              Pair(ERROR_USER_INFO_KEY, result.reason.msg)
-            )
-
-            else -> ModuleException.UNKNOWN_EXCEPTION.reject(
-              promise,
-              Pair(ERROR_USER_INFO_KEY, result.reason.msg)
-            )
-          }
-        }
-
-        is SignWithCOSEResult.Success -> {
-          promise.resolve(Base64Utils.encodeBase64(result.signature))
-        }
-      }
-    } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-    }
-  }
-
-  @ReactMethod
-  fun verify(sign1Data: String, publicKey: ReadableMap, promise: Promise) {
-    val data = try {
-      Base64Utils.decodeBase64AndBase64Url(sign1Data)
-    } catch (e: Exception) {
-      ModuleException.INVALID_ENCODING.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
-      return;
-    }
-
-    try {
-      val result = COSEManager().verifySign1FromJWK(
-        dataSigned = data,
-        jwk = publicKey.toString()
-      )
+      val buffer = Base64Utils.decodeBase64AndBase64Url(data)
+      val result = CBorParser(buffer).toJson()
       promise.resolve(result)
     } catch (e: Exception) {
-      ModuleException.UNKNOWN_EXCEPTION.reject(
-        promise,
-        Pair(ERROR_USER_INFO_KEY, e.message.orEmpty())
-      )
+      promise.reject(ModuleErrorCodes.DECODE_ERROR, e.message, e)
     }
   }
+
+
+    @ReactMethod
+    fun decodeDocuments(data: String, promise: Promise) {
+      try {
+        val buffer = Base64Utils.decodeBase64AndBase64Url(data)
+        CBorParser(buffer).documentsCborToJson(separateElementIdentifier = true, onComplete = {
+          promise.resolve(it)
+        }, onError = { e ->
+          promise.reject(ModuleErrorCodes.DECODE_DOCUMENTS_ERROR, e.message, e)
+        })
+      } catch (e: Exception) {
+        promise.reject(ModuleErrorCodes.DECODE_DOCUMENTS_ERROR, e.message, e)
+      }
+    }
+
+    @ReactMethod
+    fun decodeIssuerSigned(issuerSigned: String, promise: Promise) {
+      try {
+        val buffer =
+          Base64Utils.decodeBase64AndBase64Url(issuerSigned)
+        val result =
+          CBorParser(buffer).issuerSignedCborToJson(separateElementIdentifier = true) ?: run {
+            // We don't have the exact error here for some reason
+            promise.reject(
+              ModuleErrorCodes.DECODE_ISSUER_SIGNED_ERROR,
+              "An error occurred while decoding the issuer signed content"
+            )
+          }
+        promise.resolve(result)
+      } catch (e: Exception) {
+        promise.reject(ModuleErrorCodes.DECODE_ISSUER_SIGNED_ERROR, e.message, e)
+      }
+    }
+
+    @ReactMethod
+    fun sign(payload: String, keyTag: String, promise: Promise){
+    try {
+      val data = Base64Utils.decodeBase64AndBase64Url(payload)
+        val result = COSEManager().signWithCOSE(
+          data = data,
+          alias = keyTag
+        )
+        when (result) {
+          is SignWithCOSEResult.Failure -> {
+            // We don't have a throwable to pass here from the onError callback
+            promise.reject(ModuleErrorCodes.SIGN_ERROR, result.reason.msg)
+          }
+          is SignWithCOSEResult.Success -> {
+            promise.resolve(Base64Utils.encodeBase64(result.signature))
+          }
+        }
+      } catch (e: Exception) {
+        promise.reject(ModuleErrorCodes.SIGN_ERROR, e.message, e)
+      }
+    }
+
+    @ReactMethod
+    fun verify(sign1Data: String, publicKey: ReadableMap, promise: Promise) {
+      try {
+      val data = Base64Utils.decodeBase64AndBase64Url(sign1Data)
+        val result = COSEManager().verifySign1FromJWK(
+          dataSigned = data,
+          jwk = publicKey.toString()
+        )
+        promise.resolve(result)
+      } catch (e: Exception) {
+       promise.reject(ModuleErrorCodes.VERIFY_ERROR, e.message, e)
+      }
+    }
 
   companion object {
     const val NAME = "IoReactNativeCbor"
-    const val ERROR_USER_INFO_KEY = "error"
 
-    private enum class ModuleException(
-      val ex: Exception
-    ) {
-      UNABLE_TO_DECODE(Exception("UNABLE_TO_DECODE")),
-      PUBLIC_KEY_NOT_FOUND(Exception("PUBLIC_KEY_NOT_FOUND")),
-      UNABLE_TO_SIGN(Exception("UNABLE_TO_SIGN")),
-      INVALID_ENCODING(Exception("INVALID_ENCODING")),
-      UNKNOWN_EXCEPTION(Exception("UNKNOWN_EXCEPTION"));
-
-      fun reject(
-        promise: Promise, vararg args: Pair<String, String>
-      ) {
-        exMap(*args).let {
-          promise.reject(it.first, ex.message, it.second)
-        }
-      }
-
-      private fun exMap(vararg args: Pair<String, String>): Pair<String, WritableMap> {
-        val writableMap = WritableNativeMap()
-        args.forEach { writableMap.putString(it.first, it.second) }
-        return Pair(this.ex.message ?: "UNKNOWN", writableMap)
-      }
+    // Errors which this module uses to reject a promise
+    private object ModuleErrorCodes {
+      const val DECODE_ERROR = "DECODE_ERROR"
+      const val DECODE_DOCUMENTS_ERROR = "DECODE_DOCUMENTS_ERROR"
+      const val DECODE_ISSUER_SIGNED_ERROR = "DECODE_ISSUER_SIGNED_ERROR"
+      const val SIGN_ERROR = "SIGN_ERROR"
+      const val VERIFY_ERROR = "VERIFY_ERROR"
     }
   }
 }
