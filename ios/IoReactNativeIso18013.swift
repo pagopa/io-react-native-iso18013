@@ -276,13 +276,13 @@ class IoReactNativeIso18013: RCTEventEmitter {
      - reject: The promise to be rejected
    */
   @objc(sendErrorResponse:withResolver:withRejecter:)
-  func sendErrorResponse(code: UInt64, resolve: @escaping RCTPromiseResolveBlock,
-                               reject: @escaping RCTPromiseRejectBlock){
+  func sendErrorResponse(code: UInt64, _ resolve: @escaping RCTPromiseResolveBlock,
+                           reject: @escaping RCTPromiseRejectBlock){
     do{
       if let statusEnum = SessionDataStatus(rawValue: code) {
         try Proximity.shared.errorPresentation(statusEnum)
       } else {
-        reject(ModuleErrorCodes.sendErrorResponseError.rawValue, "Invalid status code provided: \(status)", nil)
+        reject(ModuleErrorCodes.sendErrorResponseError.rawValue, "Invalid status code provided: \(code)", nil)
       }
       resolve(true)
     }catch let error{
