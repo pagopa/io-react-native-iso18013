@@ -47,7 +47,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
   @objc(start:withResolver:withRejecter:)
   func start(
     certificates: [Any],
-    _ resolve: @escaping RCTPromiseResolveBlock,
+    resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
@@ -95,7 +95,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
   */
   @objc(getQrCodeString:withRejecter:)
   func getQrCodeString(
-    _ resolve: @escaping RCTPromiseResolveBlock,
+    resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
     do{
@@ -212,7 +212,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
   func generateResponse(
     documents: Array<Any>,
     acceptedFields: [AnyHashable: Any],
-    _ resolve: @escaping RCTPromiseResolveBlock,
+    resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
@@ -245,7 +245,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
   @objc(sendResponse:withResolver:withRejecter:)
   func sendResponse(
     response: String,
-    _ resolve: @escaping RCTPromiseResolveBlock,
+    resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
     do{
@@ -272,13 +272,13 @@ class IoReactNativeIso18013: RCTEventEmitter {
      - reject: The promise to be rejected
    */
   @objc(sendErrorResponse:withResolver:withRejecter:)
-  func sendErrorResponse(status: UInt64, _ resolve: @escaping RCTPromiseResolveBlock,
-                         reject: @escaping RCTPromiseRejectBlock){
+  func sendErrorResponse(code: UInt64, _ resolve: @escaping RCTPromiseResolveBlock,
+                           reject: @escaping RCTPromiseRejectBlock){
     do{
-      if let statusEnum = SessionDataStatus(rawValue: status) {
+      if let statusEnum = SessionDataStatus(rawValue: code) {
         try Proximity.shared.errorPresentation(statusEnum)
       } else {
-        reject(ModuleErrorCodes.sendErrorResponseError.rawValue, "Invalid status code provided: \(status)", nil)
+        reject(ModuleErrorCodes.sendErrorResponseError.rawValue, "Invalid status code provided: \(code)", nil)
       }
       resolve(true)
     }catch let error{
@@ -298,7 +298,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
    */
   @objc(close:withRejecter:)
   func close(
-    _ resolve: @escaping RCTPromiseResolveBlock,
+    resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
     Proximity.shared.stop()
@@ -390,13 +390,14 @@ class IoReactNativeIso18013: RCTEventEmitter {
     }
   }
   
-  @objc func generateOID4VPDeviceResponse(
-    _ clientId: String,
+  @objc(generateOID4VPDeviceResponse:withResponseUri:withAuthorizationRequestNonce:withMdocGeneratedNonce:withDocuments:withAcceptedFields:withResolver:withRejecter:)
+  func generateOID4VPDeviceResponse(
+    clientId: String,
     responseUri: String,
     authorizationRequestNonce: String,
     mdocGeneratedNonce: String,
     documents: [Any],
-    fieldRequestedAndAccepted: [AnyHashable: Any],
+    acceptedFields: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
@@ -410,7 +411,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
       )
       
       let documentsAsProximityDocument = try parseDocuments(documents: documents)
-      let items = try parseAcceptedFields(acceptedFields: fieldRequestedAndAccepted)
+      let items = try parseAcceptedFields(acceptedFields: acceptedFields)
       let response = try Proximity.shared.generateDeviceResponse(items: items, documents: documentsAsProximityDocument, sessionTranscript: sessionTranscript)
       resolve(Data(response).base64EncodedString())
     } catch let parsingError as ParsingError{

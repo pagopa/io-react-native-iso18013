@@ -9,7 +9,7 @@ import type { RequestedDocument } from '../types';
  * @param authorizationRequestNonce extracted from OID4VP session
  * @param mdocGeneratedNonce To be generated
  * @param documents An Array of {@link DocRequested}
- * @param fieldRequestedAndAccepted extracted from OID4VP session, it's a record of claims
+ * @param acceptedFields extracted from OID4VP session, it's a record of claims
  *                                  accepted for disclosure or its stringification
  * @throws {OID4VPFailure} in case of failure
  * @returns the Device Response in CBOR format
@@ -20,7 +20,7 @@ export const generateOID4VPDeviceResponse = async (
   authorizationRequestNonce: string,
   mdocGeneratedNonce: string,
   documents: Array<RequestedDocument>,
-  fieldRequestedAndAccepted: AcceptedFields
+  acceptedFields: AcceptedFields
 ): Promise<string> => {
   return await IoReactNativeIso18013.generateOID4VPDeviceResponse(
     clientId,
@@ -28,6 +28,6 @@ export const generateOID4VPDeviceResponse = async (
     authorizationRequestNonce,
     mdocGeneratedNonce,
     documents,
-    fieldRequestedAndAccepted
+    acceptedFields
   );
 };
