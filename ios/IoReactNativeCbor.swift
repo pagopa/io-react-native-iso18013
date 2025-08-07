@@ -13,7 +13,7 @@ class IoReactNativeCbor: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do{
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: cbor)
+      let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
       guard let json = CborCose.jsonFromCBOR(data: data) else {
         // We don't have the exact error here as this method returns nil upon failure
         reject(ModuleErrorCodes.decodeError.rawValue, "Unable to decode CBOR", nil)
@@ -34,7 +34,7 @@ class IoReactNativeCbor: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do{
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: mdoc)
+      let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
       guard let json = CborCose.decodeCBOR(data: data, true, true) else {
         // We don't have the exact error here as this method returns nil upon failure
         reject(ModuleErrorCodes.decodeDocumentsError.rawValue, "Unable to decode document CBOR", nil)
@@ -53,7 +53,7 @@ class IoReactNativeCbor: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do{
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: issuerSigned)
+      let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
       guard let json = CborCose.issuerSignedCborToJson(data: data) else {
         // We don't have the exact error here as this method returns nil upon failure
         reject(ModuleErrorCodes.decodeIssuerSignedError.rawValue, "Unable to decode Issuer Signed CBOR", nil)
@@ -79,7 +79,7 @@ class IoReactNativeCbor: NSObject {
         }
         
         do{
-          let data = try Base64Utils.decodeBase64OrBase64URL(base: payloadData)
+          let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
           guard let coseKey = CoseKeyPrivate(crv: .p256, keyTag: keyTag) else {
             // We don't have the exact error here as this method returns nil upon failure
             reject(ModuleErrorCodes.signError.rawValue, "Unable to create a private key with the given keytag: \(keyTag)", nil)
@@ -102,7 +102,7 @@ class IoReactNativeCbor: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do {
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: sign1Data)
+      let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
       let publicKeyJson = try JSONSerialization.data(withJSONObject: jwk, options:[] )
       let publicKeyString = String(data: publicKeyJson, encoding: .utf8)!
       let publicKey = CoseKey(jwk: publicKeyString)!
