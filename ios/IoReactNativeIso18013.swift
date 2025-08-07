@@ -78,7 +78,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
       }
       return try certStrings.enumerated().map { (certIndex, certString) in
         guard let data = Data(base64Encoded: certString) else {
-          throw ParsingError.certificatesNotValid("Cartificate at index \(certIndex) in the chain at index \(chainIndex) is not a valid base64 string.")
+          throw ParsingError.certificatesNotValid("Certificate at index \(certIndex) in the chain at index \(chainIndex) is not a valid base64 string.")
         }
         return data
       }
