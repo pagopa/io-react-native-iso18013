@@ -86,9 +86,9 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
      * @param keyTag - The alias of the key to use for signing.
      */
     @ReactMethod
-    fun sign(payload: String, keyTag: String, promise: Promise){
-    try {
-      val data = Base64Utils.decodeBase64AndBase64Url(payload)
+    fun sign(payload: String, keyTag: String, promise: Promise) {
+      try {
+        val data = Base64Utils.decodeBase64AndBase64Url(payload)
         val result = COSEManager().signWithCOSE(
           data = data,
           alias = keyTag
@@ -98,6 +98,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
             // We don't have a throwable to pass here from the onError callback
             promise.reject(ModuleErrorCodes.SIGN_ERROR, result.reason.msg)
           }
+
           is SignWithCOSEResult.Success -> {
             promise.resolve(Base64Utils.encodeBase64(result.signature))
           }
@@ -117,14 +118,14 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun verify(sign1Data: String, publicKey: ReadableMap, promise: Promise) {
       try {
-      val data = Base64Utils.decodeBase64AndBase64Url(sign1Data)
+        val data = Base64Utils.decodeBase64AndBase64Url(sign1Data)
         val result = COSEManager().verifySign1FromJWK(
           dataSigned = data,
           jwk = publicKey.toString()
         )
         promise.resolve(result)
       } catch (e: Exception) {
-       promise.reject(ModuleErrorCodes.VERIFY_ERROR, e.message, e)
+        promise.reject(ModuleErrorCodes.VERIFY_ERROR, e.message, e)
       }
     }
   }

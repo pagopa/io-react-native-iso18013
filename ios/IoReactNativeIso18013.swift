@@ -382,30 +382,30 @@ class IoReactNativeIso18013: RCTEventEmitter {
    Generates a CBOR encoded device response for ISO 18013-7 mDL remote presentation using OID4VP.
    Resolves with the base64 encoded device response or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
-    - clientId: The client id extracted from OID4VP session.
-    - responseUri: The response URI extracted from OID4VP session.
-    - authorizationRequestNonce - The authorization request nonce extracted from OID4VP session.
-    - mdocGeneratedNonce - the mdoc generated nonce to be generated.
-    - documents: An array containing documents. Each document is defined as a map containing:
-         - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-         - alias which is the alias of the key used to sign the credential;
-         - docType which is the document type.
-    - fieldRequestedAndAccepted: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
-        
-         
-           {
-              "org.iso.18013.5.1.mDL": {
-                "org.iso.18013.5.1": {
-                  "hair_colour": true,
-                  "given_name_national_character": true,
-                  "family_name_national_character": true,
-                  "given_name": true,
+      - clientId: The client id extracted from OID4VP session.
+      - responseUri: The response URI extracted from OID4VP session.
+      - authorizationRequestNonce - The authorization request nonce extracted from OID4VP session.
+      - mdocGeneratedNonce - the mdoc generated nonce to be generated.
+      - documents: An array containing documents. Each document is defined as a map containing:
+           - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+           - alias which is the alias of the key used to sign the credential;
+           - docType which is the document type.
+      - fieldRequestedAndAccepted: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a `[String: [String: [String: Bool]]]`. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
+          
+           
+             {
+                "org.iso.18013.5.1.mDL": {
+                  "org.iso.18013.5.1": {
+                    "hair_colour": true,
+                    "given_name_national_character": true,
+                    "family_name_national_character": true,
+                    "given_name": true,
+                  }
                 }
-              }
-           }
+             }
 
-     - resolve: The promise to be resolved.
-     - reject: The promise to be rejected.
+       - resolve: The promise to be resolved.
+       - reject: The promise to be rejected.
    */
   @objc func generateOID4VPDeviceResponse(
     _ clientId: String,

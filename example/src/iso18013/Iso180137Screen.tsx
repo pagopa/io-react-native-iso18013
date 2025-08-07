@@ -51,7 +51,7 @@ const handleGenerateResponseWrongDocRequested = async () => {
     parseAndPrintError(
       ISO18013_7.ModuleErrorSchema,
       error,
-      'handleGenerateResponseWrongFieldRequestedAndAccepted error: '
+      'handleGenerateResponseWrongDocRequested error: '
     );
   }
 };
@@ -78,7 +78,7 @@ const handleGenerateResponseIncompleteDocRequested = async () => {
     parseAndPrintError(
       ISO18013_7.ModuleErrorSchema,
       error,
-      'handleGenerateResponseWrongFieldRequestedAndAccepted error: '
+      'handleGenerateResponseIncompleteDocRequested error: '
     );
   }
 };
