@@ -387,7 +387,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       const val CLOSE_ERROR = "CLOSE_ERROR"
 
       // ISO18013-7 related errors
-      const val GENERATE_OID4VP_RESPONSE_ERROR = "GENERATE_RESPONSE_ERROR"
+      const val GENERATE_OID4VP_RESPONSE_ERROR = "GENERATE_OID4VP_RESPONSE_ERROR"
     }
   }
 }
