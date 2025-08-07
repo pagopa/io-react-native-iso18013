@@ -48,9 +48,9 @@ export const decodeDocuments = async (data: string): Promise<Documents> => {
  * @returns The decoded {@link IssuerSigned} contained in the mDOC object
  */
 export const decodeIssuerSigned = async (
-  issuerSigned: string
+  data: string
 ): Promise<IssuerSigned> => {
   const decodedIssuerSignedString =
-    await IoReactNativeCbor.decodeIssuerSigned(issuerSigned);
+    await IoReactNativeCbor.decodeIssuerSigned(data);
   return await IssuerSignedFromString.parseAsync(decodedIssuerSignedString);
 };
