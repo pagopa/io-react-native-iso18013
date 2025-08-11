@@ -36,8 +36,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     /**
      * Decode base64 or base64url encoded mDOC-CBOR data to a JSON object.
      * Resolves with a string containing the parsed data or rejects with an error code
-     * defined in [ModuleErrorCodes].
-     * @param data - The base64 or base64url encoded mDOC string
+     * @param data - The base64 or base64url encoded mDOC-CBOR string
      */
     @ReactMethod
     fun decodeDocuments(data: String, promise: Promise) {
