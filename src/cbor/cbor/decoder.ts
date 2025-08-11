@@ -22,7 +22,7 @@ export const decode = async (data: string): Promise<any> => {
 
 /**
  * Decode base64 or base64url encoded mDOC-CBOR data to a JSON object
- * @param data - The base64 or base64url encoded mDOC string
+ * @param data - The base64 or base64url encoded mDOC-CBOR string
  * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  * @returns The decoded data as mDOC object
  */
