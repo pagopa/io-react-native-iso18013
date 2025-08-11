@@ -426,19 +426,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
       reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, error.localizedDescription, error)
     }
   }
-  
-  private class DocRequested {
-    var issuerSignedContent : [UInt8]
-    var alias : String
-    var docType : String
     
-    public init(issuerSignedContent: [UInt8], alias: String, docType: String) {
-      self.issuerSignedContent = issuerSignedContent
-      self.alias = alias
-      self.docType = docType
-    }
-  }
-  
   /**
    Custom Error which is thrown when a parsing error occurs in our utility functions which converts data from the bridge to what
    our underlying functions expect.
