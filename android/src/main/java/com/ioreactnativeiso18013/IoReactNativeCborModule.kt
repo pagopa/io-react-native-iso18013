@@ -43,10 +43,10 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun decodeIssuerSigned(issuerSigned: String, promise: Promise) {
+    fun decodeIssuerSigned(data: String, promise: Promise) {
       try {
         val buffer =
-          Base64Utils.decodeBase64AndBase64Url(issuerSigned)
+          Base64Utils.decodeBase64AndBase64Url(data)
         val result =
           CBorParser(buffer).issuerSignedCborToJson(separateElementIdentifier = true) ?: run {
             // We don't have the exact error here for some reason
@@ -62,11 +62,11 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun sign(payload: String, keyTag: String, promise: Promise){
+    fun sign(data: String, keyTag: String, promise: Promise){
     try {
-      val data = Base64Utils.decodeBase64AndBase64Url(payload)
+      val toSign = Base64Utils.decodeBase64AndBase64Url(data)
         val result = COSEManager().signWithCOSE(
-          data = data,
+          data = toSign,
           alias = keyTag
         )
         when (result) {
@@ -84,11 +84,11 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun verify(sign1Data: String, publicKey: ReadableMap, promise: Promise) {
+    fun verify(data: String, publicKey: ReadableMap, promise: Promise) {
       try {
-      val data = Base64Utils.decodeBase64AndBase64Url(sign1Data)
+      val dataSigned = Base64Utils.decodeBase64AndBase64Url(data)
         val result = COSEManager().verifySign1FromJWK(
-          dataSigned = data,
+          dataSigned,
           jwk = publicKey.toString()
         )
         promise.resolve(result)

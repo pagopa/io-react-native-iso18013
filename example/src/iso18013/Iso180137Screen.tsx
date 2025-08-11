@@ -101,7 +101,7 @@ const handleGenerateResponseWrongAcceptedFields = async () => {
     parseAndPrintError(
       ISO18013_7.ModuleErrorSchema,
       error,
-      'handleGenerateResponseWrongFieldRequestedAndAccepted error: '
+      'handleGenerateResponseWrongdAcceptedFields error: '
     );
   }
 };
