@@ -22,7 +22,7 @@ try {
     authorizationRequestNonce,
     mdocGeneratedNonce,
     documents,
-    fieldRequestedAndAccepted
+    acceptedFields
   );
 } catch (error: any) {
   const { message, userInfo } = e as CoseFailure;
@@ -44,7 +44,7 @@ export const generateOID4VPDeviceResponse = async (
   authorizationRequestNonce: string,
   mdocGeneratedNonce: string,
   documents: Array<RequestedDocument>,
-  fieldRequestedAndAccepted: Record<string, any> | string
+  acceptedFields: Record<string, any> | string
 ) : Promise<string> => {...};
 ```
 
