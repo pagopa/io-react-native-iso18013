@@ -240,7 +240,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
-   * Generates a CBOR device response for ISO 18013-7 mDL remote presentation using OID4VP.
+   * Generates a CBOR encoded device response for ISO 18013-7 mDL remote presentation using OID4VP.
    * Resolves with the base64 encoded device response or rejects with an error code
    * defined in [ModuleErrorCodes].
    * @param clientId - the client id extracted from OID4VP session
