@@ -4,7 +4,6 @@ import CryptoKit
 
 @objc(IoReactNativeCbor)
 class IoReactNativeCbor: NSObject {
-  private let keyConfig: KeyConfig = .ec
   
   /**
    Decode base64 or base64url encoded CBOR data to JSON object.
@@ -147,49 +146,6 @@ class IoReactNativeCbor: NSObject {
       resolve(verified)
     } catch {
       reject(ModuleErrorCodes.verifyError.rawValue, error.localizedDescription, error)
-    }
-  }
-    
-  private func keyExists(keyTag: String) -> (key: SecKey?, status: OSStatus) {
-    let getQuery = privateKeyKeychainQuery(keyTag: keyTag)
-    var item: CFTypeRef?
-    let status = SecItemCopyMatching(getQuery as CFDictionary, &item)
-    return (status == errSecSuccess ? (item as! SecKey) : nil, status)
-  }
-  
-  private func privateKeyKeychainQuery(
-    keyTag: String
-  ) -> [String : Any] {
-    return [
-      kSecClass as String: kSecClassKey,
-      kSecAttrApplicationTag as String: keyTag,
-      kSecAttrKeyType as String: keyConfig.keyType(),
-      kSecReturnRef as String: true
-    ]
-  }
-  
-  private enum KeyConfig: Int, CaseIterable {
-    case ec
-    
-    func keyType() -> CFString {
-      switch self {
-      case .ec:
-        return kSecAttrKeyTypeECSECPrimeRandom
-      }
-    }
-    
-    func keySizeInBits() -> Int {
-      switch self {
-      case .ec:
-        return 256
-      }
-    }
-    
-    func keySignAlgorithm() -> SecKeyAlgorithm {
-      switch self {
-      case .ec:
-        return .ecdsaSignatureMessageX962SHA256
-      }
     }
   }
   
