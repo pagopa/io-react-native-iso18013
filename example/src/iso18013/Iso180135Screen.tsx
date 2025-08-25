@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, ScrollView } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import {
@@ -39,6 +39,9 @@ const Iso180135Screen: React.FC = () => {
   const [request, setRequest] = useState<
     ISO18013_5.VerifierRequest['request'] | null
   >(null);
+  const listeners = useRef<Array<ReturnType<typeof ISO18013_5.addListener>>>(
+    []
+  );
 
   /**
    * Callback function to handle device connection.
@@ -121,11 +124,10 @@ const Iso180135Screen: React.FC = () => {
         );
       }
       console.log('Cleaning up listeners and closing QR engagement');
-      ISO18013_5.removeListener('onDeviceConnected');
-      ISO18013_5.removeListener('onDeviceConnecting');
-      ISO18013_5.removeListener('onDeviceDisconnected');
-      ISO18013_5.removeListener('onDocumentRequestReceived');
-      ISO18013_5.removeListener('onError');
+      listeners.current.forEach((listener) => {
+        console.log(listener);
+        listener.remove();
+      });
       await ISO18013_5.close();
       setQrCode(null);
       setRequest(null);
@@ -238,15 +240,19 @@ const Iso180135Screen: React.FC = () => {
     }
     try {
       await ISO18013_5.start(); // Peripheral mode
+
+      listeners.current = [
+        ISO18013_5.addListener('onDeviceConnecting', handleOnDeviceConnecting),
+        ISO18013_5.addListener('onDeviceConnected', handleOnDeviceConnected),
+        ISO18013_5.addListener(
+          'onDocumentRequestReceived',
+          onDocumentRequestReceived
+        ),
+        ISO18013_5.addListener('onDeviceDisconnected', onDeviceDisconnected),
+        ISO18013_5.addListener('onError', onError),
+      ];
+
       // Register listeners
-      ISO18013_5.addListener('onDeviceConnecting', handleOnDeviceConnecting);
-      ISO18013_5.addListener('onDeviceConnected', handleOnDeviceConnected);
-      ISO18013_5.addListener(
-        'onDocumentRequestReceived',
-        onDocumentRequestReceived
-      );
-      ISO18013_5.addListener('onDeviceDisconnected', onDeviceDisconnected);
-      ISO18013_5.addListener('onError', onError);
 
       // Generate the QR code string
       console.log('Generating QR code');
