@@ -135,13 +135,5 @@ export function addListener<E extends Events>(
   event: E,
   callback: (data: EventsPayload[E]) => void
 ) {
-  eventEmitter.addListener(event, callback);
-}
-
-/**
- * Removes a listener for a `QrEngagementEvents` event.
- * @param event - The event to remove the listener for. The available events are defined in the `QrEngagementEvents` type.
- */
-export function removeListener(event: Events) {
-  eventEmitter.removeAllListeners(event);
+  return eventEmitter.addListener(event, callback);
 }
