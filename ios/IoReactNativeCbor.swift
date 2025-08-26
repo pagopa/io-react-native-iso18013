@@ -4,7 +4,6 @@ import CryptoKit
 
 @objc(IoReactNativeCbor)
 class IoReactNativeCbor: NSObject {
-  private let keyConfig: KeyConfig = .ec
   
   @objc(decode:withResolver:withRejecter:)
   func decode(
@@ -13,8 +12,8 @@ class IoReactNativeCbor: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do{
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
-      guard let json = CborCose.jsonFromCBOR(data: data) else {
+      let decoded = try Base64Utils.decodeBase64OrBase64URL(base: data)
+      guard let json = CborCose.jsonFromCBOR(data: decoded) else {
         // We don't have the exact error here as this method returns nil upon failure
         reject(ModuleErrorCodes.decodeError.rawValue, "Unable to decode CBOR", nil)
         return
@@ -34,8 +33,8 @@ class IoReactNativeCbor: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do{
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
-      guard let json = CborCose.decodeCBOR(data: data, true, true) else {
+      let decoded = try Base64Utils.decodeBase64OrBase64URL(base: data)
+      guard let json = CborCose.decodeCBOR(data: decoded, true, true) else {
         // We don't have the exact error here as this method returns nil upon failure
         reject(ModuleErrorCodes.decodeDocumentsError.rawValue, "Unable to decode document CBOR", nil)
         return
@@ -53,8 +52,8 @@ class IoReactNativeCbor: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do{
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
-      guard let json = CborCose.issuerSignedCborToJson(data: data) else {
+      let decoded = try Base64Utils.decodeBase64OrBase64URL(base: data)
+      guard let json = CborCose.issuerSignedCborToJson(data: decoded) else {
         // We don't have the exact error here as this method returns nil upon failure
         reject(ModuleErrorCodes.decodeIssuerSignedError.rawValue, "Unable to decode Issuer Signed CBOR", nil)
         return
@@ -79,13 +78,13 @@ class IoReactNativeCbor: NSObject {
         }
         
         do{
-          let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
+          let decoded = try Base64Utils.decodeBase64OrBase64URL(base: data)
           guard let coseKey = CoseKeyPrivate(crv: .p256, keyTag: keyTag) else {
             // We don't have the exact error here as this method returns nil upon failure
             reject(ModuleErrorCodes.signError.rawValue, "Unable to create a private key with the given keytag: \(keyTag)", nil)
             return
           }
-          let signedPayload = CborCose.sign(data: data, privateKey: coseKey)
+          let signedPayload = CborCose.sign(data: decoded, privateKey: coseKey)
           resolve(signedPayload.base64EncodedString())
       }
       catch{
@@ -102,57 +101,14 @@ class IoReactNativeCbor: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do {
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: data)
+      let decoded = try Base64Utils.decodeBase64OrBase64URL(base: data)
       let publicKeyJson = try JSONSerialization.data(withJSONObject: jwk, options:[] )
       let publicKeyString = String(data: publicKeyJson, encoding: .utf8)!
       let publicKey = CoseKey(jwk: publicKeyString)!
-      let verified = CborCose.verify(data: data, publicKey: publicKey)
+      let verified = CborCose.verify(data: decoded, publicKey: publicKey)
       resolve(verified)
     } catch {
       reject(ModuleErrorCodes.verifyError.rawValue, error.localizedDescription, error)
-    }
-  }
-    
-  private func keyExists(keyTag: String) -> (key: SecKey?, status: OSStatus) {
-    let getQuery = privateKeyKeychainQuery(keyTag: keyTag)
-    var item: CFTypeRef?
-    let status = SecItemCopyMatching(getQuery as CFDictionary, &item)
-    return (status == errSecSuccess ? (item as! SecKey) : nil, status)
-  }
-  
-  private func privateKeyKeychainQuery(
-    keyTag: String
-  ) -> [String : Any] {
-    return [
-      kSecClass as String: kSecClassKey,
-      kSecAttrApplicationTag as String: keyTag,
-      kSecAttrKeyType as String: keyConfig.keyType(),
-      kSecReturnRef as String: true
-    ]
-  }
-  
-  private enum KeyConfig: Int, CaseIterable {
-    case ec
-    
-    func keyType() -> CFString {
-      switch self {
-      case .ec:
-        return kSecAttrKeyTypeECSECPrimeRandom
-      }
-    }
-    
-    func keySizeInBits() -> Int {
-      switch self {
-      case .ec:
-        return 256
-      }
-    }
-    
-    func keySignAlgorithm() -> SecKeyAlgorithm {
-      switch self {
-      case .ec:
-        return .ecdsaSignatureMessageX962SHA256
-      }
     }
   }
   

@@ -18,14 +18,16 @@ This library emits the following events:
 | onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects. |
 | onError | `{ error: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed via the `parseError` provided [here](src/schema.ts). |
 
-Listeners can be added using the `addListener` method and removed using the `removeListener` method.
+Listeners can be added using the `addListener` method and removed by using the returned reference by calling the `remove` method.
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
-ISO18013_5.addListener('event', () => console.log('event occurred'));
+const listener = ISO18013_5.addListener('event', () =>
+  console.log('event occurred')
+);
 
-ISO18013_5.removeListener('event');
+listener.remove();
 ```
 
 #### `onDeviceConnecting`
@@ -173,7 +175,7 @@ await ISO18013_5.sendErrorResponse({
 
 Closes the QR engagement by releasing the resources allocated during the `start` method.
 Before starting a new flow, it is necessary to call this method to ensure that the previous flow is properly closed.
-The listeners can be removed using the `removeListener` method.
+Listeners can be added using the `addListener` method and removed using the `removeListener` method.
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
