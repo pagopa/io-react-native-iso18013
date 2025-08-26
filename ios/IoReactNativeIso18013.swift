@@ -266,7 +266,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
   /**
    Sends an error response during the presentation according to the SessionData status codes defined in table 20 of the ISO18013-5 standard.
    - Parameters:
-     - status: The status error to be sent is an integer of type ``SessionDataStatus``:
+     - code: The status error to be sent is an integer of type ``SessionDataStatus``:
        ```
          10 -> Error: session encryption
          11 -> Error: CBOR decoding

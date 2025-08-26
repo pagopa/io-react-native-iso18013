@@ -44,7 +44,7 @@ export const decodeDocuments = async (data: string): Promise<Documents> => {
  * If it is not possibile to decode the provided data, the promise will be rejected with
  * an instance of {@link CborFailure}.
  *
- * @param issuerSigned - The base64 or base64url encoded MDOC data
+ * @param data - The base64 or base64url encoded MDOC data
  * @returns The decoded {@link IssuerSigned} contained in the mDOC object
  */
 export const decodeIssuerSigned = async (
