@@ -32,100 +32,100 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.DECODE_ERROR, e.message, e)
     }
+  }
 
-    /**
-     * Decode base64 or base64url encoded mDOC-CBOR data to a JSON object.
-     * Resolves with a string containing the parsed data or rejects with an error code
-     * @param data the base64 or base64url encoded mDOC-CBOR string
-     */
-    @ReactMethod
-    fun decodeDocuments(data: String, promise: Promise) {
-      try {
-        val buffer = Base64Utils.decodeBase64AndBase64Url(data)
-        CBorParser(buffer).documentsCborToJson(separateElementIdentifier = true, onComplete = {
-          promise.resolve(it)
-        }, onError = { e ->
-          promise.reject(ModuleErrorCodes.DECODE_DOCUMENTS_ERROR, e.message, e)
-        })
-      } catch (e: Exception) {
+  /**
+   * Decode base64 or base64url encoded mDOC-CBOR data to a JSON object.
+   * Resolves with a string containing the parsed data or rejects with an error code
+   * @param data the base64 or base64url encoded mDOC-CBOR string
+   */
+  @ReactMethod
+  fun decodeDocuments(data: String, promise: Promise) {
+    try {
+      val buffer = Base64Utils.decodeBase64AndBase64Url(data)
+      CBorParser(buffer).documentsCborToJson(separateElementIdentifier = true, onComplete = {
+        promise.resolve(it)
+      }, onError = { e ->
         promise.reject(ModuleErrorCodes.DECODE_DOCUMENTS_ERROR, e.message, e)
-      }
+      })
+    } catch (e: Exception) {
+      promise.reject(ModuleErrorCodes.DECODE_DOCUMENTS_ERROR, e.message, e)
     }
+  }
 
-    /**
-     * Decode base64 or base64url encoded issuerSigned attribute part of an mDOC-CBOR.
-     * @param issuerSigned the base64 or base64url encoded mDOC-CBOR containing the issuerSigned data string
-     * Resolves with a string containing the parsed data or rejects with an error code
-     * defined in [ModuleErrorCodes].
-     */
-    @ReactMethod
-    fun decodeIssuerSigned(issuerSigned: String, promise: Promise) {
-      try {
-        val buffer =
-          Base64Utils.decodeBase64AndBase64Url(issuerSigned)
-        val result =
-          CBorParser(buffer).issuerSignedCborToJson(separateElementIdentifier = true) ?: run {
-            // We don't have the exact error here for some reason
-            promise.reject(
-              ModuleErrorCodes.DECODE_ISSUER_SIGNED_ERROR,
-              "An error occurred while decoding the issuer signed content"
-            )
-          }
-        promise.resolve(result)
-      } catch (e: Exception) {
-        promise.reject(ModuleErrorCodes.DECODE_ISSUER_SIGNED_ERROR, e.message, e)
-      }
-    }
-
-    /**
-     * Sign base64 encoded data with COSE and return the COSE-Sign1 object in base64 encoding.
-     * Resolves with a string containing the COSE-Sign1 object in base64 encoding or rejects with an
-     * error code defined in [ModuleErrorCodes].
-     * @param payload the base64 or base64url encoded payload to sign
-     * @param keyTag the alias of the key to use for signing.
-     */
-    @ReactMethod
-    fun sign(payload: String, keyTag: String, promise: Promise) {
-      try {
-        val data = Base64Utils.decodeBase64AndBase64Url(payload)
-        val result = COSEManager().signWithCOSE(
-          data = data,
-          alias = keyTag
-        )
-        when (result) {
-          is SignWithCOSEResult.Failure -> {
-            // We don't have a throwable to pass here from the onError callback
-            promise.reject(ModuleErrorCodes.SIGN_ERROR, result.reason.msg)
-          }
-
-          is SignWithCOSEResult.Success -> {
-            promise.resolve(Base64Utils.encodeBase64(result.signature))
-          }
+  /**
+   * Decode base64 or base64url encoded issuerSigned attribute part of an mDOC-CBOR.
+   * @param issuerSigned the base64 or base64url encoded mDOC-CBOR containing the issuerSigned data string
+   * Resolves with a string containing the parsed data or rejects with an error code
+   * defined in [ModuleErrorCodes].
+   */
+  @ReactMethod
+  fun decodeIssuerSigned(issuerSigned: String, promise: Promise) {
+    try {
+      val buffer =
+        Base64Utils.decodeBase64AndBase64Url(issuerSigned)
+      val result =
+        CBorParser(buffer).issuerSignedCborToJson(separateElementIdentifier = true) ?: run {
+          // We don't have the exact error here for some reason
+          promise.reject(
+            ModuleErrorCodes.DECODE_ISSUER_SIGNED_ERROR,
+            "An error occurred while decoding the issuer signed content"
+          )
         }
-      } catch (e: Exception) {
-        promise.reject(ModuleErrorCodes.SIGN_ERROR, e.message, e)
-      }
+      promise.resolve(result)
+    } catch (e: Exception) {
+      promise.reject(ModuleErrorCodes.DECODE_ISSUER_SIGNED_ERROR, e.message, e)
     }
+  }
 
-    /**
-     * Verifies a COSE-Sign1 object with the provided public key.
-     * Resolves with a boolean indicating whether or not the verification succeeded or not or rejects
-     * with an error code defined in [ModuleErrorCodes].
-     * @param data the COSE-Sign1 object in base64 or base64url encoding
-     * @param publicKey the public key in JWK format
-     */
-    @ReactMethod
-    fun verify(sign1Data: String, publicKey: ReadableMap, promise: Promise) {
-      try {
-        val data = Base64Utils.decodeBase64AndBase64Url(sign1Data)
-        val result = COSEManager().verifySign1FromJWK(
-          dataSigned = data,
-          jwk = publicKey.toString()
-        )
-        promise.resolve(result)
-      } catch (e: Exception) {
-        promise.reject(ModuleErrorCodes.VERIFY_ERROR, e.message, e)
+  /**
+   * Sign base64 encoded data with COSE and return the COSE-Sign1 object in base64 encoding.
+   * Resolves with a string containing the COSE-Sign1 object in base64 encoding or rejects with an
+   * error code defined in [ModuleErrorCodes].
+   * @param payload the base64 or base64url encoded payload to sign
+   * @param keyTag the alias of the key to use for signing.
+   */
+  @ReactMethod
+  fun sign(payload: String, keyTag: String, promise: Promise) {
+    try {
+      val data = Base64Utils.decodeBase64AndBase64Url(payload)
+      val result = COSEManager().signWithCOSE(
+        data = data,
+        alias = keyTag
+      )
+      when (result) {
+        is SignWithCOSEResult.Failure -> {
+          // We don't have a throwable to pass here from the onError callback
+          promise.reject(ModuleErrorCodes.SIGN_ERROR, result.reason.msg)
+        }
+
+        is SignWithCOSEResult.Success -> {
+          promise.resolve(Base64Utils.encodeBase64(result.signature))
+        }
       }
+    } catch (e: Exception) {
+      promise.reject(ModuleErrorCodes.SIGN_ERROR, e.message, e)
+    }
+  }
+
+  /**
+   * Verifies a COSE-Sign1 object with the provided public key.
+   * Resolves with a boolean indicating whether or not the verification succeeded or not or rejects
+   * with an error code defined in [ModuleErrorCodes].
+   * @param data the COSE-Sign1 object in base64 or base64url encoding
+   * @param publicKey the public key in JWK format
+   */
+  @ReactMethod
+  fun verify(sign1Data: String, publicKey: ReadableMap, promise: Promise) {
+    try {
+      val data = Base64Utils.decodeBase64AndBase64Url(sign1Data)
+      val result = COSEManager().verifySign1FromJWK(
+        dataSigned = data,
+        jwk = publicKey.toString()
+      )
+      promise.resolve(result)
+    } catch (e: Exception) {
+      promise.reject(ModuleErrorCodes.VERIFY_ERROR, e.message, e)
     }
   }
 
