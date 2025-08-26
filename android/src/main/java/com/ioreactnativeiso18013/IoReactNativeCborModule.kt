@@ -112,7 +112,7 @@ class IoReactNativeCborModule(reactContext: ReactApplicationContext) :
    * Verifies a COSE-Sign1 object with the provided public key.
    * Resolves with a boolean indicating whether or not the verification succeeded or not or rejects
    * with an error code defined in [ModuleErrorCodes].
-   * @param data the COSE-Sign1 object in base64 or base64url encoding
+   * @param sign1Data the COSE-Sign1 object in base64 or base64url encoding
    * @param publicKey the public key in JWK format
    */
   @ReactMethod
