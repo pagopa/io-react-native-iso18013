@@ -160,14 +160,24 @@ Generates a response that will be sent to the verifier app containing the reques
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-
 const response = await ISO18013_5.generateResponse({
   documents: [
     {
-      type: 'mDL',
-      data: 'base64url-encoded-data',
+      issuerSignedContent: 'base64url-or-base64-encoded-content',
+      alias: 'key-alias',
+      docType: 'docType',
     },
   ],
+  acceptedFields: {
+    'org.iso.18013.5.1.mDL': {
+      'org.iso.18013.5.1': {
+        hair_colour: true,
+        given_name_national_character: true,
+        family_name_national_character: true,
+        given_name: true,
+      },
+    },
+  },
 });
 console.log(response);
 ```
