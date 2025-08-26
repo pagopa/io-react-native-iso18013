@@ -189,10 +189,7 @@ Sends an error response to the verifier app. The supported error codes are defin
 ```typescript
 import { ISO18013_5, ErrorCode } from '@pagopa/io-react-native-iso18013';
 
-await ISO18013_5.sendErrorResponse({
-  errorCode: ErrorCode.SESSION_ENCRYPTION,
-  errorMessage: 'An error occurred while encrypting the session',
-});
+await ISO18013_5.sendErrorResponse(ErrorCode.SESSION_ENCRYPTION);
 ```
 
 #### `close`
