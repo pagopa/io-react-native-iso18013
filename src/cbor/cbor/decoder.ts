@@ -8,15 +8,11 @@ import {
 import { coerceToJSON } from './schema.utils';
 
 /**
- * Decode base64 encoded CBOR data to JSON object.
+ * Decode base64 or base64url encoded CBOR data to JSON object.
+ * This method does not handle nested CBOR data, which will need additional parsing.
  *
- * If it is not possibile to decode the provided data, the promise will be rejected with
- * an instance of {@link CborFailure}.
- *
- * **NOTE**: this method does not handle nested CBOR data, which will need additional
- * parsing.
- *
- * @param data - The base64 or base64url encoded CBOR data
+ * @param data - The base64 or base64url encoded CBOR string
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  * @returns The decoded data as JSON object
  */
 export const decode = async (data: string): Promise<any> => {
@@ -25,12 +21,9 @@ export const decode = async (data: string): Promise<any> => {
 };
 
 /**
- * Decode base64 or base64url encoded CBOR data to mDOC object
- *
- * If it is not possibile to decode the provided data, the promise will be rejected with
- * an instance of {@link CborFailure}.
- *
- * @param data - The base64 encoded MDOC data
+ * Decode base64 or base64url encoded mDOC-CBOR data to a JSON object
+ * @param data - The base64 or base64url encoded mDOC-CBOR string
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  * @returns The decoded data as mDOC object
  */
 export const decodeDocuments = async (data: string): Promise<Documents> => {
@@ -39,13 +32,10 @@ export const decodeDocuments = async (data: string): Promise<Documents> => {
 };
 
 /**
- * Extract and decode the {@link IssuerSigned} with the {@link IssuerAuth} decoded from base64 encoded CBOR
- *
- * If it is not possibile to decode the provided data, the promise will be rejected with
- * an instance of {@link CborFailure}.
- *
- * @param issuerSigned - The base64 or base64url encoded MDOC data
- * @returns The decoded {@link IssuerSigned} contained in the mDOC object
+ * Decode base64 or base64url encoded issuerSigned attribute part of an mDOC-CBOR.
+ * @param issuerSigned - The base64 or base64url encoded mDOC-CBOR containing the issuerSigned data string
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
+ * @returns The decoded {@link IssuerSigned}
  */
 export const decodeIssuerSigned = async (
   issuerSigned: string
