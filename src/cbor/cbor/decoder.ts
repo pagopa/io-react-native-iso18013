@@ -33,7 +33,7 @@ export const decodeDocuments = async (data: string): Promise<Documents> => {
 
 /**
  * Decode base64 or base64url encoded issuerSigned attribute part of an mDOC-CBOR.
- * @param issuerSigned - The base64 or base64url encoded mDOC-CBOR containing the issuerSigned data string
+ * @param data - The base64 or base64url encoded mDOC-CBOR containing the issuerSigned
  * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  * @returns The decoded {@link IssuerSigned}
  */

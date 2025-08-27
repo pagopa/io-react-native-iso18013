@@ -180,7 +180,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
    * - alias which is the alias of the key used to sign the credential;
    * - docType which is the document type.
-   * @param fieldRequestedAndAccepted A dictionary of elements, where each element must adhere to a Map<String, Map<String, Map<String,Boolean>>>.
+   * @param acceptedFields A dictionary of elements, where each element must adhere to a Map<String, Map<String, Map<String,Boolean>>>.
    * The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
    * ```
    * {
@@ -263,7 +263,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
    * - alias which is the alias of the key used to sign the credential;
    * - docType which is the document type.
-   * @param fieldRequestedAndAccepted dictionary of elements, where each element must adhere to a Map<String, Map<String, Map<String,Boolean>>>.
+   * @param acceptedFields dictionary of elements, where each element must adhere to a Map<String, Map<String, Map<String,Boolean>>>.
    * The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
    * ```
    * {

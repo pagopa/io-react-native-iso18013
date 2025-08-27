@@ -8,7 +8,7 @@ import type { RequestedDocument } from '../types';
  * @param authorizationRequestNonce - the authorization request nonce extracted from OID4VP session
  * @param mdocGeneratedNonce - the mdoc generated nonce to be generated
  * @param documents - an array of {@link RequestedDocument}
- * @param fieldRequestedAndAccepted - a record of claims accepted for disclosure or its stringification extracted from OID4VP session
+ * @param acceptedFields - a record of claims accepted for disclosure or its stringification extracted from OID4VP session
  * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  * @returns a base64 encoded device response
  */
