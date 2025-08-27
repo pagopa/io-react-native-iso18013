@@ -2,16 +2,15 @@ import { IoReactNativeIso18013 } from '..';
 import type { RequestedDocument } from '../types';
 
 /**
- *
- * @param clientId extracted from OID4VP session
- * @param responseUri extracted from OID4VP session
- * @param authorizationRequestNonce extracted from OID4VP session
- * @param mdocGeneratedNonce To be generated
- * @param documents An Array of {@link DocRequested}
- * @param acceptedFields extracted from OID4VP session, it's a record of claims
- *                                  accepted for disclosure or its stringification
- * @throws {OID4VPFailure} in case of failure
- * @returns the Device Response in CBOR format
+ * Generates a CBOR device response for ISO 18013-7 mDL remote presentation using OID4VP.
+ * @param clientId - the client id extracted from OID4VP session
+ * @param responseUri - the response URI extracted from OID4VP session
+ * @param authorizationRequestNonce - the authorization request nonce extracted from OID4VP session
+ * @param mdocGeneratedNonce - the mdoc generated nonce to be generated
+ * @param documents - an array of {@link RequestedDocument}
+ * @param fieldRequestedAndAccepted - a record of claims accepted for disclosure or its stringification extracted from OID4VP session
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
+ * @returns a base64 encoded device response
  */
 export const generateOID4VPDeviceResponse = async (
   clientId: string,
