@@ -6,87 +6,35 @@ This module provides methods to decode CBOR data into readable objects.
 import { CBOR } from '@pagopa/io-react-native-iso18013';
 ```
 
-### Methods
+## Methods
 
 #### `decode`
 
-This method allows to decode CBOR data into readable JSON objects.
-Returns a `Promise` which resolves to a JSON object, or rejects with an instance of `CborFailure` in case of failure.
+Decodes CBOR data into readable JSON objects.
 
 **Note**: this method does not decode nested CBOR objects and therefore complex objects needs additional manual decoding
 
 ```typescript
-try {
-  const decoded = await CBOR.decode('...');
-} catch (e) {
-  const { message, userInfo } = e as CborFailure;
-}
+const decoded = await CBOR.decode('...');
 ```
 
 #### `decodeDocuments`
 
-This metod allows the decoding of CBOR data which contains MDOC objects.
-Returns a promise wich resolves to a [Documents](#documents) object, or rejects with an instance of `CborFailure` in case of failure.
+Decodes CBOR data containing MDOC objects.
 
 ```typescript
-try {
-  const decoded = await CBOR.decodeDocuments('...');
-} catch (e) {
-  const { message, userInfo } = e as CborFailure;
-}
+const decoded = await CBOR.decodeDocuments('...');
 ```
 
-### Types
+#### `decodeIssuerSigned`
 
-#### `Documents`
+Decodes CBOR data containing an Issuer Signed object.
 
 ```typescript
-type Documents = {
-  status?: number;
-  version?: string;
-  documents?: Array<MDOC>;
-};
+const decoded = await CBOR.decodeIssuerSigned('...');
 ```
 
-#### `MDOC`
-
-```typescript
-type MDOC = {
-  docType?: DocumentType;
-  issuerSigned?: IssuerSigned;
-};
-```
-
-#### `IssuerSigned`
-
-```typescript
-type IssuerSigned = {
-  nameSpaces?: Record<string, Array<DocumentValue>>;
-  issuerAuth?: string;
-};
-```
-
-#### `DocumentValue`
-
-```typescript
-type DocumentValue = {
-  digestID?: number;
-  random?: string;
-  elementIdentifier?: string;
-  elementValue?: string;
-};
-```
-
-#### `DocumentType`
-
-```typescript
-enum DocumentTypeEnum {
-  MDL = 'org.iso.18013.5.1.mDL',
-  EU_PID = 'eu.europa.ec.eudi.pid.1',
-}
-```
-
-### Error Codes
+## Errors
 
 This table contains the list of error codes that can be thrown by the `CBOR` module which are mapped via the `ModuleErrorCodes` type:
 | Type | Platform | Description |
