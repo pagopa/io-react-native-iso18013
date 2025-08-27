@@ -1,4 +1,4 @@
-## CBOR
+# CBOR
 
 This module provides methods to decode CBOR data into readable objects.
 
