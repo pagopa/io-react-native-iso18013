@@ -14,7 +14,8 @@ class IoReactNativeCbor: NSObject {
       - resolve: The promise to be resolved.
       - reject: The promise to be rejected.
    */
-  @objc func decode(
+  @objc(decode:withResolver:withRejecter:)
+  func decode(
     data: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
@@ -41,7 +42,8 @@ class IoReactNativeCbor: NSObject {
       - resolve: The promise to be resolved.
       - reject: The promise to be rejected.
    */
-  @objc func decodeDocuments(
+  @objc(decodeDocuments:withResolver:withRejecter:)
+  func decodeDocuments(
     data: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
@@ -67,7 +69,8 @@ class IoReactNativeCbor: NSObject {
       - resolve: The promise to be resolved.
       - reject: The promise to be rejected.
    */
-  @objc func decodeIssuerSigned(
+  @objc(decodeIssuerSigned:withResolver:withRejecter:)
+  func decodeIssuerSigned(
     data: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
@@ -94,7 +97,8 @@ class IoReactNativeCbor: NSObject {
      - resolve: The promise to be resolved.
      - reject: The promise to be rejected.
    */
-  @objc func sign(
+  @objc(sign:withKeyTag:withResolver:withRejecter:)
+  func sign(
     data: String,
     keyTag: String,
     resolver resolve: @escaping RCTPromiseResolveBlock,
@@ -131,7 +135,8 @@ class IoReactNativeCbor: NSObject {
       - resolve: The promise to be resolved
       - reject: The promise to be rejected..
    */
-  @objc func verify(
+  @objc(verify:withJwk:withResolver:withRejecter:)
+  func verify(
     data: String,
     jwk: NSDictionary,
     resolver resolve: RCTPromiseResolveBlock,

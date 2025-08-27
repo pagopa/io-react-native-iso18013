@@ -406,7 +406,8 @@ class IoReactNativeIso18013: RCTEventEmitter {
        - resolve: The promise to be resolved.
        - reject: The promise to be rejected.
    */
-  @objc func generateOID4VPDeviceResponse(
+  @objc(generateOID4VPDeviceResponse:withResponseUri:withAuthorizationRequestNonce:withMdocGeneratedNonce:withDocuments:withAcceptedFields:withResolver:withRejecter:)
+  func generateOID4VPDeviceResponse(
     clientId: String,
     responseUri: String,
     authorizationRequestNonce: String,
