@@ -65,7 +65,7 @@ class IoReactNativeCbor: NSObject {
    Decode base64 or base64url encoded issuerSigned attribute part of an mDOC-CBOR.
    Resolves with a string containing the parsed data or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
-      - issuerSigned: The base64 or base64url encoded mDOC-CBOR containing the issuerSigned data string.
+      - data: The base64 or base64url encoded mDOC-CBOR containing the issuerSigned data string.
       - resolve: The promise to be resolved.
       - reject: The promise to be rejected.
    */
@@ -138,13 +138,13 @@ class IoReactNativeCbor: NSObject {
   @objc(verify:withJwk:withResolver:withRejecter:)
   func verify(
     data: String,
-    jwk: NSDictionary,
+    publicKey: NSDictionary,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do {
       let buffer = try Base64Utils.decodeBase64OrBase64URL(base: data)
-      let publicKeyJson = try JSONSerialization.data(withJSONObject: jwk, options:[] )
+      let publicKeyJson = try JSONSerialization.data(withJSONObject: publicKey, options:[] )
       let publicKeyString = String(data: publicKeyJson, encoding: .utf8)!
       let publicKey = CoseKey(jwk: publicKeyString)!
       let verified = CborCose.verify(data: buffer, publicKey: publicKey)
