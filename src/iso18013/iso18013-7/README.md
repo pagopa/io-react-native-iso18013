@@ -1,51 +1,28 @@
-## ISO18013-7
+# ISO18013-7
 
-This module provides methods to obtain data structures necessary for the processes defined in the `ISO-18013` standard.
+This library provides a React Native module based on [iso18013-android](https://github.com/pagopa/iso18013-android) and [iso18013-ios](https://github.com/pagopa/iso18013-ios) which allows mDL remote presentation according to the ISO 18013-7 standard.
 
 ```typescript
-import { ISO18013_7 } from '@pagopa/io-react-native-cbor';
+import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
 ```
 
-### Methods
+## Methods
 
 #### `generateOID4VPDeviceResponse`
 
-Generates CBOR of the _Device Response_ containing all the claims that have been chosen to be presented during an _OID4VP_ session.
-
-Returns a `Promise` which resolves to a `string` containing the CBOR of the **Device Response** object or rejects with an instance of `CoseFailure` in case of failures.
+Returns a string containing the CBOR of the **Device Response** object.
 
 ```typescript
-try {
-  const result = await ISO18013_7.generateOID4VPDeviceResponse(
-    clientId,
-    responseUri,
-    authorizationRequestNonce,
-    mdocGeneratedNonce,
-    documents,
-    acceptedFields
-  );
-} catch (error: any) {
-  const { message, userInfo } = e as CoseFailure;
-}
-```
+import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
 
-#### Signature
-
-```typescript
-type RequestedDocument = {
-    issuerSignedContent : string,
-    alias : string,
-    docType : string
-}
-
-export const generateOID4VPDeviceResponse = async (
-  clientId: string,
-  responseUri: string,
-  authorizationRequestNonce: string,
-  mdocGeneratedNonce: string,
-  documents: Array<RequestedDocument>,
-  acceptedFields: Record<string, any> | string
-) : Promise<string> => {...};
+const result = await ISO18013_7.generateOID4VPDeviceResponse(
+  clientId,
+  responseUri,
+  authorizationRequestNonce,
+  mdocGeneratedNonce,
+  documents,
+  acceptedFields
+);
 ```
 
 ## Errors

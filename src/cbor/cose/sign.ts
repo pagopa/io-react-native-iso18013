@@ -6,7 +6,7 @@ import { IoReactNativeCbor } from '..';
  *
  * @param data - The base64 or base64url encoded payload to sign
  * @param keyTag - The alias of the key to use for signing.
- * @throws {CoseFailure} If the key does not exist
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  * @returns The COSE-Sign1 object in base64 encoding
  */
 export const sign = async (data: string, keyTag: string): Promise<string> =>
@@ -17,6 +17,7 @@ export const sign = async (data: string, keyTag: string): Promise<string> =>
  *
  * @param data - The COSE-Sign1 object in base64 or base64url encoding
  * @param publicKey - The public key in JWK format
+ * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
  * @returns true if the signature is valid, false otherwise
  */
 export const verify = async (

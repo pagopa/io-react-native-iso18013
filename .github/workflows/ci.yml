@@ -117,6 +117,9 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Select Xcode version
+        run: sudo xcode-select -s '/Applications/Xcode_16.4.app'
+
       - name: Cache turborepo for iOS
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:

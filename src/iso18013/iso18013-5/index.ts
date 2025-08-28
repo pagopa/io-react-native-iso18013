@@ -16,7 +16,6 @@ export {
   close,
   generateResponse,
   getQrCodeString,
-  removeListener,
   sendErrorResponse,
   sendResponse,
   start,

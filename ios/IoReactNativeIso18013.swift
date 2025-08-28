@@ -37,8 +37,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
   
   /**
    Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
-   Resolves to true or rejects if an error occurs.
-    
+   Resolves to true or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
       - certificates: Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
       - resolve: The promise to be resolved
@@ -65,10 +64,9 @@ class IoReactNativeIso18013: RCTEventEmitter {
   
   /**
    Utility function to parse an array coming from the React Native Bridge into an array of Data representing DER encoded X.509 certificates.
-   
    - Parameters:
-      - certificates:Two-dimensional array of base64 strings representing DER encoded X.509 certificate
-   
+      - certificates: Two-dimensional array of base64 strings representing DER encoded X.509 certificate
+    - Throws: `ParsingError` if the provided certificate is not a valid base64 encoded string.
     - Returns: A two-dimensional array of Data containing DER encoded X.509 certificates.
   */
   private func parseCertificates(_ certificates: [Any]) throws -> [[Data]] {
@@ -87,12 +85,11 @@ class IoReactNativeIso18013: RCTEventEmitter {
   
   /**
    Creates a QR code to be scanned in order to initialize the presentation.
-   Resolves with the QR code strings.
-
+   Resolves with a string containing the QR code or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
       - resolve: The promise to be resolved
       - reject: The promise to be rejected
-  */
+   */
   @objc(getQrCodeString:withRejecter:)
   func getQrCodeString(
     resolve: @escaping RCTPromiseResolveBlock,
@@ -110,20 +107,17 @@ class IoReactNativeIso18013: RCTEventEmitter {
    Parses an array of documents from the React Native bridge which doesn't have any typing to an array of ``IOWalletProximity.ProximityDocument``.
    It checks if each element in the array has  `issuerSignedContent`, `alias` and `docType` properties in order to build a ``IOWalletProximity.ProximityDocument``, then it appens it to the array.
    The result can be fed to ``IOWalletProximity.generateResponse``.
-   
    - Parameters:
       - documents: An array containing documents. Each document is defined as a map containing:
          - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
          - alias which is the alias of the key used to sign the credential;
          - docType which is the document type.
-   
    - Throws: `ParsingError`:
       - If the provided documents array do not contain a dictionary;
       - If the provided dictionary doesn't adhere to the structure we expect;
       - If the issuerSignedContent is not a valid base64 or base64url encoded string;
       - If the creation of a ProximityDdocument fails.
-   
-   - Returns: An array of `ProximityDocument` containg the documents to be presented
+   - Returns: An array of `ProximityDocument` containg the documents to be presented.
    */
   private func parseDocuments(documents: [Any]) throws -> [ProximityDocument] {
     return try documents.map{ (element) -> ProximityDocument in
@@ -151,14 +145,10 @@ class IoReactNativeIso18013: RCTEventEmitter {
    Parses a dictionary of accepted fields for the presentation from the React Native bridge which doesn't have any typing to a ``AcceptedFieldsDict`` dictionary.
    It checks if each element in the array is a dictionary where the key is a string, and the value is another dictionary. This nested dictionary has a string as its key and a boolean as its value, then it appens it to the array.
    The result can be fed to ``IOWalletProximity.generateResponse``.
-   
    - Parameters:
-      - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]]
-   
-   - Throws: `ParsingError` if a value doesn't has the ``AcceptedFieldsDict`` shape or the result dictionary is empty
-   
-   - Returns: An ``AcceptedFieldsDict`` containg the accepted fields to be presented
-   
+      - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]].
+   - Throws: `ParsingError` if a value doesn't has the ``AcceptedFieldsDict`` shape or the result dictionary is empty.
+   - Returns: An ``AcceptedFieldsDict`` containg the accepted fields to be presented.
    */
   private func parseAcceptedFields(acceptedFields: [AnyHashable: Any]) throws(ParsingError) -> AcceptedFieldsDict {
     var result: AcceptedFieldsDict = [:]
@@ -177,37 +167,31 @@ class IoReactNativeIso18013: RCTEventEmitter {
   }
   
   /**
-     Generates a response containing the documents and the fields which the user decided to present.
-     It parses the untyped ``documents`` and ``acceptedFields`` parameters and feeds them to the ``IOWalletProximity.generateDeviceResponse`` function.
-     It resolves the promise with the response as a base64 encoded string.
-     It rejects the promise if an error occurs during the parameters parsing or while generating the device response.
-     
-     - Parameters:
-       - documents: An array containing documents. Each document is defined as a map containing:
-           - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-           - alias which is the alias of the key used to sign the credential;
-           - docType which is the document type.
-       - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-       - alias which is the alias of the key used to sign the credential;
-       - docType which is the document type.
-       - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credentia doctypel. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
+   Generates a response containing the documents and the fields which the user decided to present.
+   It parses the untyped ``documents`` and ``acceptedFields`` parameters and feeds them to the ``IOWalletProximity.generateDeviceResponse`` function.
+   Resolves with a base64 encoded response or rejects with an error code defined in ``ModuleErrorCodes``.
+   - Parameters:
+     - documents: An array containing documents. Each document is defined as a map containing:
+         - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+         - alias which is the alias of the key used to sign the credential;
+         - docType which is the document type.
+     - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
         
          
-             {
-                "org.iso.18013.5.1.mDL": {
-                  "org.iso.18013.5.1": {
-                    "hair_colour": true,
-                    "given_name_national_character": true,
-                    "family_name_national_character": true,
-                    "given_name": true,
-                  }
+           {
+              "org.iso.18013.5.1.mDL": {
+                "org.iso.18013.5.1": {
+                  "hair_colour": true,
+                  "given_name_national_character": true,
+                  "family_name_national_character": true,
+                  "given_name": true,
                 }
-             }
-    
-       - resolve: The promise to be resolved
-       - reject: The promise to be rejected
-     
-     */
+              }
+           }
+  
+     - resolve: The promise to be resolved.
+     - reject: The promise to be rejected.
+   */
   @objc(generateResponse:withAcceptedFields:withResolver:withRejecter:)
   func generateResponse(
     documents: Array<Any>,
@@ -234,9 +218,8 @@ class IoReactNativeIso18013: RCTEventEmitter {
   
   /**
    Sends a response containing the documents and the fields which the user decided to present generated by ``generateResponse``.
-   It resolves to true after sending the response, otherwise it rejects if an error occurs while decoding the response.
    Currently there's not evidence of the verifier app responding to this request, thus we don't handle the response.
-   
+   Resolves with a true boolean in case of success or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
      - response: A base64 encoded string containing the response generated by ``generateResponse``
      - resolve: The promise to be resolved
@@ -261,15 +244,16 @@ class IoReactNativeIso18013: RCTEventEmitter {
   
   /**
    Sends an error response during the presentation according to the SessionData status codes defined in table 20 of the ISO18013-5 standard.
+   Resolves to true or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
-     - status: The status error to be sent is an integer of type ``SessionDataStatus``:
+     - code: The status error to be sent is an integer of type ``SessionDataStatus``:
        ```
          10 -> Error: session encryption
          11 -> Error: CBOR decoding
          20 -> Session termination
        ```
-     - resolve: The promise to be resolved
-     - reject: The promise to be rejected
+     - resolve: The promise to be resolved.
+     - reject: The promise to be rejected.
    */
   @objc(sendErrorResponse:withResolver:withRejecter:)
   func sendErrorResponse(code: UInt64, _ resolve: @escaping RCTPromiseResolveBlock,
@@ -289,12 +273,10 @@ class IoReactNativeIso18013: RCTEventEmitter {
   
   /**
    Closes the bluetooth connection and clears any resource.
-   It resolves to true after closing the connection.
-   
+   Resolves to true after closing the connection or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
-     - resolve: The promise to be resolved
-     - reject:  The promise to be rejected
-   
+     - resolve: The promise to be resolved.
+     - reject:  The promise to be rejected.
    */
   @objc(close:withRejecter:)
   func close(
@@ -306,13 +288,11 @@ class IoReactNativeIso18013: RCTEventEmitter {
   }
   
   /**
-     Converts a device requested from the `onDocumentRequestReceived` callback into a serializable JSON.
-     
-     - Parameters:
-        - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces and the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the dataß
-     
-     - Returns: A JSON string representing the device request or nil if an error occurs
-    */
+   Converts a device requested from the `onDocumentRequestReceived` callback into a serializable JSON.
+   - Parameters:
+      - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces and the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the data.
+   - Returns: A JSON string representing the device request or nil if an error occurs.
+   */
   private func deviceRequestToJson(request: [(docType: String, nameSpaces: [String: [String: Bool]], isAuthenticated: Bool)]?) -> String? {
     var jsonRequest : [String: AnyHashable] = [:]
     request?.forEach({
@@ -390,6 +370,37 @@ class IoReactNativeIso18013: RCTEventEmitter {
     }
   }
   
+  /**
+   Generates a CBOR encoded device response for ISO 18013-7 mDL remote presentation using OID4VP.
+   Resolves with the base64 encoded device response or rejects with an error code defined in ``ModuleErrorCodes``.
+   - Parameters:
+      - clientId: The client id extracted from OID4VP session.
+      - responseUri: The response URI extracted from OID4VP session.
+      - authorizationRequestNonce - The authorization request nonce extracted from OID4VP session.
+      - mdocGeneratedNonce - the mdoc generated nonce to be generated.
+      - documents: An array containing documents. Each document is defined as a map containing:
+           - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+           - alias which is the alias of the key used to sign the credential;
+           - docType which is the document type.
+      - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a `[String: [String: [String: Bool]]]`. The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
+          
+           
+             {
+                "org.iso.18013.5.1.mDL": {
+                  "org.iso.18013.5.1": {
+                    "hair_colour": true,
+                    "given_name_national_character": true,
+                    "family_name_national_character": true,
+                    "given_name": true,
+                  },
+                  {...}
+                },
+                {...}
+             }
+
+       - resolve: The promise to be resolved.
+       - reject: The promise to be rejected.
+   */
   @objc(generateOID4VPDeviceResponse:withResponseUri:withAuthorizationRequestNonce:withMdocGeneratedNonce:withDocuments:withAcceptedFields:withResolver:withRejecter:)
   func generateOID4VPDeviceResponse(
     clientId: String,
@@ -423,19 +434,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
       reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, error.localizedDescription, error)
     }
   }
-  
-  private class DocRequested {
-    var issuerSignedContent : [UInt8]
-    var alias : String
-    var docType : String
     
-    public init(issuerSignedContent: [UInt8], alias: String, docType: String) {
-      self.issuerSignedContent = issuerSignedContent
-      self.alias = alias
-      self.docType = docType
-    }
-  }
-  
   /**
    Custom Error which is thrown when a parsing error occurs in our utility functions which converts data from the bridge to what
    our underlying functions expect.
