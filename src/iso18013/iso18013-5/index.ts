@@ -1,8 +1,4 @@
-export {
-  type AcceptedFields,
-  type VerifierRequest,
-  parseVerifierRequest,
-} from './request';
+export { type VerifierRequest, parseVerifierRequest } from './request';
 
 export {
   type OnErrorPayload,
@@ -25,4 +21,4 @@ export {
   start,
 } from './proximity';
 
-export { type RequestedDocument } from '../types';
+export { type RequestedDocument, type AcceptedFields } from '../types';

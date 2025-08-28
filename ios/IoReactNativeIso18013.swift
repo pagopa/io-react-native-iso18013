@@ -163,10 +163,6 @@ class IoReactNativeIso18013: RCTEventEmitter {
       result[keyString] = valueDict
     }
     
-    if(result.isEmpty){
-      throw ParsingError.acceptedFieldsNotValid("Empty accepted fields cannot be empty")
-    }
-    
     return result
   }
   
@@ -396,8 +392,10 @@ class IoReactNativeIso18013: RCTEventEmitter {
                     "given_name_national_character": true,
                     "family_name_national_character": true,
                     "given_name": true,
-                  }
-                }
+                  },
+                  {...}
+                },
+                {...}
              }
 
        - resolve: The promise to be resolved.
@@ -410,7 +408,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
     authorizationRequestNonce: String,
     mdocGeneratedNonce: String,
     documents: [Any],
-    acceptedFields: String,
+    acceptedFields: [AnyHashable: Any],
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
@@ -424,7 +422,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
       )
       
       let documentsAsProximityDocument = try parseDocuments(documents: documents)
-      let items = try JSONDecoder().decode([String : [String : [String : Bool]]].self, from: Data(acceptedFields.utf8))
+      let items = try parseAcceptedFields(acceptedFields: acceptedFields)
       let response = try Proximity.shared.generateDeviceResponse(items: items, documents: documentsAsProximityDocument, sessionTranscript: sessionTranscript)
       resolve(Data(response).base64EncodedString())
     } catch let parsingError as ParsingError{

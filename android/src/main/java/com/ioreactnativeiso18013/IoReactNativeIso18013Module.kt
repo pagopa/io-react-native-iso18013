@@ -190,8 +190,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    *        "given_name_national_character": true,
    *        "family_name_national_character": true,
    *        "given_name": true,
-   *      }
-   *    }
+   *      },
+   *      {...}
+   *    },
+   *   {...}
    * }
    * ```
    * @param promise The promise which will be resolved in case of success or rejected in case of failure.
@@ -209,8 +211,9 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
         val sessionTranscript = devHelper.sessionTranscript()
         val responseGenerator = ResponseGenerator(sessionTranscript)
+        val parsedAcceptedFields = parseAcceptedFields(acceptedFields)
         responseGenerator.createResponse(docRequestedList,
-          acceptedFields.toString(),
+          parsedAcceptedFields,
           object : ResponseGenerator.Response {
             override fun onResponseGenerated(response: ByteArray) {
               promise.resolve(Base64Utils.encodeBase64(response))
@@ -283,7 +286,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   fun generateOID4VPDeviceResponse(
     clientId: String, responseUri: String, authorizationRequestNonce: String,
     mdocGeneratedNonce: String, documents: ReadableArray,
-    acceptedFields: String, promise: Promise
+    acceptedFields: ReadableMap, promise: Promise
   ) {
     try {
       val sessionTranscript =
@@ -297,10 +300,12 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       val documentsParsed =
         parseDocRequested(documents)
 
+      val parsedAcceptedFields = parseAcceptedFields(acceptedFields)
+
       val responseGenerator = ResponseGenerator(sessionTranscript)
       responseGenerator.createResponse(
         documentsParsed,
-        acceptedFields,
+        parsedAcceptedFields,
         object : ResponseGenerator.Response {
           override fun onResponseGenerated(response: ByteArray) {
             promise.resolve(Base64Utils.encodeBase64(response))
@@ -392,6 +397,62 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       }.toTypedArray()
     } catch (e: Exception) {
       throw IllegalArgumentException("Failed to parse documents: ${e.message}", e)
+    }
+  }
+
+  /**
+   * Utility function which checks if the input map is consistent with what we expects before parsing
+   * it to a string.
+   * It loops through each credential and each namespace, checking if the accepted fields contain
+   * a boolean value.
+   * @param acceptedFields - A map contained the accepted fields to be presented with the following shape:
+   * {
+   * "org.iso.18013.5.1.mDL": {
+   *  "org.iso.18013.5.1": {
+   *    "hair_colour": true,
+   *    "given_name_national_character": true,
+   *    "family_name_national_character": true,
+   *    "given_name": true,
+   *    },
+   *    {...}
+   *   },
+   *   {...}
+   * }
+   * @throw IllegalArgumentException if the ReadableMap is not consistent or contains an invalid value
+   * @returns String representation of [acceptedFields]
+   */
+  private fun parseAcceptedFields(acceptedFields: ReadableMap): String {
+    try {
+      // Loop for each credential and throw if something different than map is found
+      acceptedFields.entryIterator.forEach { credentialEntry ->
+        val credentialName = credentialEntry.key
+        val credentialValue = credentialEntry.value
+        if (credentialValue !is ReadableMap) {
+          throw IllegalArgumentException("Credential '$credentialName' must be a map")
+        }
+
+        // Loop for each namespace in credential and throw if something different than map is found
+        credentialValue.entryIterator.forEach { namespaceEntry ->
+          val namespaceName = namespaceEntry.key
+          val namespaceValue = namespaceEntry.value
+          if (namespaceValue !is ReadableMap) {
+            throw IllegalArgumentException("Namespace '$namespaceName' in credential '$credentialName' must be a map")
+          }
+
+          // Loop for each field in namespace and throw if something different than boolean is found
+          namespaceValue.entryIterator.forEach { fieldEntry ->
+            val fieldName = fieldEntry.key
+            val fieldValue = fieldEntry.value
+            if (fieldValue !is Boolean) {
+              throw IllegalArgumentException("Field '$fieldName' in namespace '$namespaceName' of credential '$credentialName' must be a boolean")
+            }
+          }
+        }
+      }
+      // If no exception is thrown then we can convert it to string
+      return acceptedFields.toString()
+    } catch (e: Exception) {
+      throw IllegalArgumentException("Failed to parse accepted fields: ${e.message}", e)
     }
   }
 
