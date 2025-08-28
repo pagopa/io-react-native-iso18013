@@ -211,9 +211,9 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
         val sessionTranscript = devHelper.sessionTranscript()
         val responseGenerator = ResponseGenerator(sessionTranscript)
-        val acceptedFields = parseAcceptedFields(acceptedFields)
+        val parsedAcceptedFields = parseAcceptedFields(acceptedFields)
         responseGenerator.createResponse(docRequestedList,
-          acceptedFields,
+          parsedAcceptedFields,
           object : ResponseGenerator.Response {
             override fun onResponseGenerated(response: ByteArray) {
               promise.resolve(Base64Utils.encodeBase64(response))
@@ -300,12 +300,12 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       val documentsParsed =
         parseDocRequested(documents)
 
-      val acceptedFields = parseAcceptedFields(acceptedFields)
+      val parsedAcceptedFields = parseAcceptedFields(acceptedFields)
 
       val responseGenerator = ResponseGenerator(sessionTranscript)
       responseGenerator.createResponse(
         documentsParsed,
-        acceptedFields,
+        parsedAcceptedFields,
         object : ResponseGenerator.Response {
           override fun onResponseGenerated(response: ByteArray) {
             promise.resolve(Base64Utils.encodeBase64(response))

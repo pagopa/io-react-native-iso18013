@@ -27,8 +27,10 @@ export type RequestedDocument = {
  *        "given_name_national_character": true,
  *        "family_name_national_character": true,
  *        "given_name": true,
- *     }
- *    }
+ *     },
+ *     {...}
+ *    },
+ *    {...}
  *  }`
  **/
 export type AcceptedFields = {
