@@ -180,7 +180,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
    * - alias which is the alias of the key used to sign the credential;
    * - docType which is the document type.
-   * @param fieldRequestedAndAccepted A dictionary of elements, where each element must adhere to a Map<String, Map<String, Map<String,Boolean>>>.
+   * @param acceptedFields A dictionary of elements, where each element must adhere to a Map<String, Map<String, Map<String,Boolean>>>.
    * The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
    * ```
    * {
@@ -199,7 +199,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun generateResponse(
     documents: ReadableArray,
-    fieldRequestedAndAccepted: ReadableMap,
+    acceptedFields: ReadableMap,
     promise: Promise
   ) {
     try {
@@ -210,7 +210,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         val sessionTranscript = devHelper.sessionTranscript()
         val responseGenerator = ResponseGenerator(sessionTranscript)
         responseGenerator.createResponse(docRequestedList,
-          fieldRequestedAndAccepted.toString(),
+          acceptedFields.toString(),
           object : ResponseGenerator.Response {
             override fun onResponseGenerated(response: ByteArray) {
               promise.resolve(Base64Utils.encodeBase64(response))
@@ -263,7 +263,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
    * - alias which is the alias of the key used to sign the credential;
    * - docType which is the document type.
-   * @param fieldRequestedAndAccepted dictionary of elements, where each element must adhere to a Map<String, Map<String, Map<String,Boolean>>>.
+   * @param acceptedFields dictionary of elements, where each element must adhere to a Map<String, Map<String, Map<String,Boolean>>>.
    * The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
    * ```
    * {
@@ -283,7 +283,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   fun generateOID4VPDeviceResponse(
     clientId: String, responseUri: String, authorizationRequestNonce: String,
     mdocGeneratedNonce: String, documents: ReadableArray,
-    fieldRequestedAndAccepted: String, promise: Promise
+    acceptedFields: String, promise: Promise
   ) {
     try {
       val sessionTranscript =
@@ -300,7 +300,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       val responseGenerator = ResponseGenerator(sessionTranscript)
       responseGenerator.createResponse(
         documentsParsed,
-        fieldRequestedAndAccepted,
+        acceptedFields,
         object : ResponseGenerator.Response {
           override fun onResponseGenerated(response: ByteArray) {
             promise.resolve(Base64Utils.encodeBase64(response))

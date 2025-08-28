@@ -10,42 +10,19 @@ import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
 
 #### `generateOID4VPDeviceResponse`
 
-Generates CBOR of the _Device Response_ containing all the claims that have been chosen to be presented during an _OID4VP_ session.
-
-Returns a `Promise` which resolves to a `string` containing the CBOR of the **Device Response** object or rejects with an instance of `CoseFailure` in case of failures.
+Returns a string containing the CBOR of the **Device Response** object.
 
 ```typescript
-try {
-  const result = await ISO18013_7.generateOID4VPDeviceResponse(
-    clientId,
-    responseUri,
-    authorizationRequestNonce,
-    mdocGeneratedNonce,
-    documents,
-    fieldRequestedAndAccepted
-  );
-} catch (error: any) {
-  const { message, userInfo } = e as CoseFailure;
-}
-```
+import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
 
-#### Signature
-
-```typescript
-type RequestedDocument = {
-    issuerSignedContent : string,
-    alias : string,
-    docType : string
-}
-
-export const generateOID4VPDeviceResponse = async (
-  clientId: string,
-  responseUri: string,
-  authorizationRequestNonce: string,
-  mdocGeneratedNonce: string,
-  documents: Array<RequestedDocument>,
-  fieldRequestedAndAccepted: Record<string, any> | string
-) : Promise<string> => {...};
+const result = await ISO18013_7.generateOID4VPDeviceResponse(
+  clientId,
+  responseUri,
+  authorizationRequestNonce,
+  mdocGeneratedNonce,
+  documents,
+  acceptedFields
+);
 ```
 
 ## Errors
