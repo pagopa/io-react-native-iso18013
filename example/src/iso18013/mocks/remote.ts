@@ -133,9 +133,20 @@ export const INCOMPLETE_DOC_REQUEST = {
   ],
 };
 
-export const WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST = {
+export const EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST = {
   ...DEVICE_REQUEST_BASE64URL,
   acceptedFields: {},
+};
+
+export const WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST = {
+  ...DEVICE_REQUEST_BASE64URL,
+  acceptedFields: {
+    'org.iso.18013.5.1.mDL': {
+      'org.iso.18013.5.1': {
+        non_existing_field: 'not_a_boolean',
+      },
+    },
+  },
 };
 
 export type DeviceRequest = typeof DEVICE_REQUEST_BASE64;

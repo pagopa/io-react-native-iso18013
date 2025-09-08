@@ -5,6 +5,7 @@ import { styles } from '../styles';
 import {
   DEVICE_REQUEST_BASE64,
   DEVICE_REQUEST_BASE64URL,
+  EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST,
   INCOMPLETE_DOC_REQUEST,
   TEST_REMOTE_KEYTAG,
   WRONG_DOC_REQUEST,
@@ -83,6 +84,29 @@ const handleGenerateResponseIncompleteDocRequested = async () => {
   }
 };
 
+const handleGenerateResponseEmptyAcceptedFields = async () => {
+  try {
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
+    const result = await ISO18013_7.generateOID4VPDeviceResponse(
+      EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.clientId,
+      EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.responseUri,
+      EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request
+        .authorizationRequestNonce,
+      EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.mdocGeneratedNonce,
+      EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.documents,
+      EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.acceptedFields
+    );
+    console.log(result);
+    Alert.alert('✅ Device Response Generation Success');
+  } catch (error: any) {
+    parseAndPrintError(
+      ISO18013_7.ModuleErrorSchema,
+      error,
+      'handleGenerateResponseEmptyAcceptedFields error: '
+    );
+  }
+};
+
 const handleGenerateResponseWrongAcceptedFields = async () => {
   try {
     await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
@@ -93,7 +117,7 @@ const handleGenerateResponseWrongAcceptedFields = async () => {
         .authorizationRequestNonce,
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.mdocGeneratedNonce,
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.documents,
-      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.acceptedFields
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.acceptedFields as any // Cast needed to induce error scenario
     );
     console.log(result);
     Alert.alert('❌ Device Response Generation Success, something is wrong');
@@ -123,6 +147,10 @@ const Iso1801357Screen = () => (
     <Button
       title="Test Generate OID4VP Response (incomplete DocRequested)"
       onPress={handleGenerateResponseIncompleteDocRequested}
+    />
+    <Button
+      title="Test Generate OID4VP Response (empty acceptedFields)"
+      onPress={handleGenerateResponseEmptyAcceptedFields}
     />
     <Button
       title="Test Generate OID4VP Response (wrong acceptedFields)"
