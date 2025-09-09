@@ -15,6 +15,25 @@ Returns a string containing the CBOR of the **Device Response** object.
 ```typescript
 import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
 
+const documents = [
+  {
+    issuerSignedContent: 'base64url-or-base64-encoded-content',
+    alias: 'key-alias',
+    docType: 'docType',
+  },
+];
+
+const acceptedFields = {
+  'org.iso.18013.5.1.mDL': {
+    'org.iso.18013.5.1': {
+      hair_colour: true,
+      given_name_national_character: true,
+      family_name_national_character: true,
+      given_name: true,
+    },
+  },
+};
+
 const result = await ISO18013_7.generateOID4VPDeviceResponse(
   clientId,
   responseUri,
