@@ -14,7 +14,7 @@ import kotlin.random.Random
 class IoReactNativeIso18013Test {
 
   /**
-   * This method check if two parsed certificates lists are equal.
+   * Checks if two parsed certificates lists are equal.
    * This is required because ByteArray are compared by reference.
    * @param a - The first list to be compared
    * @param b - The second list to be compared
@@ -36,7 +36,7 @@ class IoReactNativeIso18013Test {
   }
 
   /**
-   * This method check if two array of documents equal.
+   * Checks if two array of documents equal.
    * TThis is needed because DocRequest contains a ByteArray which is compared by reference
    * @param a - The first array to be compared
    * @param b - The second array to be compared
