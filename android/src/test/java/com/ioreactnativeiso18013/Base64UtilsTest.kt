@@ -7,7 +7,7 @@ data class Base64Data(
   val string: String
 )
 
-class Base64UtilsTestDecodeBase64AndBase64Url {
+class Base64UtilsTest {
   private val base64 = Base64Data(
     array = byteArrayOf(116, 101, 115, 116),
     string = "dGVzdA=="

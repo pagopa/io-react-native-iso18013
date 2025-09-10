@@ -67,44 +67,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
-   * Utility function to parse an array coming from the React Native Bridge into an ArrayList
-   * of ByteArray representing DER encoded X.509 certificates.
-   * @param certificates two-dimensional array of base64 strings representing DER encoded X.509 certificate
-   * @returns ArrayList of ByteArray representing DER encoded X.509 certificates.
-   * @throws IllegalArgumentException if an element in the array is not base64 encoded
-   */
-  private fun parseCertificates(certificates: ReadableArray): List<List<ByteArray>> =
-    /** Map the chain arrays and remove null entries. On each chain call the getArray method which
-    * can throw and if it does rethrow an exception with information on its position
-    */
-    (0 until certificates.size()).mapNotNull { chainIndex ->
-      val chain = runCatching { certificates.getArray(chainIndex) }
-        .getOrElse { throw IllegalArgumentException("Certificate chain at $chainIndex is not an array", it) }
-        ?: throw IllegalArgumentException("Certificate chain at index $chainIndex is null")
-
-      /**
-       * Map each chain certificate and remove null entries. On each certificate call the getString
-       * method which can throw and if it does rethrow an exception with information on its position
-       */
-      (0 until chain.size()).mapNotNull { certIndex ->
-        val base64 = runCatching { chain.getString(certIndex) }
-          .getOrElse { throw IllegalArgumentException("Failed to get certificate string at chain $chainIndex, cert $certIndex", it) }
-          ?: throw java.lang.IllegalArgumentException("Certificate at index $certIndex is null")
-
-        /**
-         * Decode the base64 string for each mapped certificate and if an error occurs rethrow
-         * an exception with information on its position
-         */
-        runCatching {
-          Base64Utils.decodeBase64(base64)
-        }.getOrElse {
-          throw IllegalArgumentException("Certificate at index $certIndex in the chain at index $chainIndex is not a valid base64 string", it)
-        }
-      }
-    }
-
-
-  /**
    * Creates a QR code to be scanned in order to initialize the presentation.
    * Resolves with a string containing the QR code or rejects with an error code defined in [ModuleErrorCodes].
    * @param promise the promise which will be resolved in case of success or rejected in case of failure.
@@ -363,100 +325,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
-   * Utility function which extracts the document shape we expect to receive from the bridge
-   * in the one expected by {DocRequested}.
-   * @param documents a {ReadableArray} containing documents. Each document is defined as a map containing:
-   * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-   * - alias which is the alias of the key used to sign the credential;
-   * - docType which is the document type.
-   * @returns an array containing a {DocRequested} object for each document in {documents}
-   * @throws IllegalArgumentException if the provided document doesn't adhere to the expected format
-   */
-  private fun parseDocRequested(documents: ReadableArray): Array<DocRequested> {
-    return try {
-      (0 until documents.size()).map { i ->
-        val entry = documents.getMap(i)
-          ?: throw IllegalArgumentException("Entry at index $i in ReadableArray is null")
-        val alias = entry.getString("alias")
-        val issuerSignedContentStr = entry.getString("issuerSignedContent")
-        val docType = entry.getString("docType")
-
-        if (
-          alias == null || entry.getType("alias") != ReadableType.String ||
-          issuerSignedContentStr == null || entry.getType("issuerSignedContent") != ReadableType.String ||
-          docType == null || entry.getType("docType") != ReadableType.String
-        ) throw IllegalArgumentException("Unable to decode the provided documents at index $i")
-
-        val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
-
-        DocRequested(
-          issuerSignedContent,
-          alias,
-          docType
-        )
-      }.toTypedArray()
-    } catch (e: Exception) {
-      throw IllegalArgumentException("Failed to parse documents: ${e.message}", e)
-    }
-  }
-
-  /**
-   * Utility function which checks if the input map is consistent with what we expects before parsing
-   * it to a string.
-   * It loops through each credential and each namespace, checking if the accepted fields contain
-   * a boolean value.
-   * @param acceptedFields - A map contained the accepted fields to be presented with the following shape:
-   * {
-   * "org.iso.18013.5.1.mDL": {
-   *  "org.iso.18013.5.1": {
-   *    "hair_colour": true,
-   *    "given_name_national_character": true,
-   *    "family_name_national_character": true,
-   *    "given_name": true,
-   *    },
-   *    {...}
-   *   },
-   *   {...}
-   * }
-   * @throw IllegalArgumentException if the ReadableMap is not consistent or contains an invalid value
-   * @returns String representation of [acceptedFields]
-   */
-  private fun parseAcceptedFields(acceptedFields: ReadableMap): String {
-    try {
-      // Loop for each credential and throw if something different than map is found
-      acceptedFields.entryIterator.forEach { credentialEntry ->
-        val credentialName = credentialEntry.key
-        val credentialValue = credentialEntry.value
-        if (credentialValue !is ReadableMap) {
-          throw IllegalArgumentException("Credential '$credentialName' must be a map")
-        }
-
-        // Loop for each namespace in credential and throw if something different than map is found
-        credentialValue.entryIterator.forEach { namespaceEntry ->
-          val namespaceName = namespaceEntry.key
-          val namespaceValue = namespaceEntry.value
-          if (namespaceValue !is ReadableMap) {
-            throw IllegalArgumentException("Namespace '$namespaceName' in credential '$credentialName' must be a map")
-          }
-
-          // Loop for each field in namespace and throw if something different than boolean is found
-          namespaceValue.entryIterator.forEach { fieldEntry ->
-            val fieldName = fieldEntry.key
-            val fieldValue = fieldEntry.value
-            if (fieldValue !is Boolean) {
-              throw IllegalArgumentException("Field '$fieldName' in namespace '$namespaceName' of credential '$credentialName' must be a boolean")
-            }
-          }
-        }
-      }
-      // If no exception is thrown then we can convert it to string
-      return acceptedFields.toString()
-    } catch (e: Exception) {
-      throw IllegalArgumentException("Failed to parse accepted fields: ${e.message}", e)
-    }
-  }
-
-  /**
    * Wrapper function to send an event via `RCTEventEmitter`
    * @param eventName - The event name
    * @param data - The data attached to eventName
@@ -499,5 +367,136 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       // ISO18013-7 related errors
       const val GENERATE_OID4VP_RESPONSE_ERROR = "GENERATE_OID4VP_RESPONSE_ERROR"
     }
+
+    /**
+     * Utility function which checks if the input map is consistent with what we expects before parsing
+     * it to a string.
+     * It loops through each credential and each namespace, checking if the accepted fields contain
+     * a boolean value.
+     * @param acceptedFields - A map contained the accepted fields to be presented with the following shape:
+     * {
+     * "org.iso.18013.5.1.mDL": {
+     *  "org.iso.18013.5.1": {
+     *    "hair_colour": true,
+     *    "given_name_national_character": true,
+     *    "family_name_national_character": true,
+     *    "given_name": true,
+     *    },
+     *    {...}
+     *   },
+     *   {...}
+     * }
+     * @throw IllegalArgumentException if the ReadableMap is not consistent or contains an invalid value
+     * @returns String representation of [acceptedFields]
+     */
+    fun parseAcceptedFields(acceptedFields: ReadableMap): String {
+      try {
+        // Loop for each credential and throw if something different than map is found
+        acceptedFields.entryIterator.forEach { credentialEntry ->
+          val credentialName = credentialEntry.key
+          val credentialValue = credentialEntry.value
+          if (credentialValue !is ReadableMap) {
+            throw IllegalArgumentException("Credential '$credentialName' must be a map")
+          }
+
+          // Loop for each namespace in credential and throw if something different than map is found
+          credentialValue.entryIterator.forEach { namespaceEntry ->
+            val namespaceName = namespaceEntry.key
+            val namespaceValue = namespaceEntry.value
+            if (namespaceValue !is ReadableMap) {
+              throw IllegalArgumentException("Namespace '$namespaceName' in credential '$credentialName' must be a map")
+            }
+
+            // Loop for each field in namespace and throw if something different than boolean is found
+            namespaceValue.entryIterator.forEach { fieldEntry ->
+              val fieldName = fieldEntry.key
+              val fieldValue = fieldEntry.value
+              if (fieldValue !is Boolean) {
+                throw IllegalArgumentException("Field '$fieldName' in namespace '$namespaceName' of credential '$credentialName' must be a boolean")
+              }
+            }
+          }
+        }
+        // If no exception is thrown then we can convert it to string
+        return acceptedFields.toString()
+      } catch (e: Exception) {
+        throw IllegalArgumentException("Failed to parse accepted fields: ${e.message}", e)
+      }
+    }
+
+    /**
+     * Utility function which extracts the document shape we expect to receive from the bridge
+     * in the one expected by {DocRequested}.
+     * @param documents a {ReadableArray} containing documents. Each document is defined as a map containing:
+     * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+     * - alias which is the alias of the key used to sign the credential;
+     * - docType which is the document type.
+     * @returns an array containing a {DocRequested} object for each document in {documents}
+     * @throws IllegalArgumentException if the provided document doesn't adhere to the expected format
+     */
+    fun parseDocRequested(documents: ReadableArray): Array<DocRequested> {
+      return try {
+        (0 until documents.size()).map { i ->
+          val entry = documents.getMap(i)
+            ?: throw IllegalArgumentException("Entry at index $i in ReadableArray is null")
+          val alias = entry.getString("alias")
+          val issuerSignedContentStr = entry.getString("issuerSignedContent")
+          val docType = entry.getString("docType")
+
+          if (
+            alias == null || entry.getType("alias") != ReadableType.String ||
+            issuerSignedContentStr == null || entry.getType("issuerSignedContent") != ReadableType.String ||
+            docType == null || entry.getType("docType") != ReadableType.String
+          ) throw IllegalArgumentException("Unable to decode the provided documents at index $i")
+
+          val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
+
+          DocRequested(
+            issuerSignedContent,
+            alias,
+            docType
+          )
+        }.toTypedArray()
+      } catch (e: Exception) {
+        throw IllegalArgumentException("Failed to parse documents: ${e.message}", e)
+      }
+    }
+
+    /**
+     * Utility function to parse an array coming from the React Native Bridge into an ArrayList
+     * of ByteArray representing DER encoded X.509 certificates.
+     * @param certificates two-dimensional array of base64 strings representing DER encoded X.509 certificate
+     * @returns ArrayList of ByteArray representing DER encoded X.509 certificates.
+     * @throws IllegalArgumentException if an element in the array is not base64 encoded
+     */
+    fun parseCertificates(certificates: ReadableArray): List<List<ByteArray>> =
+      /** Map the chain arrays and remove null entries. On each chain call the getArray method which
+       * can throw and if it does rethrow an exception with information on its position
+       */
+      (0 until certificates.size()).mapNotNull { chainIndex ->
+        val chain = runCatching { certificates.getArray(chainIndex) }
+          .getOrElse { throw IllegalArgumentException("Certificate chain at $chainIndex is not an array", it) }
+          ?: throw IllegalArgumentException("Certificate chain at index $chainIndex is null")
+
+        /**
+         * Map each chain certificate and remove null entries. On each certificate call the getString
+         * method which can throw and if it does rethrow an exception with information on its position
+         */
+        (0 until chain.size()).mapNotNull { certIndex ->
+          val base64 = runCatching { chain.getString(certIndex) }
+            .getOrElse { throw IllegalArgumentException("Failed to get certificate string at chain $chainIndex, cert $certIndex", it) }
+            ?: throw java.lang.IllegalArgumentException("Certificate at index $certIndex is null")
+
+          /**
+           * Decode the base64 string for each mapped certificate and if an error occurs rethrow
+           * an exception with information on its position
+           */
+          runCatching {
+            Base64Utils.decodeBase64(base64)
+          }.getOrElse {
+            throw IllegalArgumentException("Certificate at index $certIndex in the chain at index $chainIndex is not a valid base64 string", it)
+          }
+        }
+      }
   }
 }
