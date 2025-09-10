@@ -16,9 +16,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup Javascript
-        uses: ./.github/actions/setup
-
       - name: Setup JDK
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
@@ -37,6 +34,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Javascript
+        uses: ./.github/actions/setup
 
       - name: Run module unit tests
         run: cd example/android && chmod +x ./gradlew && ./gradlew test
