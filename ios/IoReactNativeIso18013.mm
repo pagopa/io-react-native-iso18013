@@ -18,22 +18,22 @@ RCT_EXTERN_METHOD(generateResponse:(NSArray *)documents
                  withResolver:(RCTPromiseResolveBlock)resolve
                  withRejecter:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(sendResponse:(NSString)response
+RCT_EXTERN_METHOD(sendResponse:(NSString *)response
                  withResolver:(RCTPromiseResolveBlock)resolve
                  withRejecter:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(sendErrorResponse:(NSInteger)status
+RCT_EXTERN_METHOD(sendErrorResponse:(NSInteger *)code
                   withResolver:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(generateOID4VPDeviceResponse: (NSString)clientId
-                  responseUri: (NSString*)responseUri
-                  authorizationRequestNonce: (NSString*)authorizationRequestNonce
-                  mdocGeneratedNonce: (NSString*)mdocGeneratedNonce
-                  documents: (NSArray*)documents
-                  fieldRequestedAndAccepted: (NSDictionary*)fieldRequestedAndAccepted
-                  resolver: (RCTPromiseResolveBlock)resolve
-                  rejecter: (RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(generateOID4VPDeviceResponse: (NSString *)clientId
+                  withResponseUri: (NSString *)responseUri
+                  withAuthorizationRequestNonce: (NSString *)authorizationRequestNonce
+                  withMdocGeneratedNonce: (NSString *)mdocGeneratedNonce
+                  withDocuments: (NSArray *)documents
+                  withAcceptedFields: (NSDictionary *)acceptedFields
+                  withResolver: (RCTPromiseResolveBlock)resolve
+                  withRejecter: (RCTPromiseRejectBlock)reject)
 
 + (BOOL)requiresMainQueueSetup
 {

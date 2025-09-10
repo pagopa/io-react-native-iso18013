@@ -10,12 +10,17 @@ npm install @pagopa/io-react-native-iso18013
 
 ## Usage
 
-Each module is documented in its own README file:
+This library includes two native modules for both iOS and Android:
 
-- [ISO18013-5](src/iso18013/iso18013-5/README.md): Proximity presentation according to the ISO 18013-5 standard;
-- [ISO18013-7](src/iso18013/iso18013-7/README.md): Remote presentation according to the ISO 18013-7 standard;
-- [CBOR](src/cbor/cbor/README.md): Decoding of CBOR data into readable objects;
-- [COSE](src/cbor/cose/README.md): Management of COSE verify and sign operations.
+- [IoReactNativeIso18013](src/iso18013/iso18013-5/proximity.ts) for ISO 18013-5 and ISO 18013-7 implementations;
+- [IoReactNativeCbor](src/cbor/cbor.ts) for CBOR and COSE implementations.
+
+On the javascript side, the library exposes the following modules:
+
+- [ISO18013-5](src/iso18013/iso18013-5/README.md): Proximity presentation according to the ISO 18013-5 standard which is part of the `IoReactNativeIso18013` module;
+- [ISO18013-7](src/iso18013/iso18013-7/README.md): Remote presentation according to the ISO 18013-7 standard which is part of the `IoReactNativeIso18013` module;
+- [CBOR](src/cbor/cbor/README.md): Decoding of CBOR data into readable objects which is part of the `IoReactNativeCbor` module;
+- [COSE](src/cbor/cose/README.md): Management of COSE verify and sign operations which is part of the `IoReactNativeCbor` module.
 
 ## Contributing
 

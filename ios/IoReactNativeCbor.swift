@@ -4,16 +4,25 @@ import CryptoKit
 
 @objc(IoReactNativeCbor)
 class IoReactNativeCbor: NSObject {
-  private let keyConfig: KeyConfig = .ec
   
-  @objc func decode(
-    _ cbor: String,
+  /**
+   Decode base64 or base64url encoded CBOR data to JSON object.
+   Resolves with a string containing the parsed data or rejects with an error code defined in ``ModuleErrorCodes``.
+   This method does not handle nested CBOR data, which will need additional parsing.
+   - Parameters:
+      - data: The base64 or base64url encoded CBOR string.
+      - resolve: The promise to be resolved.
+      - reject: The promise to be rejected.
+   */
+  @objc(decode:withResolver:withRejecter:)
+  func decode(
+    data: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do{
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: cbor)
-      guard let json = CborCose.jsonFromCBOR(data: data) else {
+      let buffer = try Base64Utils.decodeBase64OrBase64URL(base: data)
+      guard let json = CborCose.jsonFromCBOR(data: buffer) else {
         // We don't have the exact error here as this method returns nil upon failure
         reject(ModuleErrorCodes.decodeError.rawValue, "Unable to decode CBOR", nil)
         return
@@ -25,15 +34,23 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
-  
-  @objc func decodeDocuments(
-    _ mdoc: String,
+  /**
+   Decode base64 or base64url encoded mDOC-CBOR data to a JSON object.
+   Resolves with a string containing the parsed data or rejects with an error code defined in ``ModuleErrorCodes``.
+   - Parameters:
+      - data: The base64 or base64url encoded mDOC-CBOR string.
+      - resolve: The promise to be resolved.
+      - reject: The promise to be rejected.
+   */
+  @objc(decodeDocuments:withResolver:withRejecter:)
+  func decodeDocuments(
+    data: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do{
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: mdoc)
-      guard let json = CborCose.decodeCBOR(data: data, true, true) else {
+      let buffer = try Base64Utils.decodeBase64OrBase64URL(base: data)
+      guard let json = CborCose.decodeCBOR(data: buffer, true, true) else {
         // We don't have the exact error here as this method returns nil upon failure
         reject(ModuleErrorCodes.decodeDocumentsError.rawValue, "Unable to decode document CBOR", nil)
         return
@@ -44,14 +61,23 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
-  @objc func decodeIssuerSigned(
-    _ issuerSigned: String,
+  /**
+   Decode base64 or base64url encoded issuerSigned attribute part of an mDOC-CBOR.
+   Resolves with a string containing the parsed data or rejects with an error code defined in ``ModuleErrorCodes``.
+   - Parameters:
+      - data: The base64 or base64url encoded mDOC-CBOR containing the issuerSigned data string.
+      - resolve: The promise to be resolved.
+      - reject: The promise to be rejected.
+   */
+  @objc(decodeIssuerSigned:withResolver:withRejecter:)
+  func decodeIssuerSigned(
+    data: String,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do{
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: issuerSigned)
-      guard let json = CborCose.issuerSignedCborToJson(data: data) else {
+      let buffer = try Base64Utils.decodeBase64OrBase64URL(base: data)
+      guard let json = CborCose.issuerSignedCborToJson(data: buffer) else {
         // We don't have the exact error here as this method returns nil upon failure
         reject(ModuleErrorCodes.decodeIssuerSignedError.rawValue, "Unable to decode Issuer Signed CBOR", nil)
         return
@@ -62,8 +88,18 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
-  @objc func sign(
-    _ payloadData: String,
+  /**
+   Sign base64 encoded data with COSE and return the COSE-Sign1 object in base64 encoding.
+   Resolves with a string containing the COSE-Sign1 object in base64 encoding or rejects with an error code defined in ``ModuleErrorCodes``.
+   - Parameters:
+     - data: The base64 or base64url encoded payload to sign.
+     - keyTag: The alias of the key to use for signing.
+     - resolve: The promise to be resolved.
+     - reject: The promise to be rejected.
+   */
+  @objc(sign:withKeyTag:withResolver:withRejecter:)
+  func sign(
+    data: String,
     keyTag: String,
     resolver resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
@@ -75,13 +111,13 @@ class IoReactNativeCbor: NSObject {
         }
         
         do{
-          let data = try Base64Utils.decodeBase64OrBase64URL(base: payloadData)
+          let buffer = try Base64Utils.decodeBase64OrBase64URL(base: data)
           guard let coseKey = CoseKeyPrivate(crv: .p256, keyTag: keyTag) else {
             // We don't have the exact error here as this method returns nil upon failure
             reject(ModuleErrorCodes.signError.rawValue, "Unable to create a private key with the given keytag: \(keyTag)", nil)
             return
           }
-          let signedPayload = CborCose.sign(data: data, privateKey: coseKey)
+          let signedPayload = CborCose.sign(data: buffer, privateKey: coseKey)
           resolve(signedPayload.base64EncodedString())
       }
       catch{
@@ -90,64 +126,31 @@ class IoReactNativeCbor: NSObject {
     }
   }
   
-  @objc func verify(
-    _ sign1Data: String,
-    jwk: NSDictionary,
+  /**
+   Verifies a COSE-Sign1 object with the provided public key.
+   Resolves with boolean indicating whether or not the verification succeeded or not or rejects with an error code defined in ``ModuleErrorCodes``.
+   - Parameters:
+      - data: The COSE-Sign1 object in base64 or base64url encoding.
+      - publicKey: The public key in JWK format.
+      - resolve: The promise to be resolved
+      - reject: The promise to be rejected..
+   */
+  @objc(verify:withJwk:withResolver:withRejecter:)
+  func verify(
+    data: String,
+    publicKey: NSDictionary,
     resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
     do {
-      let data = try Base64Utils.decodeBase64OrBase64URL(base: sign1Data)
-      let publicKeyJson = try JSONSerialization.data(withJSONObject: jwk, options:[] )
+      let buffer = try Base64Utils.decodeBase64OrBase64URL(base: data)
+      let publicKeyJson = try JSONSerialization.data(withJSONObject: publicKey, options:[] )
       let publicKeyString = String(data: publicKeyJson, encoding: .utf8)!
       let publicKey = CoseKey(jwk: publicKeyString)!
-      let verified = CborCose.verify(data: data, publicKey: publicKey)
+      let verified = CborCose.verify(data: buffer, publicKey: publicKey)
       resolve(verified)
     } catch {
       reject(ModuleErrorCodes.verifyError.rawValue, error.localizedDescription, error)
-    }
-  }
-    
-  private func keyExists(keyTag: String) -> (key: SecKey?, status: OSStatus) {
-    let getQuery = privateKeyKeychainQuery(keyTag: keyTag)
-    var item: CFTypeRef?
-    let status = SecItemCopyMatching(getQuery as CFDictionary, &item)
-    return (status == errSecSuccess ? (item as! SecKey) : nil, status)
-  }
-  
-  private func privateKeyKeychainQuery(
-    keyTag: String
-  ) -> [String : Any] {
-    return [
-      kSecClass as String: kSecClassKey,
-      kSecAttrApplicationTag as String: keyTag,
-      kSecAttrKeyType as String: keyConfig.keyType(),
-      kSecReturnRef as String: true
-    ]
-  }
-  
-  private enum KeyConfig: Int, CaseIterable {
-    case ec
-    
-    func keyType() -> CFString {
-      switch self {
-      case .ec:
-        return kSecAttrKeyTypeECSECPrimeRandom
-      }
-    }
-    
-    func keySizeInBits() -> Int {
-      switch self {
-      case .ec:
-        return 256
-      }
-    }
-    
-    func keySignAlgorithm() -> SecKeyAlgorithm {
-      switch self {
-      case .ec:
-        return .ecdsaSignatureMessageX962SHA256
-      }
     }
   }
   
