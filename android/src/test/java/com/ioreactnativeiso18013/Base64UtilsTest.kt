@@ -1,6 +1,6 @@
 package com.ioreactnativeiso18013
-import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.Assert.assertThrows
+import org.junit.Test
 
 data class Base64Data(
   val array: ByteArray,
@@ -20,41 +20,34 @@ class Base64UtilsTest {
 
   private val invalidBase64 = "123~"
 
-  @Nested
-  inner class DecodeBase64AndBase64Url {
-    @Test
-    fun `should convert a base64url string into a byte array`() {
-      val decodedArray = Base64Utils.decodeBase64AndBase64Url(base64url.string)
-      assert(decodedArray.contentEquals(base64url.array))
-    }
+  @Test
+  fun `should convert a base64url string into a byte array`() {
+    val decodedArray = Base64Utils.decodeBase64AndBase64Url(base64url.string)
+    assert(decodedArray.contentEquals(base64url.array))
+  }
 
-    @Test
-    fun `should convert a base64 string into a byte array`() {
-      val decodedArray = Base64Utils.decodeBase64AndBase64Url(base64.string)
-      assert(decodedArray.contentEquals(base64.array))
-    }
+  @Test
+  fun `should convert a base64 string into a byte array`() {
+    val decodedArray = Base64Utils.decodeBase64AndBase64Url(base64.string)
+    assert(decodedArray.contentEquals(base64.array))
+  }
 
-    @Test
-    fun `should throw IllegalArgumentException with an invalid string`() {
-      assertThrows(
-        IllegalArgumentException::class.java
-      ) {
-        Base64Utils.decodeBase64AndBase64Url(invalidBase64)
-      }
+  @Test
+  fun `should throw IllegalArgumentException with an invalid string while decoding base64 or base64url string`() {
+    assertThrows(
+      IllegalArgumentException::class.java
+    ) {
+      Base64Utils.decodeBase64AndBase64Url(invalidBase64)
     }
   }
 
-  @Nested
-  inner class EncodeBase64 {
     @Test
     fun `should encoded a byte array into a base64 string`() {
       val encodedArray = Base64Utils.encodeBase64(base64.array)
       assert(encodedArray == base64.string)
     }
-  }
 
-  @Nested
-  inner class DecodeBase64 {
+
     @Test
     fun `should decode a base64 string into a byte array`() {
       val encodedArray = Base64Utils.decodeBase64(base64.string)
@@ -62,13 +55,12 @@ class Base64UtilsTest {
     }
 
     @Test
-    fun `should throw IllegalArgumentException with an invalid string`() {
+    fun `should throw IllegalArgumentException with an invalid string while decoding base64`() {
       assertThrows(
         IllegalArgumentException::class.java
       ) {
         Base64Utils.decodeBase64(invalidBase64)
       }
     }
-  }
 }
 
