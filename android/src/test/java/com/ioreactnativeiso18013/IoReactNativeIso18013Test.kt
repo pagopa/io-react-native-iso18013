@@ -412,7 +412,6 @@ class IoReactNativeIso18013Test {
 
   @Test
   fun `should throw an IllegalArgumentException if the field type is not a boolean`() {
-    assert(true == false)
     val nativeMap = JavaOnlyMap.of(
       "org.iso.18013.5.1.mDL",
       JavaOnlyMap.of(
