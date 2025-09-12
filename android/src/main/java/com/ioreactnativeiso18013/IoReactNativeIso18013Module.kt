@@ -408,9 +408,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           credentialValue.entryIterator.forEach { namespaceEntry ->
             val namespaceName = namespaceEntry.key
             val namespaceValue = namespaceEntry.value
-            if(namespaceName.isEmpty()){
-              throw IllegalArgumentException("Credential must define at least one namespace")
-            }
             if (namespaceValue !is ReadableMap) {
               throw IllegalArgumentException("Namespace '$namespaceName' in credential '$credentialName' must be a map")
             }
