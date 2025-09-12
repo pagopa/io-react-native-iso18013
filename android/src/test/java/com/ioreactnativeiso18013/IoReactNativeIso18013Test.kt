@@ -80,6 +80,7 @@ class IoReactNativeIso18013Test {
     assert(areCertificatesListsEqual(certificatesByteArray, parsedCertificates))
   }
 
+  @Test
   fun `should parse multiple certificates from the bridge into a 2 dimensional byte array`() {
     val certificatesBase64 = listOf(
       JavaOnlyArray.from(listOf("dGVzdA==", "dGVzdDEyMw==", "cmFuZG9tU3RyaW5nMTIz")),
