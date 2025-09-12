@@ -221,7 +221,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
