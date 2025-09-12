@@ -6,7 +6,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  test:
+  android-unit-tests:
     runs-on: ubuntu-latest
 
     permissions:
@@ -27,4 +27,5 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run module unit tests
-        run: cd example/android && chmod +x ./gradlew && ./gradlew test
+        run: chmod +x ./gradlew && ./gradlew test
+        working-directory: example/android
