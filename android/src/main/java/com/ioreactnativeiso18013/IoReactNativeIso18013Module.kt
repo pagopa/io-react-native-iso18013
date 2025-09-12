@@ -399,12 +399,25 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
             throw IllegalArgumentException("Credential '$credentialName' must be a map")
           }
 
+          // If no namespace is found then throw
+          if(!credentialValue.entryIterator.hasNext()){
+            throw IllegalArgumentException("Credential '$credentialName' must define at least one namespace")
+          }
+
           // Loop for each namespace in credential and throw if something different than map is found
           credentialValue.entryIterator.forEach { namespaceEntry ->
             val namespaceName = namespaceEntry.key
             val namespaceValue = namespaceEntry.value
+            if(namespaceName.isEmpty()){
+              throw IllegalArgumentException("Credential must define at least one namespace")
+            }
             if (namespaceValue !is ReadableMap) {
               throw IllegalArgumentException("Namespace '$namespaceName' in credential '$credentialName' must be a map")
+            }
+
+            // If no field is found then throw
+            if(!namespaceValue.entryIterator.hasNext()){
+              throw IllegalArgumentException("Credential '$credentialName' with namespace `$namespaceName` must define at least one field")
             }
 
             // Loop for each field in namespace and throw if something different than boolean is found

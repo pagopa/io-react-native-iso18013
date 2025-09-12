@@ -9,6 +9,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import kotlin.collections.emptyList
 
 class IoReactNativeIso18013Test {
 
@@ -55,7 +56,30 @@ class IoReactNativeIso18013Test {
     }
   }
 
+  /**
+   * Tests for parseCertificates
+   */
+
   @Test
+  fun `should parse multiple certificates from the bridge with an empty inner array into a 2 dimensional byte array`() {
+    val certificatesBase64 = listOf(
+      JavaOnlyArray.from(listOf("dGVzdA==", "dGVzdDEyMw==", "cmFuZG9tU3RyaW5nMTIz")),
+      JavaOnlyArray(),
+    )
+    val certificatesByteArray = listOf(
+      listOf(
+        byteArrayOf(116, 101, 115, 116),
+        byteArrayOf(116, 101, 115, 116, 49, 50, 51),
+        byteArrayOf(114, 97, 110, 100, 111, 109, 83, 116, 114, 105, 110, 103, 49, 50, 51)
+      ),
+      emptyList<ByteArray>()
+    )
+    val nativeArray = JavaOnlyArray.from(certificatesBase64)
+    val parsedCertificates = IoReactNativeIso18013Module.parseCertificates(nativeArray)
+    print(parsedCertificates.toString())
+    assert(areCertificatesListsEqual(certificatesByteArray, parsedCertificates))
+  }
+
   fun `should parse multiple certificates from the bridge into a 2 dimensional byte array`() {
     val certificatesBase64 = listOf(
       JavaOnlyArray.from(listOf("dGVzdA==", "dGVzdDEyMw==", "cmFuZG9tU3RyaW5nMTIz")),
@@ -86,6 +110,14 @@ class IoReactNativeIso18013Test {
     val nativeArray = JavaOnlyArray.from(certificatesBase64)
     val parsedCertificates = IoReactNativeIso18013Module.parseCertificates(nativeArray)
     assert(areCertificatesListsEqual(certificatesByteArray, parsedCertificates))
+  }
+
+
+  @Test
+  fun `should return an empty list if the array of certificates is empty`() {
+    val nativeArray = JavaOnlyArray()
+    val parsedCertificates = IoReactNativeIso18013Module.parseCertificates(nativeArray)
+    assert(parsedCertificates.isEmpty())
   }
 
   @Test
@@ -124,6 +156,9 @@ class IoReactNativeIso18013Test {
     }
   }
 
+  /**
+   * Tests for parseDocRequested
+   */
 
   @OptIn(ExperimentalEncodingApi::class)
   @Test
@@ -170,6 +205,13 @@ class IoReactNativeIso18013Test {
   }
 
   @Test
+  fun `should parse an empty set of documents`() {
+    val nativeArray = JavaOnlyArray()
+    val result = IoReactNativeIso18013Module.parseDocRequested(nativeArray)
+    assert(result.isEmpty())
+  }
+
+  @Test
   fun `should throw an IllegalArgumentException if the document is missing the issuerSignedContent field`() {
     val nativeArray = JavaOnlyArray.from(
       listOf(
@@ -193,7 +235,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
@@ -207,23 +249,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
-    }
-  }
-
-  @Test
-  fun `should throw an IllegalArgumentException if the document issuerSignedContent is not a string`() {
-    val nativeArray = JavaOnlyArray.from(
-      listOf(
-        JavaOnlyMap.of(
-          "alias", "test", "docType", "test", "issuerSignedContent", 123
-        )
-      )
-    )
-    assertThrows(
-      IllegalArgumentException::class.java
-    ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
@@ -239,7 +265,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
@@ -255,7 +281,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
@@ -271,7 +297,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
@@ -287,7 +313,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
@@ -303,7 +329,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
@@ -319,7 +345,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
@@ -335,7 +361,7 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
 
@@ -347,9 +373,14 @@ class IoReactNativeIso18013Test {
     assertThrows(
       IllegalArgumentException::class.java
     ) {
-      IoReactNativeIso18013Module.parseCertificates(nativeArray)
+      IoReactNativeIso18013Module.parseDocRequested(nativeArray)
     }
   }
+
+  /**
+   * Tests for parseAcceptedFields
+   */
+
   @Test
   fun `should parse a valid map of accepted fields`() {
     val nativeMap = JavaOnlyMap.of(
@@ -372,6 +403,14 @@ class IoReactNativeIso18013Test {
     )
     val result = IoReactNativeIso18013Module.parseAcceptedFields(nativeMap)
     assert(result.contentEquals(nativeMap.toString()))
+  }
+
+  @Test
+  fun `should parse an empty map of accepted fields`() {
+    val nativeMap = JavaOnlyMap()
+    val result = IoReactNativeIso18013Module.parseAcceptedFields(nativeMap)
+    print(result)
+    assert(result == "{}")
   }
 
   @Test
@@ -401,6 +440,35 @@ class IoReactNativeIso18013Test {
           false
         ),
         "org.iso.18013.5.1_ext", 123
+      )
+    )
+    assertThrows(
+      IllegalArgumentException::class.java
+    ) {
+      IoReactNativeIso18013Module.parseAcceptedFields(nativeMap)
+    }
+  }
+
+  @Test
+  fun `should throw an IllegalArgumentException if no namespace are provided for the credential`() {
+    val nativeMap = JavaOnlyMap.of(
+      "org.iso.18013.5.1.mDL",
+      JavaOnlyMap()
+    )
+    assertThrows(
+      IllegalArgumentException::class.java
+    ) {
+      IoReactNativeIso18013Module.parseAcceptedFields(nativeMap)
+    }
+  }
+
+  @Test
+  fun `should throw an IllegalArgumentException if no fields are provided for the namespace`() {
+    val nativeMap = JavaOnlyMap.of(
+      "org.iso.18013.5.1.mDL",
+      JavaOnlyMap.of(
+        "org.iso.18013.5.1",
+        JavaOnlyMap()
       )
     )
     assertThrows(
