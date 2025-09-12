@@ -42,7 +42,7 @@ class Base64UtilsTest {
   }
 
     @Test
-    fun `should encoded a byte array into a base64 string`() {
+    fun `should encode a byte array into a base64 string`() {
       val encodedArray = Base64Utils.encodeBase64(base64.array)
       assert(encodedArray == base64.string)
     }
