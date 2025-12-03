@@ -415,6 +415,17 @@ class IoReactNativeIso18013Test {
   }
 
   @Test
+  fun `should parse a map with a credential type but without any namespace nor values`() {
+    val nativeMap = JavaOnlyMap.of(
+      "org.iso.18013.5.1.mDL",
+      JavaOnlyMap()
+    )
+    val result = IoReactNativeIso18013Module.parseAcceptedFields(nativeMap)
+    print(result)
+    assert(result == "{org.iso.18013.5.1.mDL={}}")
+  }
+
+  @Test
   fun `should throw an IllegalArgumentException if the credential type is not a map`() {
     val nativeMap = JavaOnlyMap.of(
       "org.iso.18013.5.1.mDL", 123
@@ -442,19 +453,6 @@ class IoReactNativeIso18013Test {
         ),
         "org.iso.18013.5.1_ext", 123
       )
-    )
-    assertThrows(
-      IllegalArgumentException::class.java
-    ) {
-      IoReactNativeIso18013Module.parseAcceptedFields(nativeMap)
-    }
-  }
-
-  @Test
-  fun `should throw an IllegalArgumentException if no namespace are provided for the credential`() {
-    val nativeMap = JavaOnlyMap.of(
-      "org.iso.18013.5.1.mDL",
-      JavaOnlyMap()
     )
     assertThrows(
       IllegalArgumentException::class.java

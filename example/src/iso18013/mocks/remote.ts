@@ -138,6 +138,13 @@ export const EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST = {
   acceptedFields: {},
 };
 
+export const EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST = {
+  ...DEVICE_REQUEST_BASE64URL,
+  acceptedFields: {
+    'org.iso.18013.5.1.mDL': {},
+  },
+};
+
 export const WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST = {
   ...DEVICE_REQUEST_BASE64URL,
   acceptedFields: {

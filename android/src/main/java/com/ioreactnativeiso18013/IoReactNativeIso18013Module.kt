@@ -386,7 +386,8 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
      *   },
      *   {...}
      * }
-     * @throw IllegalArgumentException if the ReadableMap is not consistent or contains an invalid value
+     * @throw IllegalArgumentException if the value provided is not a ReadableMap which contains
+     * at least a credential type. If a namespace doesn't contain at least one value.
      * @returns String representation of [acceptedFields]
      */
     fun parseAcceptedFields(acceptedFields: ReadableMap): String {
@@ -399,10 +400,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
             throw IllegalArgumentException("Credential '$credentialName' must be a map")
           }
 
-          // If no namespace is found then throw
-          if(!credentialValue.entryIterator.hasNext()){
-            throw IllegalArgumentException("Credential '$credentialName' must define at least one namespace")
-          }
+          // We don't check for a namespace, if there's none that's a valid structure and thus should pass the validation
 
           // Loop for each namespace in credential and throw if something different than map is found
           credentialValue.entryIterator.forEach { namespaceEntry ->
