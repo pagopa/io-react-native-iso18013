@@ -6,6 +6,7 @@ import {
   DEVICE_REQUEST_BASE64,
   DEVICE_REQUEST_BASE64URL,
   EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST,
+  EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST,
   INCOMPLETE_DOC_REQUEST,
   TEST_REMOTE_KEYTAG,
   WRONG_DOC_REQUEST,
@@ -130,6 +131,29 @@ const handleGenerateResponseWrongAcceptedFields = async () => {
   }
 };
 
+const handleGenerateResponseEmptyNamespaceAcceptedFields = async () => {
+  try {
+    await generateKeyIfNotExists(TEST_REMOTE_KEYTAG);
+    const result = await ISO18013_7.generateOID4VPDeviceResponse(
+      EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.request.clientId,
+      EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.request.responseUri,
+      EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.request
+        .authorizationRequestNonce,
+      EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.request.mdocGeneratedNonce,
+      EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.documents,
+      EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.acceptedFields
+    );
+    console.log(result);
+    Alert.alert('✅ Device Response Generation Success');
+  } catch (error: any) {
+    parseAndPrintError(
+      ISO18013_7.ModuleErrorSchema,
+      error,
+      'handleGenerateResponseEmptyNamespaceAcceptedFields error: '
+    );
+  }
+};
+
 const Iso1801357Screen = () => (
   <ScrollView contentContainerStyle={styles.container}>
     <Button
@@ -155,6 +179,10 @@ const Iso1801357Screen = () => (
     <Button
       title="Test Generate OID4VP Response (wrong acceptedFields)"
       onPress={handleGenerateResponseWrongAcceptedFields}
+    />
+    <Button
+      title="Test Generate OID4VP Response (empty namespace in acceptedFields)"
+      onPress={handleGenerateResponseEmptyNamespaceAcceptedFields}
     />
   </ScrollView>
 );
