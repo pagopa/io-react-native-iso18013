@@ -38,7 +38,7 @@ const result = await ISO18013_7.generateOID4VPDeviceResponse(
   clientId,
   responseUri,
   authorizationRequestNonce,
-  mdocGeneratedNonce,
+  jwkThumbprint,
   documents,
   acceptedFields
 );

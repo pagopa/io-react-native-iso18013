@@ -377,7 +377,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
       - clientId: The client id extracted from OID4VP session.
       - responseUri: The response URI extracted from OID4VP session.
       - authorizationRequestNonce - The authorization request nonce extracted from OID4VP session.
-      - mdocGeneratedNonce - the mdoc generated nonce to be generated.
+      - jwkThumbprint - the JWK SHA-256 Thumbprint if direct_post.jwt, otherwise is null
       - documents: An array containing documents. Each document is defined as a map containing:
            - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
            - alias which is the alias of the key used to sign the credential;
@@ -401,12 +401,12 @@ class IoReactNativeIso18013: RCTEventEmitter {
        - resolve: The promise to be resolved.
        - reject: The promise to be rejected.
    */
-  @objc(generateOID4VPDeviceResponse:withResponseUri:withAuthorizationRequestNonce:withMdocGeneratedNonce:withDocuments:withAcceptedFields:withResolver:withRejecter:)
+  @objc(generateOID4VPDeviceResponse:withResponseUri:withAuthorizationRequestNonce:withJwkThumbprint:withDocuments:withAcceptedFields:withResolver:withRejecter:)
   func generateOID4VPDeviceResponse(
     clientId: String,
     responseUri: String,
     authorizationRequestNonce: String,
-    mdocGeneratedNonce: String,
+    jwkThumbprint: String?,
     documents: [Any],
     acceptedFields: [AnyHashable: Any],
     resolver resolve: RCTPromiseResolveBlock,
@@ -418,7 +418,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
         clientId: clientId,
         responseUri: responseUri,
         authorizationRequestNonce: authorizationRequestNonce,
-        mdocGeneratedNonce: mdocGeneratedNonce
+        jwkThumbprint: jwkThumbprint
       )
       
       let documentsAsProximityDocument = try parseDocuments(documents: documents)

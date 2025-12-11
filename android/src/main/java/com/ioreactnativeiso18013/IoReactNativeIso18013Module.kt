@@ -223,7 +223,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @param clientId the client id extracted from OID4VP session
    * @param responseUri the response URI extracted from OID4VP session
    * @param authorizationRequestNonce the authorization request nonce extracted from OID4VP session
-   * @param mdocGeneratedNonce the mDoc generated nonce to be generated
+   * @param jwkThumbprint the JWK SHA-256 Thumbprint if direct_post.jwt, otherwise is null
    * @param documents [ReadableArray] containing documents. Each document is defined as a map containing:
    * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
    * - alias which is the alias of the key used to sign the credential;
@@ -247,7 +247,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun generateOID4VPDeviceResponse(
     clientId: String, responseUri: String, authorizationRequestNonce: String,
-    mdocGeneratedNonce: String, documents: ReadableArray,
+    jwkThumbprint: String?, documents: ReadableArray,
     acceptedFields: ReadableMap, promise: Promise
   ) {
     try {
@@ -256,7 +256,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           clientId,
           responseUri,
           authorizationRequestNonce,
-          mdocGeneratedNonce
+          jwkThumbprint
         ).createSessionTranscript()
 
       val documentsParsed =

@@ -7,7 +7,7 @@ import type { RequestedDocument } from '../types';
  * @param clientId - the client id extracted from OID4VP session
  * @param responseUri - the response URI extracted from OID4VP session
  * @param authorizationRequestNonce - the authorization request nonce extracted from OID4VP session
- * @param mdocGeneratedNonce - the mdoc generated nonce to be generated
+ * @param jwkThumbprint - the JWK SHA-256 Thumbprint if direct_post.jwt, otherwise is null
  * @param documents - an array of {@link RequestedDocument}
  * @param acceptedFields - a record of claims accepted for disclosure or its stringification extracted from OID4VP session
  * @throws {ModuleError} in case of failure which can be parsed with {@link ModuleErrorSchema}
@@ -17,7 +17,7 @@ export const generateOID4VPDeviceResponse = async (
   clientId: string,
   responseUri: string,
   authorizationRequestNonce: string,
-  mdocGeneratedNonce: string,
+  jwkThumbprint: string | undefined,
   documents: Array<RequestedDocument>,
   acceptedFields: AcceptedFields
 ): Promise<string> => {
@@ -25,7 +25,7 @@ export const generateOID4VPDeviceResponse = async (
     clientId,
     responseUri,
     authorizationRequestNonce,
-    mdocGeneratedNonce,
+    jwkThumbprint,
     documents,
     acceptedFields
   );
