@@ -29,7 +29,7 @@ RCT_EXTERN_METHOD(sendErrorResponse:(NSInteger *)code
 RCT_EXTERN_METHOD(generateOID4VPDeviceResponse: (NSString *)clientId
                   withResponseUri: (NSString *)responseUri
                   withAuthorizationRequestNonce: (NSString *)authorizationRequestNonce
-                  withMdocGeneratedNonce: (NSString *)mdocGeneratedNonce
+                  withJwkThumbprint: (NSString *)jwkThumbprint
                   withDocuments: (NSArray *)documents
                   withAcceptedFields: (NSDictionary *)acceptedFields
                   withResolver: (RCTPromiseResolveBlock)resolve

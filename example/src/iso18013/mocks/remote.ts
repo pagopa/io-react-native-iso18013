@@ -9,7 +9,7 @@ export const DEVICE_REQUEST_BASE64 = {
     responseUri:
       'https://simple.demo.connector.io/openid4vp/authorization-response',
     authorizationRequestNonce: '12000e60-e41c-4c9f-abf6-292b36cfe615',
-    mdocGeneratedNonce: '12000e12-e41c-609f-abf6-292b36cfe615',
+    jwkThumbprint: 'NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs',
   },
   documents: [
     {
@@ -65,7 +65,7 @@ export const DEVICE_REQUEST_BASE64URL = {
     responseUri:
       'https://simple.demo.connector.io/openid4vp/authorization-response',
     authorizationRequestNonce: '12000e60-e41c-4c9f-abf6-292b36cfe615',
-    mdocGeneratedNonce: '12000e12-e41c-609f-abf6-292b36cfe615',
+    jwkThumbprint: 'NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs',
   },
   documents: [
     {
