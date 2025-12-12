@@ -18,7 +18,7 @@ Native modules require Bluetooth permissions to work properly.
 Add the following permissions to your `AndroidManifest.xml`:
 
 ```xml
-<!-- Required for Bluetooth on Android >=12 or SDK >=31 -->
+<!-- Required for Bluetooth on Androi >=12 or SDK >=31 -->
 
 <!-- We defined the neverForLocation flag as we do not derive it from the Bluetooth -->
 <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
