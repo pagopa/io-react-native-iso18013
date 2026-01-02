@@ -11,7 +11,7 @@ cd ios && bundle exec pod install && cd ..
 
 ## Permission
 
-This library uses Bluetooth capabilities in order to implement the proximity flow defined in the ISO 18013-5 standard. Thus, native permissions must be added to the native projects.
+This library uses Bluetooth capabilities in order to implement the proximity flow defined in the ISO 18013-5 standard. Thus, Bluetooth permissions must be added to the native projects.
 
 ### Android
 
