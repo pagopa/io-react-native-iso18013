@@ -9,6 +9,48 @@ yarn add @pagopa/io-react-native-iso18013
 cd ios && bundle exec pod install && cd ..
 ```
 
+## Permission
+
+This library uses Bluetooth capabilities in order to implement the proximity flow defined in the ISO 18013-5 standard. Thus, Bluetooth permissions must be added to the native projects.
+
+### Android
+
+Add the following permissions to your `AndroidManifest.xml`:
+
+```xml
+<!-- Required for Bluetooth on Android >=12 or SDK >=31 -->
+
+<!-- We defined the neverForLocation flag as we do not derive it from the Bluetooth -->
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+
+<!-- Required for Bluetooth on Android <=11 SDK <= 30 -->
+<uses-permission android:name="android.permission.BLUETOOTH"
+                  android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+                  android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30"/>
+```
+
+Please note that the `neverForLocation` flag of `BLUETOOTH_SCAN` indicates that the app does not derive location information from Bluetooth scans. However, you still need to include the `ACCESS_FINE_LOCATION` permission for Android versions <=11 (SDK <=30) to enable Bluetooth scanning.
+
+### iOS
+
+Add the following keys to your `Info.plist`:
+
+```xml
+<!-- Required for Bluetooth usage -->
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>$(PRODUCT_NAME) needs access BLE.</string>
+<key>NSBluetoothPeripheralUsageDescription</key>
+<string>$(PRODUCT_NAME) needs access BLE.</string>
+<key>NSBluetoothScanUsageDescription</key>
+<string>$(PRODUCT_NAME) needs access to scan for nearby Bluetooth devices.</string>
+```
+
+More info can be found in the [official Android documentation](https://developer.android.com/develop/connectivity/bluetooth/bt-permissions).
+
 ## Events
 
 This library emits the following events:
