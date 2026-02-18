@@ -56,19 +56,19 @@ More info can be found in the [official Android documentation](https://developer
 This library emits the following events:
 | Event | Payload | Description |
 |---------------------------|--------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| onDeviceConnecting (iOS only) | `undefined` | Event dispatched when the verifier app is connecting |
+| onDeviceConnecting | `undefined` | Event dispatched when the verifier app is connecting |
 | onDeviceConnected | `undefined` | Event dispatched when the verifier app is connected. |
 | onDocumentRequestReceived | `{ data: string } \| undefined` | Event dispatched when the consumer app receives a new request, contained in the data payload. It can be parsed via the `parseVerifierRequest` function. |
 | onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects by sending the END (0x02) flag. |
 | onError | `{ error: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed with `ISO18013_5.OnErrorPayloadSchema`. |
-| onNfcStart (iOS only) | `undefined` | Event dispatched when the NFC engagement session starts successfully. |
-| onNfcStop (iOS only) | `undefined` | Event dispatched when the NFC engagement session stops. |
+| onNfcStart | `undefined` | Event dispatched when the NFC engagement session starts successfully. |
+| onNfcStop | `undefined` | Event dispatched when the NFC engagement session stops. |
 
 The events flow is described in the following diagram:
 
 ```mermaid
 flowchart LR
-    onDeviceConnecting["onDeviceConnecting *(iOS only)*"]
+    onDeviceConnecting["onDeviceConnecting"]
     onDeviceConnected["onDeviceConnected"]
     onDocumentRequestReceived["onDocumentRequestReceived"]
     onDeviceDisconnected["onDeviceDisconnected"]
@@ -173,7 +173,7 @@ ISO18013_5.addListener(
 );
 ```
 
-#### `onNfcStart` (iOS only)
+#### `onNfcStart`
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
@@ -183,7 +183,7 @@ ISO18013_5.addListener('onNfcStart', () => {
 });
 ```
 
-#### `onNfcStop` (iOS only)
+#### `onNfcStop`
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
@@ -206,11 +206,12 @@ import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 await ISO18013_5.start();
 ```
 
-#### `startNfc` (iOS only)
+#### `startNfc`
 
 Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
 This method must be called after `start`.
-On Android, this method rejects with an unsupported-platform error.
+On iOS, requires iOS 17.4 or later.
+On Android, requires HCE support (most mid-to-high-end devices).
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
@@ -218,10 +219,9 @@ import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 await ISO18013_5.startNfc();
 ```
 
-#### `stopNfc` (iOS only)
+#### `stopNfc`
 
 Stops an active NFC engagement session.
-On Android, this method rejects with an unsupported-platform error.
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';

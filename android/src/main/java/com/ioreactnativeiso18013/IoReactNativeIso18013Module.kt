@@ -12,11 +12,20 @@ import com.facebook.react.bridge.WritableMap
 import it.pagopa.io.wallet.proximity.OpenID4VP
 import it.pagopa.io.wallet.proximity.bluetooth.BleRetrievalMethod
 import it.pagopa.io.wallet.proximity.engagement.EngagementListener
+import it.pagopa.io.wallet.proximity.nfc.NfcEngagementEvent
+import it.pagopa.io.wallet.proximity.nfc.NfcEngagementEventBus
+import it.pagopa.io.wallet.proximity.nfc.NfcEngagementService
 import it.pagopa.io.wallet.proximity.qr_code.QrEngagement
 import it.pagopa.io.wallet.proximity.request.DocRequested
 import it.pagopa.io.wallet.proximity.response.ResponseGenerator
 import it.pagopa.io.wallet.proximity.session_data.SessionDataStatus
 import it.pagopa.io.wallet.proximity.wrapper.DeviceRetrievalHelperWrapper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
@@ -27,6 +36,8 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
   private var qrEngagement: QrEngagement? = null
   private var deviceRetrievalHelper: DeviceRetrievalHelperWrapper? = null
+  private var nfcEventJob: Job? = null
+  private val nfcScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
   /**
    * Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
@@ -95,6 +106,8 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun close(promise: Promise) {
     try {
+      nfcEventJob?.cancel()
+      nfcEventJob = null
       qrEngagement?.close()
       deviceRetrievalHelper?.disconnect()
       promise.resolve(true)
@@ -118,16 +131,16 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun sendErrorResponse(code: Double, promise: Promise) {
     try {
-      qrEngagement?.let { it ->
+      deviceRetrievalHelper?.let { drh ->
         val sessionDataStatus = SessionDataStatus.entries.find { it.value == code.toLong() }
         if (sessionDataStatus != null) {
-          it.sendErrorResponse(sessionDataStatus)
+          drh.sendResponse(null, sessionDataStatus.value)
           promise.resolve(true)
         } else {
           promise.reject(ModuleErrorCodes.SEND_ERROR_RESPONSE_ERROR, message="Invalid status code")
         }
       } ?: run {
-        promise.reject(ModuleErrorCodes.QR_ENGAGEMENT_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
+        promise.reject(ModuleErrorCodes.DRH_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
       }
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.SEND_ERROR_RESPONSE_ERROR, message=e.message, e)
@@ -203,45 +216,93 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun sendResponse(response: String, promise: Promise) {
     try {
-      qrEngagement?.let { qrEng ->
-        val responseBytes = Base64Utils.decodeBase64(response)
-        qrEng.sendResponse(responseBytes)
+      deviceRetrievalHelper?.let { drh ->
+        drh.sendResponse(Base64Utils.decodeBase64(response), 0L)
         promise.resolve(true)
+      } ?: run {
+        promise.reject(ModuleErrorCodes.DRH_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
       }
-        ?: run {
-          promise.reject(ModuleErrorCodes.QR_ENGAGEMENT_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
-        }
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.SEND_RESPONSE_ERROR, e.message, e)
     }
   }
 
   /**
-   * Starts NFC engagement (HCE).
-   * Android currently does not support this engagement path in this module.
-   * Rejects with an error code defined in [ModuleErrorCodes].
-   * @param promise the promise which will be rejected with an unsupported-platform error.
+   * Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
+   * Requires NFC and HCE support on the device.
+   * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
+   * @param promise the promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
   fun startNfc(promise: Promise) {
-    promise.reject(
-      ModuleErrorCodes.START_NFC_ERROR,
-      "NFC engagement is currently supported only on iOS."
-    )
+    try {
+      val activity = currentActivity ?: run {
+        promise.reject(ModuleErrorCodes.START_NFC_ERROR, "No activity available")
+        return
+      }
+      val status = NfcEngagementService.enable(activity, IoNfcEngagementService::class.java)
+      if (!status.canWork()) {
+        promise.reject(ModuleErrorCodes.START_NFC_ERROR, "HCE not available: $status")
+        return
+      }
+      startNfcEventCollection()
+      sendEvent("onNfcStart", null)
+      promise.resolve(true)
+    } catch (e: Exception) {
+      promise.reject(ModuleErrorCodes.START_NFC_ERROR, e.message, e)
+    }
   }
 
   /**
-   * Stops an active NFC engagement session.
-   * Android currently does not support this engagement path in this module.
-   * Rejects with an error code defined in [ModuleErrorCodes].
-   * @param promise the promise which will be rejected with an unsupported-platform error.
+   * Stops the active NFC engagement session.
+   * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
+   * @param promise the promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
   fun stopNfc(promise: Promise) {
-    promise.reject(
-      ModuleErrorCodes.STOP_NFC_ERROR,
-      "NFC engagement is currently supported only on iOS."
-    )
+    try {
+      val activity = currentActivity ?: run {
+        promise.reject(ModuleErrorCodes.STOP_NFC_ERROR, "No activity available")
+        return
+      }
+      NfcEngagementService.disable(activity)
+      nfcEventJob?.cancel()
+      nfcEventJob = null
+      sendEvent("onNfcStop", null)
+      promise.resolve(true)
+    } catch (e: Exception) {
+      promise.reject(ModuleErrorCodes.STOP_NFC_ERROR, e.message, e)
+    }
+  }
+
+  private fun startNfcEventCollection() {
+    nfcEventJob?.cancel()
+    nfcEventJob = nfcScope.launch {
+      NfcEngagementEventBus.events.collect { event ->
+        when (event) {
+          is NfcEngagementEvent.Connecting ->
+            sendEvent("onDeviceConnecting", "")
+          is NfcEngagementEvent.Connected -> {
+            deviceRetrievalHelper = event.device
+            sendEvent("onDeviceConnected", "")
+          }
+          is NfcEngagementEvent.Error -> {
+            val data: WritableMap = Arguments.createMap()
+            data.putString("error", event.error.message ?: "")
+            sendEvent("onError", data)
+          }
+          is NfcEngagementEvent.Disconnected ->
+            sendEvent("onDeviceDisconnected", event.transportSpecificTermination.toString())
+          is NfcEngagementEvent.DocumentRequestReceived -> {
+            val data: WritableMap = Arguments.createMap()
+            data.putString("data", event.request)
+            sendEvent("onDocumentRequestReceived", data)
+          }
+          is NfcEngagementEvent.NotSupported ->
+            sendEvent("onNfcStop", null)
+        }
+      }
+    }
   }
 
   /**
