@@ -58,9 +58,11 @@ This library emits the following events:
 |---------------------------|--------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
 | onDeviceConnecting (iOS only) | `undefined` | Event dispatched when the verifier app is connecting |
 | onDeviceConnected | `undefined` | Event dispatched when the verifier app is connected. |
-| onDocumentRequestReceived | `{ data: string } \| undefined` | Event dispatched when the consumer app receives a new request, contained in the data payload. It can be parsed via the `parseVerifierRequest` provided [here](src/schema.ts). |
+| onDocumentRequestReceived | `{ data: string } \| undefined` | Event dispatched when the consumer app receives a new request, contained in the data payload. It can be parsed via the `parseVerifierRequest` function. |
 | onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects by sending the END (0x02) flag. |
-| onError | `{ error: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed via the `parseError` provided [here](src/schema.ts). |
+| onError | `{ error: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed with `ISO18013_5.OnErrorPayloadSchema`. |
+| onNfcStart (iOS only) | `undefined` | Event dispatched when the NFC engagement session starts successfully. |
+| onNfcStop (iOS only) | `undefined` | Event dispatched when the NFC engagement session stops. |
 
 The events flow is described in the following diagram:
 
@@ -159,16 +161,36 @@ ISO18013_5.addListener(
       if (!data || !data.error) {
         throw new Error('No error data received');
       }
-      const parsedError = parseError(data.error);
+      const parsedError = ISO18013_5.OnErrorPayloadSchema.parse(data.error);
       console.error(`onError: ${parsedError}`);
     } catch (e) {
       console.error('Error parsing onError data:', e);
     } finally {
       // Close the flow on error
-      await closeFlow();
+      await ISO18013_5.close();
     }
   }
 );
+```
+
+#### `onNfcStart` (iOS only)
+
+```typescript
+import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
+
+ISO18013_5.addListener('onNfcStart', () => {
+  console.log('NFC engagement started');
+});
+```
+
+#### `onNfcStop` (iOS only)
+
+```typescript
+import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
+
+ISO18013_5.addListener('onNfcStop', () => {
+  console.log('NFC engagement stopped');
+});
 ```
 
 ## Methods
@@ -182,6 +204,29 @@ to specify a certificates of array to verify the reader app.
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
 await ISO18013_5.start();
+```
+
+#### `startNfc` (iOS only)
+
+Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
+This method must be called after `start`.
+On Android, this method rejects with an unsupported-platform error.
+
+```typescript
+import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
+
+await ISO18013_5.startNfc();
+```
+
+#### `stopNfc` (iOS only)
+
+Stops an active NFC engagement session.
+On Android, this method rejects with an unsupported-platform error.
+
+```typescript
+import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
+
+await ISO18013_5.stopNfc();
 ```
 
 #### `getQrCodeString`
@@ -241,9 +286,9 @@ await ISO18013_5.sendResponse(response);
 Sends an error response to the verifier app. The supported error codes are defined in the Table 20 of the ISO 18013-5 standard and are coded in the `ErrorCode` enum.
 
 ```typescript
-import { ISO18013_5, ErrorCode } from '@pagopa/io-react-native-iso18013';
+import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
-await ISO18013_5.sendErrorResponse(ErrorCode.SESSION_ENCRYPTION);
+await ISO18013_5.sendErrorResponse(ISO18013_5.ErrorCode.SESSION_ENCRYPTION);
 ```
 
 #### `close`
@@ -270,7 +315,7 @@ sequenceDiagram
 
     Note over proximity, verifier: If an error occurs during the flow, the onError callback is triggered
     app->>+proximity: Calls start()
-    app->>+proximity: Calls getQrCode()
+    app->>+proximity: Calls getQrCodeString()
     proximity-->>+app: QR code string
     app->>+app: Renders the QR code string
     verifier->>+app: Scans the QR code
@@ -313,6 +358,8 @@ This table contains the list of error codes that can be thrown by the `ISO18013_
 | DRH_NOT_DEFINED           | Android     | The device retrieval helper hasn't been initialized, call the `start` method |
 | QR_ENGAGEMENT_NOT_DEFINED | Android     | The QR engagement hasn't been initialized, call the `start` method           |
 | START_ERROR               | Android/iOS | An error occurred while initializing the required resources                  |
+| START_NFC_ERROR           | Android/iOS | An error occurred while starting NFC engagement                              |
+| STOP_NFC_ERROR            | Android/iOS | An error occurred while stopping NFC engagement                              |
 | GET_QR_CODE_ERROR         | Android/iOS | An error occurred while generating the engagement QR code                    |
 | SEND_RESPONSE_ERROR       | Android/iOS | An error occurred while sending the response for the verifier app            |
 | SEND_ERROR_RESPONSE_ERROR | Android/iOS | An error occurred while sending the error response to the verifier app       |
@@ -325,7 +372,7 @@ An error can be parsed using the `ModuleErrorSchema` with type `ModuleErrorCodes
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 try {
-  await ISO18013_5.func();
+  await ISO18013_5.startNfc();
 } catch (error) {
   const parsedError = ISO18013_5.ModuleErrorSchema.parse(error); // Or ModuleErrorSchema.safeParse(error) for safe parsing
   console.log(JSON.stringify(parsedError, null, 2));

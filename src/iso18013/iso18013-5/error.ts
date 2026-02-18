@@ -15,6 +15,8 @@ const ModuleErrorCodesSchema = z.enum([
   'DRH_NOT_DEFINED', // Android only
   'QR_ENGAGEMENT_NOT_DEFINED', // Android only
   'START_ERROR',
+  'START_NFC_ERROR',
+  'STOP_NFC_ERROR',
   'GET_QR_CODE_ERROR',
   'SEND_RESPONSE_ERROR',
   'SEND_ERROR_RESPONSE_ERROR',

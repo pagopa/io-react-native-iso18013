@@ -217,6 +217,34 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
+   * Starts NFC engagement (HCE).
+   * Android currently does not support this engagement path in this module.
+   * Rejects with an error code defined in [ModuleErrorCodes].
+   * @param promise the promise which will be rejected with an unsupported-platform error.
+   */
+  @ReactMethod
+  fun startNfc(promise: Promise) {
+    promise.reject(
+      ModuleErrorCodes.START_NFC_ERROR,
+      "NFC engagement is currently supported only on iOS."
+    )
+  }
+
+  /**
+   * Stops an active NFC engagement session.
+   * Android currently does not support this engagement path in this module.
+   * Rejects with an error code defined in [ModuleErrorCodes].
+   * @param promise the promise which will be rejected with an unsupported-platform error.
+   */
+  @ReactMethod
+  fun stopNfc(promise: Promise) {
+    promise.reject(
+      ModuleErrorCodes.STOP_NFC_ERROR,
+      "NFC engagement is currently supported only on iOS."
+    )
+  }
+
+  /**
    * Generates a CBOR encoded device response for ISO 18013-7 mDL remote presentation using OID4VP.
    * Resolves with the base64 encoded device response or rejects with an error code
    * defined in [ModuleErrorCodes].
@@ -358,6 +386,8 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       const val DRH_NOT_DEFINED = "DRH_NOT_DEFINED"
       const val QR_ENGAGEMENT_NOT_DEFINED = "QR_ENGAGEMENT_NOT_DEFINED"
       const val START_ERROR = "START_ERROR"
+      const val START_NFC_ERROR = "START_NFC_ERROR"
+      const val STOP_NFC_ERROR = "STOP_NFC_ERROR"
       const val GET_QR_CODE_ERROR = "GET_QR_CODE_ERROR"
       const val GENERATE_RESPONSE_ERROR = "GENERATE_RESPONSE_ERROR"
       const val SEND_RESPONSE_ERROR = "SEND_RESPONSE_ERROR"
