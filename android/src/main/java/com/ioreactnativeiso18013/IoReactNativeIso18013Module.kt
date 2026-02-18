@@ -11,8 +11,8 @@ import com.facebook.react.bridge.ReadableType
 import com.facebook.react.bridge.WritableMap
 import it.pagopa.io.wallet.proximity.OpenID4VP
 import it.pagopa.io.wallet.proximity.bluetooth.BleRetrievalMethod
+import it.pagopa.io.wallet.proximity.engagement.EngagementListener
 import it.pagopa.io.wallet.proximity.qr_code.QrEngagement
-import it.pagopa.io.wallet.proximity.qr_code.QrEngagementListener
 import it.pagopa.io.wallet.proximity.request.DocRequested
 import it.pagopa.io.wallet.proximity.response.ResponseGenerator
 import it.pagopa.io.wallet.proximity.session_data.SessionDataStatus
@@ -293,7 +293,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * onError: Emitted when an error occurs. Carries a payload containing the error data.
    */
   private fun setupProximityHandler() {
-    qrEngagement?.withListener(object : QrEngagementListener {
+    qrEngagement?.withListener(object : EngagementListener {
       /**
        * This event currently doesn't get called due to an issue with the underlying native library.
        */
