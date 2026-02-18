@@ -1,13 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, ScrollView } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
-import {
-  KEYTAG,
-  MDL_BASE64URL,
-  MDL_BASE64,
-  WELL_KNOWN_CREDENTIALS,
-} from './mocks/proximity';
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Button, Platform, ScrollView } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
+import { styles } from '../styles';
 import {
   generateAcceptedFields,
   generateKeyIfNotExists,
@@ -15,7 +10,12 @@ import {
   parseAndPrintError,
   requestBlePermissions,
 } from '../utils';
-import { styles } from '../styles';
+import {
+  KEYTAG,
+  MDL_BASE64,
+  MDL_BASE64URL,
+  WELL_KNOWN_CREDENTIALS,
+} from './mocks/proximity';
 
 /**
  * Proximity status enum to track the current state of the flow.
@@ -36,12 +36,16 @@ const Iso180135Screen: React.FC = () => {
     PROXIMITY_STATUS.STARTING
   );
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [isNfcActive, setIsNfcActive] = useState(false);
   const [request, setRequest] = useState<
     ISO18013_5.VerifierRequest['request'] | null
   >(null);
   const listeners = useRef<Array<ReturnType<typeof ISO18013_5.addListener>>>(
     []
   );
+
+  const handleOnNfcStart = () => setIsNfcActive(true);
+  const handleOnNfcStop = () => setIsNfcActive(false);
 
   /**
    * Callback function to handle device connection.
@@ -113,6 +117,22 @@ const Iso180135Screen: React.FC = () => {
     }
   };
 
+  const startNfc = useCallback(async () => {
+    try {
+      await ISO18013_5.startNfc();
+    } catch (e) {
+      parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'startNfc error: ');
+    }
+  }, []);
+
+  const stopNfc = useCallback(async () => {
+    try {
+      await ISO18013_5.stopNfc();
+    } catch (e) {
+      parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'stopNfc error: ');
+    }
+  }, []);
+
   /**
    * Close utility function to close the proximity flow.
    */
@@ -128,6 +148,11 @@ const Iso180135Screen: React.FC = () => {
         console.log(listener);
         listener.remove();
       });
+      if (Platform.OS === 'ios') {
+        try {
+          await ISO18013_5.stopNfc();
+        } catch (_) {}
+      }
       await ISO18013_5.close();
       setQrCode(null);
       setRequest(null);
@@ -250,6 +275,8 @@ const Iso180135Screen: React.FC = () => {
         ),
         ISO18013_5.addListener('onDeviceDisconnected', onDeviceDisconnected),
         ISO18013_5.addListener('onError', onError),
+        ISO18013_5.addListener('onNfcStart', handleOnNfcStart),
+        ISO18013_5.addListener('onNfcStop', handleOnNfcStop),
       ];
 
       // Register listeners
@@ -285,6 +312,12 @@ const Iso180135Screen: React.FC = () => {
       )}
       {status === PROXIMITY_STATUS.STARTED && qrCode && (
         <QRCode value={qrCode} size={200} />
+      )}
+      {status === PROXIMITY_STATUS.STARTED && Platform.OS === 'ios' && (
+        <Button
+          title={isNfcActive ? 'Stop NFC Engagement' : 'Start NFC Engagement'}
+          onPress={isNfcActive ? stopNfc : startNfc}
+        />
       )}
       {status === PROXIMITY_STATUS.PRESENTING && request && (
         <>
