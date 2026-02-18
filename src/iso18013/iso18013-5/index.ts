@@ -19,6 +19,8 @@ export {
   sendErrorResponse,
   sendResponse,
   start,
+  startNfc,
+  stopNfc,
 } from './proximity';
 
 export { type RequestedDocument, type AcceptedFields } from '../types';

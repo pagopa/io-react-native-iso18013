@@ -26,6 +26,12 @@ RCT_EXTERN_METHOD(sendErrorResponse:(NSInteger *)code
                   withResolver:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(startNfc:(RCTPromiseResolveBlock)resolve
+                  withRejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(stopNfc:(RCTPromiseResolveBlock)resolve
+                  withRejecter:(RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(generateOID4VPDeviceResponse: (NSString *)clientId
                   withResponseUri: (NSString *)responseUri
                   withAuthorizationRequestNonce: (NSString *)authorizationRequestNonce

@@ -19,6 +19,10 @@ export type EventsPayload = {
   onDocumentRequestReceived: { data?: string } | undefined;
   onDeviceDisconnected: undefined;
   onError: { error?: string } | undefined;
+  // (iOS only) Emitted when the NFC engagement session starts successfully.
+  onNfcStart: undefined;
+  // (iOS only) Emitted when the NFC engagement session stops.
+  onNfcStop: undefined;
 };
 
 /**
@@ -122,6 +126,28 @@ export function generateResponse(
  */
 export function sendResponse(response: string): Promise<boolean> {
   return IoReactNativeIso18013.sendResponse(response);
+}
+
+/**
+ * Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
+ * iOS only. Requires iOS 17.4 or later.
+ * Must be called after {@link start} since the BLE server and device engagement
+ * must already be initialised.
+ * Resolves to true on success or rejects in case of error.
+ * @throws {ModuleError} if NFC engagement fails or the device runs iOS < 17.4
+ */
+export function startNfc(): Promise<boolean> {
+  return IoReactNativeIso18013.startNfc();
+}
+
+/**
+ * Stops the active NFC engagement session.
+ * iOS only. Requires iOS 17.4 or later.
+ * Resolves to true on success or rejects in case of error.
+ * @throws {ModuleError} if stopping NFC fails or the device runs iOS < 17.4
+ */
+export function stopNfc(): Promise<boolean> {
+  return IoReactNativeIso18013.stopNfc();
 }
 
 /**
