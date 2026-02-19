@@ -10,6 +10,7 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import com.facebook.react.bridge.WritableMap
 import it.pagopa.io.wallet.proximity.OpenID4VP
+import it.pagopa.io.wallet.proximity.ProximityLogger
 import it.pagopa.io.wallet.proximity.bluetooth.BleRetrievalMethod
 import it.pagopa.io.wallet.proximity.engagement.EngagementListener
 import it.pagopa.io.wallet.proximity.nfc.NfcEngagementEvent
@@ -36,8 +37,9 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
   private var qrEngagement: QrEngagement? = null
   private var deviceRetrievalHelper: DeviceRetrievalHelperWrapper? = null
+
   private var nfcEventJob: Job? = null
-  private val nfcScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+  private val nfcScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
   /**
    * Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
@@ -49,7 +51,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @param promise the promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
-  fun start(
+  fun startQrCodeEngagement(
     peripheralMode: Boolean,
     centralClientMode: Boolean,
     clearBleCache: Boolean,
@@ -70,10 +72,12 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         }
       }
       qrEngagement?.configure()
-      setupProximityHandler()
+
+      setupQrCodeEngagementHandler()
+
       promise.resolve(true)
     } catch (e: Exception) {
-      promise.reject(ModuleErrorCodes.START_ERROR, e.message, e)
+      promise.reject(ModuleErrorCodes.START_QRCODE_ERROR, e.message, e)
     }
   }
 
@@ -97,6 +101,36 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
+   * Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
+   * Requires NFC and HCE support on the device.
+   * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
+   * @param promise the promise which will be resolved in case of success or rejected in case of failure.
+   */
+  @ReactMethod
+  fun startNfcEngagement(
+    promise: Promise
+  ) {
+    try {
+      val activity = currentActivity ?: run {
+        promise.reject(ModuleErrorCodes.START_NFC_ERROR, "No activity available")
+        return
+      }
+      val status = NfcEngagementService.enable(activity, IoNfcEngagementService::class.java)
+      if (!status.canWork()) {
+        promise.reject(ModuleErrorCodes.START_NFC_ERROR, "HCE not available: $status")
+        return
+      }
+      setupNfcEventCollection()
+
+      sendEvent("onNfcStart", null)
+      promise.resolve(true)
+    } catch (e: Exception) {
+      promise.reject(ModuleErrorCodes.START_NFC_ERROR, e.message, e)
+    }
+
+  }
+
+  /**
    * Closes the bluetooth connection and clears any resource.
    * Resolves to true after closing the connection or rejects with an error code
    * defined in [ModuleErrorCodes].
@@ -105,7 +139,13 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    */
   @ReactMethod
   fun close(promise: Promise) {
+    val activity = currentActivity ?: run {
+      promise.reject(ModuleErrorCodes.CLOSE_ERROR, "No activity available")
+      return
+    }
+
     try {
+      NfcEngagementService.disable(activity)
       nfcEventJob?.cancel()
       nfcEventJob = null
       qrEngagement?.close()
@@ -228,84 +268,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
-   * Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
-   * Requires NFC and HCE support on the device.
-   * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
-   * @param promise the promise which will be resolved in case of success or rejected in case of failure.
-   */
-  @ReactMethod
-  fun startNfc(promise: Promise) {
-    try {
-      val activity = currentActivity ?: run {
-        promise.reject(ModuleErrorCodes.START_NFC_ERROR, "No activity available")
-        return
-      }
-      val status = NfcEngagementService.enable(activity, IoNfcEngagementService::class.java)
-      if (!status.canWork()) {
-        promise.reject(ModuleErrorCodes.START_NFC_ERROR, "HCE not available: $status")
-        return
-      }
-      startNfcEventCollection()
-      sendEvent("onNfcStart", null)
-      promise.resolve(true)
-    } catch (e: Exception) {
-      promise.reject(ModuleErrorCodes.START_NFC_ERROR, e.message, e)
-    }
-  }
-
-  /**
-   * Stops the active NFC engagement session.
-   * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
-   * @param promise the promise which will be resolved in case of success or rejected in case of failure.
-   */
-  @ReactMethod
-  fun stopNfc(promise: Promise) {
-    try {
-      val activity = currentActivity ?: run {
-        promise.reject(ModuleErrorCodes.STOP_NFC_ERROR, "No activity available")
-        return
-      }
-      NfcEngagementService.disable(activity)
-      nfcEventJob?.cancel()
-      nfcEventJob = null
-      sendEvent("onNfcStop", null)
-      promise.resolve(true)
-    } catch (e: Exception) {
-      promise.reject(ModuleErrorCodes.STOP_NFC_ERROR, e.message, e)
-    }
-  }
-
-  private fun startNfcEventCollection() {
-    nfcEventJob?.cancel()
-    nfcEventJob = nfcScope.launch {
-      NfcEngagementEventBus.events.collect { event ->
-        when (event) {
-          is NfcEngagementEvent.Connecting ->
-            sendEvent("onDeviceConnecting", "")
-          is NfcEngagementEvent.Connected -> {
-            deviceRetrievalHelper = event.device
-            sendEvent("onDeviceConnected", "")
-          }
-          is NfcEngagementEvent.Error -> {
-            val data: WritableMap = Arguments.createMap()
-            data.putString("error", event.error.message ?: "")
-            sendEvent("onError", data)
-          }
-          is NfcEngagementEvent.Disconnected ->
-            sendEvent("onDeviceDisconnected", event.transportSpecificTermination.toString())
-          is NfcEngagementEvent.DocumentRequestReceived -> {
-            val data: WritableMap = Arguments.createMap()
-            data.putString("data", event.request)
-            sendEvent("onDocumentRequestReceived", data)
-          }
-          is NfcEngagementEvent.NotSupported ->
-            sendEvent("onNfcStop", null)
-        }
-      }
-    }
-  }
-
-  /**
    * Generates a CBOR encoded device response for ISO 18013-7 mDL remote presentation using OID4VP.
    * Resolves with the base64 encoded device response or rejects with an error code
    * defined in [ModuleErrorCodes].
@@ -373,7 +335,8 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
-   * Sets the proximity handler along with the possible dispatched events and their callbacks.
+   * Sets the proximity handler for the QRCode engagement along with the possible dispatched
+   * events and their callbacks.
    * The events are then sent to React Native via `RCTEventEmitter`.
    * onDeviceConnecting: Emitted when the device is connecting to the verifier app.
    * onDeviceConnected: Emitted when the device is connected to the verifier app.
@@ -381,7 +344,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * onDeviceDisconnected: Emitted when the device is disconnected from the verifier app.
    * onError: Emitted when an error occurs. Carries a payload containing the error data.
    */
-  private fun setupProximityHandler() {
+  private fun setupQrCodeEngagementHandler() {
     qrEngagement?.withListener(object : EngagementListener {
       /**
        * This event currently doesn't get called due to an issue with the underlying native library.
@@ -411,6 +374,44 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         sendEvent("onDeviceDisconnected", transportSpecificTermination.toString())
       }
     })
+  }
+
+  /**
+   * Starts the collection of NFC engagement events.
+   * The events are then sent to React Native via `RCTEventEmitter`.
+   * onDeviceConnecting: Emitted when the device is connecting to the verifier app.
+   * onDeviceConnected: Emitted when the device is connected to the verifier app.
+   * onDocumentRequestReceived: Emitted when a document request is received from the verifier app. Carries a payload containing the request data
+   * onDeviceDisconnected: Emitted when the device is disconnected from the verifier app.
+   * onError: Emitted when an error occurs. Carries a payload containing the error data.
+   */
+  private fun setupNfcEventCollection() {
+    nfcEventJob = nfcScope.launch {
+      NfcEngagementEventBus.events.collect { event ->
+        when (event) {
+          is NfcEngagementEvent.Connecting ->
+            sendEvent("onDeviceConnecting", "")
+          is NfcEngagementEvent.Connected -> {
+            deviceRetrievalHelper = event.device
+            sendEvent("onDeviceConnected", "")
+          }
+          is NfcEngagementEvent.Error -> {
+            val data: WritableMap = Arguments.createMap()
+            data.putString("error", event.error.message ?: "")
+            sendEvent("onError", data)
+          }
+          is NfcEngagementEvent.Disconnected ->
+            sendEvent("onDeviceDisconnected", event.transportSpecificTermination.toString())
+          is NfcEngagementEvent.DocumentRequestReceived -> {
+            val data: WritableMap = Arguments.createMap()
+            data.putString("data", event.request)
+            sendEvent("onDocumentRequestReceived", data)
+          }
+          is NfcEngagementEvent.NotSupported ->
+            sendEvent("onNfcStop", null)
+        }
+      }
+    }
   }
 
   /**
@@ -446,9 +447,8 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       // ISO18013-5 related errors
       const val DRH_NOT_DEFINED = "DRH_NOT_DEFINED"
       const val QR_ENGAGEMENT_NOT_DEFINED = "QR_ENGAGEMENT_NOT_DEFINED"
-      const val START_ERROR = "START_ERROR"
+      const val START_QRCODE_ERROR = "START_QRCODE_ERROR"
       const val START_NFC_ERROR = "START_NFC_ERROR"
-      const val STOP_NFC_ERROR = "STOP_NFC_ERROR"
       const val GET_QR_CODE_ERROR = "GET_QR_CODE_ERROR"
       const val GENERATE_RESPONSE_ERROR = "GENERATE_RESPONSE_ERROR"
       const val SEND_RESPONSE_ERROR = "SEND_RESPONSE_ERROR"

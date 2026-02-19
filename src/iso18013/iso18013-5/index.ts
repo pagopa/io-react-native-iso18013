@@ -18,9 +18,8 @@ export {
   getQrCodeString,
   sendErrorResponse,
   sendResponse,
-  start,
-  startNfc,
-  stopNfc,
+  startQrCodeEngagement,
+  startNfcEngagement,
 } from './proximity';
 
 export { type RequestedDocument, type AcceptedFields } from '../types';

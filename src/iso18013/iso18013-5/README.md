@@ -61,8 +61,6 @@ This library emits the following events:
 | onDocumentRequestReceived | `{ data: string } \| undefined` | Event dispatched when the consumer app receives a new request, contained in the data payload. It can be parsed via the `parseVerifierRequest` function. |
 | onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects by sending the END (0x02) flag. |
 | onError | `{ error: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed with `ISO18013_5.OnErrorPayloadSchema`. |
-| onNfcStart | `undefined` | Event dispatched when the NFC engagement session starts successfully. |
-| onNfcStop | `undefined` | Event dispatched when the NFC engagement session stops. |
 
 The events flow is described in the following diagram:
 
@@ -173,40 +171,19 @@ ISO18013_5.addListener(
 );
 ```
 
-#### `onNfcStart`
-
-```typescript
-import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-
-ISO18013_5.addListener('onNfcStart', () => {
-  console.log('NFC engagement started');
-});
-```
-
-#### `onNfcStop`
-
-```typescript
-import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-
-ISO18013_5.addListener('onNfcStop', () => {
-  console.log('NFC engagement stopped');
-});
-```
-
 ## Methods
 
-#### `start`
+#### `startQrCodeEngagement`
 
-Starts the proximity flow and starts the bluetooth service. This method also accepts optional parameters to configure the initialization on Android, along with the possibility
-to specify a certificates of array to verify the reader app.
+Starts the proximity flow and starts the bluetooth service for QR Code engagement. This method also accepts optional parameters to configure the initialization on Android, along with the possibility to specify a certificates of array to verify the reader app.
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
-await ISO18013_5.start();
+await ISO18013_5.startQrCodeEngagement();
 ```
 
-#### `startNfc`
+#### `startNfcEngagement`
 
 Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
 This method must be called after `start`.
@@ -216,17 +193,7 @@ On Android, requires HCE support (most mid-to-high-end devices).
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
-await ISO18013_5.startNfc();
-```
-
-#### `stopNfc`
-
-Stops an active NFC engagement session.
-
-```typescript
-import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-
-await ISO18013_5.stopNfc();
+await ISO18013_5.startNfcEngagement();
 ```
 
 #### `getQrCodeString`
@@ -293,7 +260,7 @@ await ISO18013_5.sendErrorResponse(ISO18013_5.ErrorCode.SESSION_ENCRYPTION);
 
 #### `close`
 
-Closes the QR engagement by releasing the resources allocated during the `start` method.
+Closes the QR/NFC engagement by releasing the resources allocated during the `start` method.
 Before starting a new flow, it is necessary to call this method to ensure that the previous flow is properly closed.
 Listeners can be added using the `addListener` method and removed using the `removeListener` method.
 
@@ -357,9 +324,8 @@ This table contains the list of error codes that can be thrown by the `ISO18013_
 | ------------------------- | ----------- | ---------------------------------------------------------------------------- |
 | DRH_NOT_DEFINED           | Android     | The device retrieval helper hasn't been initialized, call the `start` method |
 | QR_ENGAGEMENT_NOT_DEFINED | Android     | The QR engagement hasn't been initialized, call the `start` method           |
-| START_ERROR               | Android/iOS | An error occurred while initializing the required resources                  |
+| START_QRCODE_ERROR        | Android/iOS | An error occurred while initializing QRCode engagement resources             |
 | START_NFC_ERROR           | Android/iOS | An error occurred while starting NFC engagement                              |
-| STOP_NFC_ERROR            | Android/iOS | An error occurred while stopping NFC engagement                              |
 | GET_QR_CODE_ERROR         | Android/iOS | An error occurred while generating the engagement QR code                    |
 | SEND_RESPONSE_ERROR       | Android/iOS | An error occurred while sending the response for the verifier app            |
 | SEND_ERROR_RESPONSE_ERROR | Android/iOS | An error occurred while sending the error response to the verifier app       |
@@ -372,7 +338,7 @@ An error can be parsed using the `ModuleErrorSchema` with type `ModuleErrorCodes
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 try {
-  await ISO18013_5.startNfc();
+  await ISO18013_5.func();
 } catch (error) {
   const parsedError = ISO18013_5.ModuleErrorSchema.parse(error); // Or ModuleErrorSchema.safeParse(error) for safe parsing
   console.log(JSON.stringify(parsedError, null, 2));

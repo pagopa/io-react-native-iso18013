@@ -50,7 +50,7 @@ export enum ErrorCode {
  * @param config.certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
  * @throws {ModuleError} in case of error which can be parsed with {@link ModuleErrorSchema}
  */
-export function start(
+export function startQrCodeEngagement(
   config: {
     peripheralMode?: boolean;
     centralClientMode?: boolean;
@@ -61,15 +61,30 @@ export function start(
   const { peripheralMode, centralClientMode, clearBleCache, certificates } =
     config;
   if (Platform.OS === 'ios') {
-    return IoReactNativeIso18013.start(certificates ? certificates : []);
+    return IoReactNativeIso18013.startQrCodeEngagement(
+      certificates ? certificates : []
+    );
   } else {
-    return IoReactNativeIso18013.start(
+    return IoReactNativeIso18013.startQrCodeEngagement(
       peripheralMode ? peripheralMode : true,
       centralClientMode ? centralClientMode : false,
       clearBleCache ? clearBleCache : true,
       certificates ? certificates : []
     );
   }
+}
+
+/**
+ * Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
+ * On iOS, requires iOS 17.4 or later.
+ * On Android, requires NFC and HCE support.
+ * Must be called after {@link start} since the BLE server and device engagement
+ * must already be initialised.
+ * Resolves to true on success or rejects in case of error.
+ * @throws {ModuleError} if NFC engagement fails
+ */
+export function startNfcEngagement(): Promise<boolean> {
+  return IoReactNativeIso18013.startNfcEngagement();
 }
 
 /**
@@ -126,30 +141,6 @@ export function generateResponse(
  */
 export function sendResponse(response: string): Promise<boolean> {
   return IoReactNativeIso18013.sendResponse(response);
-}
-
-/**
- * Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
- * On iOS, requires iOS 17.4 or later.
- * On Android, requires NFC and HCE support.
- * Must be called after {@link start} since the BLE server and device engagement
- * must already be initialised.
- * Resolves to true on success or rejects in case of error.
- * @throws {ModuleError} if NFC engagement fails
- */
-export function startNfc(): Promise<boolean> {
-  return IoReactNativeIso18013.startNfc();
-}
-
-/**
- * Stops the active NFC engagement session.
- * On iOS, requires iOS 17.4 or later.
- * On Android, requires NFC and HCE support.
- * Resolves to true on success or rejects in case of error.
- * @throws {ModuleError} if stopping NFC fails
- */
-export function stopNfc(): Promise<boolean> {
-  return IoReactNativeIso18013.stopNfc();
 }
 
 /**

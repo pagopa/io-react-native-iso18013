@@ -110,16 +110,7 @@ const Iso180135Screen: React.FC = () => {
       );
       return;
     }
-    try {
-      await ISO18013_5.start(); // Peripheral mode
-      setStatus(PROXIMITY_STATUS.READY);
-    } catch (error) {
-      parseAndPrintError(
-        ISO18013_5.ModuleErrorSchema,
-        error,
-        'startFlow error: '
-      );
-    }
+    setStatus(PROXIMITY_STATUS.READY);
   }, []);
 
   /**
@@ -127,6 +118,7 @@ const Iso180135Screen: React.FC = () => {
    */
   const startQrEngagement = useCallback(async () => {
     try {
+      await ISO18013_5.startQrCodeEngagement(); // Peripheral mode
       // Generate the QR code string
       console.log('Generating QR code');
       const qrString = await ISO18013_5.getQrCodeString();
@@ -147,8 +139,7 @@ const Iso180135Screen: React.FC = () => {
    */
   const startNfcEngagement = useCallback(async () => {
     try {
-      await ISO18013_5.getQrCodeString();
-      await ISO18013_5.startNfc();
+      await ISO18013_5.startNfcEngagement();
       setStatus(PROXIMITY_STATUS.ENGAGEMENT);
     } catch (error) {
       parseAndPrintError(
@@ -170,11 +161,6 @@ const Iso180135Screen: React.FC = () => {
         );
       }
 
-      if (Platform.OS === 'ios') {
-        try {
-          await ISO18013_5.stopNfc();
-        } catch (_) {}
-      }
       await ISO18013_5.close();
       setQrCode(null);
       setRequest(null);
