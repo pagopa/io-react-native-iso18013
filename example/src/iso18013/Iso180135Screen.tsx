@@ -27,7 +27,8 @@ import {
 enum PROXIMITY_STATUS {
   IDLE = 'IDLE',
   READY = 'READY',
-  ENGAGEMENT = 'ENGAGEMENT',
+  ENGAGEMENT_QRCODE = 'ENGAGEMENT_QRCODE',
+  ENGAGEMENT_NFC = 'ENGAGEMENT_NFC',
   PRESENTING = 'PRESENTING',
   ERROR = 'ERROR',
 }
@@ -35,51 +36,9 @@ enum PROXIMITY_STATUS {
 const Iso180135Screen: React.FC = () => {
   const [status, setStatus] = useState<PROXIMITY_STATUS>(PROXIMITY_STATUS.IDLE);
   const [qrCode, setQrCode] = useState<string | null>(null);
-  const [isNfcActive, setIsNfcActive] = useState(false);
   const [request, setRequest] = useState<
     ISO18013_5.VerifierRequest['request'] | null
   >(null);
-
-  const nfcTimerRef = useRef<NodeJS.Timeout>(null);
-  const [nfcSessionSeconds, setNfcSessionSeconds] = useState(0);
-
-  /**
-   * 15 seconds elapse after the intent assertion initialized
-   * After the intent assertion expires, your app will need to wait 15 seconds before acquiring a new intent assertion.
-   *
-   * See: https://developer.apple.com/support/hce-transactions-in-apps/#:~:text=After%20the%20intent,alternative%20app%20marketplaces.
-   */
-  const startNfcSessionTimer = useCallback((onTimeout?: () => void) => {
-    if (Platform.OS !== 'ios') return;
-
-    const NFC_SESSION_TIME_S = 15;
-
-    setNfcSessionSeconds(NFC_SESSION_TIME_S);
-    nfcTimerRef.current = setInterval(() => {
-      setNfcSessionSeconds((prev) => {
-        if (prev <= 1) {
-          if (nfcTimerRef.current) {
-            clearInterval(nfcTimerRef.current);
-          }
-          onTimeout?.();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
-
-  const handleOnNfcStop = useCallback(() => {
-    console.log('NFC stopped');
-    setIsNfcActive(false);
-    startNfcSessionTimer();
-  }, [startNfcSessionTimer]);
-
-  const handleOnNfcStart = useCallback(() => {
-    console.log('NFC started');
-    setIsNfcActive(true);
-    startNfcSessionTimer(handleOnNfcStop);
-  }, [handleOnNfcStop, startNfcSessionTimer]);
 
   /**
    * Callback function to handle device connection.
@@ -124,7 +83,7 @@ const Iso180135Screen: React.FC = () => {
       const qrString = await ISO18013_5.getQrCodeString();
       console.log(`Generated QR code: ${qrString}`);
       setQrCode(qrString);
-      setStatus(PROXIMITY_STATUS.ENGAGEMENT);
+      setStatus(PROXIMITY_STATUS.ENGAGEMENT_QRCODE);
     } catch (error) {
       parseAndPrintError(
         ISO18013_5.ModuleErrorSchema,
@@ -140,7 +99,7 @@ const Iso180135Screen: React.FC = () => {
   const startNfcEngagement = useCallback(async () => {
     try {
       await ISO18013_5.startNfcEngagement();
-      setStatus(PROXIMITY_STATUS.ENGAGEMENT);
+      setStatus(PROXIMITY_STATUS.ENGAGEMENT_NFC);
     } catch (error) {
       parseAndPrintError(
         ISO18013_5.ModuleErrorSchema,
@@ -324,8 +283,6 @@ const Iso180135Screen: React.FC = () => {
       ),
       ISO18013_5.addListener('onDeviceDisconnected', onDeviceDisconnected),
       ISO18013_5.addListener('onError', onError),
-      ISO18013_5.addListener('onNfcStart', handleOnNfcStart),
-      ISO18013_5.addListener('onNfcStop', handleOnNfcStop),
     ];
 
     return () => {
@@ -342,13 +299,19 @@ const Iso180135Screen: React.FC = () => {
     onDocumentRequestReceived,
     onError,
     onDeviceDisconnected,
-    handleOnNfcStart,
-    handleOnNfcStop,
   ]);
 
-  useEffect(() => {
-    console.log('Current status:', status);
-  }, [status]);
+  const nfcTimerRef = useRef<NodeJS.Timeout>(null);
+  const [nfcSessionDuration, setNfcSessionDuration] = useState(0);
+  const [nfcSessionCooldown, setNfcSessionCooldown] = useState(0);
+
+  /**
+   * 15 seconds elapse after the intent assertion initialized
+   * After the intent assertion expires, your app will need to wait 15 seconds before acquiring a new intent assertion.
+   *
+   * See: https://developer.apple.com/support/hce-transactions-in-apps/#:~:text=After%20the%20intent,alternative%20app%20marketplaces.
+   */
+  useEffect(() => {}, [status]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -377,10 +340,10 @@ const Iso180135Screen: React.FC = () => {
           />
         </>
       )}
-      {status === PROXIMITY_STATUS.ENGAGEMENT && qrCode && (
+      {status === PROXIMITY_STATUS.ENGAGEMENT_QRCODE && qrCode && (
         <QRCode value={qrCode} size={200} />
       )}
-      {status === PROXIMITY_STATUS.ENGAGEMENT && isNfcActive && (
+      {status === PROXIMITY_STATUS.ENGAGEMENT_NFC && (
         <>
           <Text>
             NFC engagement active, tap the back of both device toward each other
@@ -421,7 +384,8 @@ const Iso180135Screen: React.FC = () => {
         </>
       )}
 
-      {(status === PROXIMITY_STATUS.ENGAGEMENT ||
+      {(status === PROXIMITY_STATUS.ENGAGEMENT_NFC ||
+        status === PROXIMITY_STATUS.ENGAGEMENT_QRCODE ||
         status === PROXIMITY_STATUS.PRESENTING ||
         status === PROXIMITY_STATUS.ERROR) && (
         <Button

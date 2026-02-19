@@ -19,10 +19,6 @@ export type EventsPayload = {
   onDocumentRequestReceived: { data?: string } | undefined;
   onDeviceDisconnected: undefined;
   onError: { error?: string } | undefined;
-  // Emitted when the NFC engagement session starts successfully.
-  onNfcStart: undefined;
-  // Emitted when the NFC engagement session stops.
-  onNfcStop: undefined;
 };
 
 /**
@@ -83,8 +79,19 @@ export function startQrCodeEngagement(
  * Resolves to true on success or rejects in case of error.
  * @throws {ModuleError} if NFC engagement fails
  */
-export function startNfcEngagement(): Promise<boolean> {
-  return IoReactNativeIso18013.startNfcEngagement();
+export function startNfcEngagement(
+  config: {
+    certificates?: Array<Array<String>>;
+  } = {}
+): Promise<boolean> {
+  const { certificates } = config;
+  if (Platform.OS === 'ios') {
+    return IoReactNativeIso18013.startNfcEngagement(
+      certificates ? certificates : []
+    );
+  } else {
+    return IoReactNativeIso18013.startNfcEngagement();
+  }
 }
 
 /**

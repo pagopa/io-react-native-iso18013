@@ -13,7 +13,6 @@ class IoReactNativeIso18013: RCTEventEmitter {
   override init() {
     super.init()
     setupProximityHandler()
-    setupNfcHandler()
   }
   
   /**
@@ -25,7 +24,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
    - `onError`: Emitted when an error occurs. Carries a payload containing the error data.
    */
   override func supportedEvents() -> [String]! {
-    return ["onDeviceConnected", "onDeviceConnecting", "onDeviceDisconnected", "onDocumentRequestReceived", "onError", "onNfcStart", "onNfcStop", "unknown"]
+    return ["onDeviceConnected", "onDeviceConnecting", "onDeviceDisconnected", "onDocumentRequestReceived", "onError", "unknown"]
   }
   
   /**
@@ -44,8 +43,8 @@ class IoReactNativeIso18013: RCTEventEmitter {
       - resolve: The promise to be resolved
       - reject: The promise to be rejected
   */
-  @objc(start:withResolver:withRejecter:)
-  func start(
+  @objc(startQrCodeEngagement:withResolver:withRejecter:)
+  func startQrCodeEngagement(
     certificates: [Any],
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
@@ -270,60 +269,6 @@ class IoReactNativeIso18013: RCTEventEmitter {
       reject(ModuleErrorCodes.sendErrorResponseError.rawValue, error.localizedDescription, error)
     }
   }
-  
-  
-  /**
-   Starts NFC engagement (HCE - Host Card Emulation) to broadcast the device engagement via NDEF
-   so that a verifier can initiate the BLE proximity exchange by tapping phones.
-   Requires iOS 17.4 or later. Resolves to true on success or rejects with an error.
-   - Parameters:
-     - resolve: The promise to be resolved.
-     - reject: The promise to be rejected.
-   */
-  @objc(startNfc:withRejecter:)
-  func startNfc(
-    resolve: @escaping RCTPromiseResolveBlock,
-    reject: @escaping RCTPromiseRejectBlock
-  ) {
-    if #available(iOS 17.4, *) {
-      Task {
-        do {
-          let result = try await Proximity.shared.startNfc()
-          resolve(result)
-        } catch {
-          reject(ModuleErrorCodes.startNfcError.rawValue, error.localizedDescription, error)
-        }
-      }
-    } else {
-      reject(ModuleErrorCodes.startNfcError.rawValue, "NFC engagement requires iOS 17.4 or later", nil)
-    }
-  }
-
-  /**
-   Stops the active NFC engagement session.
-   Requires iOS 17.4 or later. Resolves to true on success or rejects with an error.
-   - Parameters:
-     - resolve: The promise to be resolved.
-     - reject: The promise to be rejected.
-   */
-  @objc(stopNfc:withRejecter:)
-  func stopNfc(
-    resolve: @escaping RCTPromiseResolveBlock,
-    reject: @escaping RCTPromiseRejectBlock
-  ) {
-    if #available(iOS 17.4, *) {
-      Task {
-        do {
-          let result = try await Proximity.shared.stopNfc()
-          resolve(result)
-        } catch {
-          reject(ModuleErrorCodes.stopNfcError.rawValue, error.localizedDescription, error)
-        }
-      }
-    } else {
-      reject(ModuleErrorCodes.stopNfcError.rawValue, "NFC engagement requires iOS 17.4 or later", nil)
-    }
-  }
 
   /**
    Closes the bluetooth connection and clears any resource.
@@ -376,23 +321,6 @@ class IoReactNativeIso18013: RCTEventEmitter {
       return nil
     }
   }
-  
-  /**
-   Sets the NFC handler to forward NFC lifecycle events to React Native.
-   - `onNfcStart`: Emitted when the NFC engagement session starts successfully.
-   - `onNfcStop`: Emitted when the NFC engagement session stops.
-   */
-  private func setupNfcHandler() {
-    Proximity.shared.nfcHandler = { [weak self] event in
-      guard let self = self else { return }
-      switch event {
-      case .onStart:
-        self.sendEvent(withName: "onNfcStart", body: nil)
-      case .onStop:
-        self.sendEvent(withName: "onNfcStop", body: nil)
-      }
-    }
-  }
 
   /**
    Sets the proximity handler along with the possible dispatched events and their callbacks.
@@ -441,6 +369,41 @@ class IoReactNativeIso18013: RCTEventEmitter {
       }
       
       self.sendEvent(withName: eventName, body: eventBody)
+    }
+  }
+  
+  /**
+   Starts NFC engagement (HCE - Host Card Emulation) to broadcast the device engagement via NDEF
+   so that a verifier can initiate the BLE proximity exchange by tapping phones.
+   Requires iOS 17.4 or later. Resolves to true on success or rejects with an error.
+   - Parameters:
+     - resolve: The promise to be resolved.
+     - reject: The promise to be rejected.
+   */
+  @objc(startNfcEngagement:withResolver:withRejecter:)
+  func startNfcEngagement(
+    certificates: [Any],
+    resolve: @escaping RCTPromiseResolveBlock,
+    reject: @escaping RCTPromiseRejectBlock
+  ) {
+    if #available(iOS 17.4, *) {
+      Task {
+        do {
+          let certsData = try parseCertificates(certificates)
+          try Proximity.shared.start(certsData)
+          
+          let result = try await Proximity.shared.startNfc()
+          resolve(result)
+        } catch let proximityError as ProximityError {
+          reject(ModuleErrorCodes.generateResponseError.rawValue, proximityError.description, proximityError)
+        } catch let parsingError as ParsingError{
+          reject(ModuleErrorCodes.generateResponseError.rawValue, parsingError.description, parsingError)
+        } catch {
+          reject(ModuleErrorCodes.startNfcError.rawValue, error.localizedDescription, error)
+        }
+      }
+    } else {
+      reject(ModuleErrorCodes.startNfcError.rawValue, "NFC engagement requires iOS 17.4 or later", nil)
     }
   }
   
@@ -534,7 +497,8 @@ class IoReactNativeIso18013: RCTEventEmitter {
   // Errors which this module uses to reject a promise
   private enum ModuleErrorCodes: String, CaseIterable {
     // ISO18013-5 related errors
-    case startError = "START_ERROR"
+    case startQrCodeError = "START_QRCODE_ERROR"
+    case startNfcError = "START_NFC_ERROR"
     case getQrCodeError = "GET_QR_CODE_ERROR"
     case sendResponseError = "SEND_RESPONSE_ERROR"
     case sendErrorResponseError = "SEND_ERROR_RESPONSE_ERROR"
@@ -542,9 +506,5 @@ class IoReactNativeIso18013: RCTEventEmitter {
     
     // ISO18013-7 related errors
     case generateOID4VPResponseError = "GENERATE_OID4VP_RESPONSE_ERROR"
-
-    // NFC related errors
-    case startNfcError = "START_NFC_ERROR"
-    case stopNfcError = "STOP_NFC_ERROR"
   }
 }
