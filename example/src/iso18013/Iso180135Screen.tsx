@@ -386,7 +386,7 @@ const Iso180135Screen: React.FC = () => {
             onPress={() => startNfcEngagement()}
             disabled={Platform.select({
               ios: nfcSessionSeconds > 0,
-              default: true,
+              default: false,
             })}
           />
         </>
