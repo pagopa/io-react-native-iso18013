@@ -10,7 +10,6 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import com.facebook.react.bridge.WritableMap
 import it.pagopa.io.wallet.proximity.OpenID4VP
-import it.pagopa.io.wallet.proximity.ProximityLogger
 import it.pagopa.io.wallet.proximity.bluetooth.BleRetrievalMethod
 import it.pagopa.io.wallet.proximity.engagement.EngagementListener
 import it.pagopa.io.wallet.proximity.nfc.NfcEngagementEvent
