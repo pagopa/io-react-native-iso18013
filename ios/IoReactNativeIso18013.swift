@@ -337,8 +337,11 @@ class IoReactNativeIso18013: RCTEventEmitter {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    Proximity.shared.stop()
-    resolve(true)
+    Task {
+      _ = try? await Proximity.shared.stopNfc()
+      Proximity.shared.stop()
+      resolve(true)
+    }
   }
   
   /**

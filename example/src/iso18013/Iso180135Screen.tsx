@@ -1,6 +1,6 @@
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Platform, ScrollView } from 'react-native';
+import { Alert, Button, Platform, ScrollView, Text } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { styles } from '../styles';
 import {
@@ -25,27 +25,61 @@ import {
  * - STOPPED: The flow has been stopped, either by the user or due to an error.
  */
 enum PROXIMITY_STATUS {
-  STARTING = 'STARTING',
-  STARTED = 'STARTED',
+  IDLE = 'IDLE',
+  READY = 'READY',
+  ENGAGEMENT = 'ENGAGEMENT',
   PRESENTING = 'PRESENTING',
-  STOPPED = 'STOPPED',
+  ERROR = 'ERROR',
 }
 
 const Iso180135Screen: React.FC = () => {
-  const [status, setStatus] = useState<PROXIMITY_STATUS>(
-    PROXIMITY_STATUS.STARTING
-  );
+  const [status, setStatus] = useState<PROXIMITY_STATUS>(PROXIMITY_STATUS.IDLE);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isNfcActive, setIsNfcActive] = useState(false);
   const [request, setRequest] = useState<
     ISO18013_5.VerifierRequest['request'] | null
   >(null);
-  const listeners = useRef<Array<ReturnType<typeof ISO18013_5.addListener>>>(
-    []
-  );
 
-  const handleOnNfcStart = () => setIsNfcActive(true);
-  const handleOnNfcStop = () => setIsNfcActive(false);
+  const nfcTimerRef = useRef<NodeJS.Timeout>(null);
+  const [nfcSessionSeconds, setNfcSessionSeconds] = useState(0);
+
+  /**
+   * 15 seconds elapse after the intent assertion initialized
+   * After the intent assertion expires, your app will need to wait 15 seconds before acquiring a new intent assertion.
+   *
+   * See: https://developer.apple.com/support/hce-transactions-in-apps/#:~:text=After%20the%20intent,alternative%20app%20marketplaces.
+   */
+  const startNfcSessionTimer = useCallback((onTimeout?: () => void) => {
+    if (Platform.OS !== 'ios') return;
+
+    const NFC_SESSION_TIME_S = 15;
+
+    setNfcSessionSeconds(NFC_SESSION_TIME_S);
+    nfcTimerRef.current = setInterval(() => {
+      setNfcSessionSeconds((prev) => {
+        if (prev <= 1) {
+          if (nfcTimerRef.current) {
+            clearInterval(nfcTimerRef.current);
+          }
+          onTimeout?.();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  const handleOnNfcStop = useCallback(() => {
+    console.log('NFC stopped');
+    setIsNfcActive(false);
+    startNfcSessionTimer();
+  }, [startNfcSessionTimer]);
+
+  const handleOnNfcStart = useCallback(() => {
+    console.log('NFC started');
+    setIsNfcActive(true);
+    startNfcSessionTimer(handleOnNfcStop);
+  }, [handleOnNfcStop, startNfcSessionTimer]);
 
   /**
    * Callback function to handle device connection.
@@ -62,6 +96,93 @@ const Iso180135Screen: React.FC = () => {
   const handleOnDeviceConnected = () => {
     console.log('onDeviceConnected');
   };
+
+  /**
+   * Start utility function to start the proximity flow.
+   */
+  const startFlow = useCallback(async () => {
+    setStatus(PROXIMITY_STATUS.IDLE);
+    const hasPermission = await requestBlePermissions();
+    if (!hasPermission) {
+      Alert.alert(
+        'Permission Required',
+        'BLE permissions are needed to proceed.'
+      );
+      return;
+    }
+    try {
+      await ISO18013_5.start(); // Peripheral mode
+      setStatus(PROXIMITY_STATUS.READY);
+    } catch (error) {
+      parseAndPrintError(
+        ISO18013_5.ModuleErrorSchema,
+        error,
+        'startFlow error: '
+      );
+    }
+  }, []);
+
+  /**
+   * Start QR engagement flow by generating the QR Code
+   */
+  const startQrEngagement = useCallback(async () => {
+    try {
+      // Generate the QR code string
+      console.log('Generating QR code');
+      const qrString = await ISO18013_5.getQrCodeString();
+      console.log(`Generated QR code: ${qrString}`);
+      setQrCode(qrString);
+      setStatus(PROXIMITY_STATUS.ENGAGEMENT);
+    } catch (error) {
+      parseAndPrintError(
+        ISO18013_5.ModuleErrorSchema,
+        error,
+        'startQrEngagement error: '
+      );
+    }
+  }, []);
+
+  /**
+   * Start NFC engagement flow by enabling NFC
+   */
+  const startNfcEngagement = useCallback(async () => {
+    try {
+      await ISO18013_5.getQrCodeString();
+      await ISO18013_5.startNfc();
+      setStatus(PROXIMITY_STATUS.ENGAGEMENT);
+    } catch (error) {
+      parseAndPrintError(
+        ISO18013_5.ModuleErrorSchema,
+        error,
+        'startNfcEngagement error: '
+      );
+    }
+  }, []);
+
+  /**
+   * Close utility function to close the proximity flow.
+   */
+  const closeFlow = useCallback(async (sendError: boolean = false) => {
+    try {
+      if (sendError) {
+        await ISO18013_5.sendErrorResponse(
+          ISO18013_5.ErrorCode.SESSION_TERMINATED
+        );
+      }
+
+      if (Platform.OS === 'ios') {
+        try {
+          await ISO18013_5.stopNfc();
+        } catch (_) {}
+      }
+      await ISO18013_5.close();
+      setQrCode(null);
+      setRequest(null);
+      setStatus(PROXIMITY_STATUS.IDLE);
+    } catch (e) {
+      parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'closeFlow error: ');
+    }
+  }, []);
 
   /**
    * Sends the required document to the verifier app.
@@ -117,51 +238,6 @@ const Iso180135Screen: React.FC = () => {
     }
   };
 
-  const startNfc = useCallback(async () => {
-    try {
-      await ISO18013_5.startNfc();
-    } catch (e) {
-      parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'startNfc error: ');
-    }
-  }, []);
-
-  const stopNfc = useCallback(async () => {
-    try {
-      await ISO18013_5.stopNfc();
-    } catch (e) {
-      parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'stopNfc error: ');
-    }
-  }, []);
-
-  /**
-   * Close utility function to close the proximity flow.
-   */
-  const closeFlow = useCallback(async (sendError: boolean = false) => {
-    try {
-      if (sendError) {
-        await ISO18013_5.sendErrorResponse(
-          ISO18013_5.ErrorCode.SESSION_TERMINATED
-        );
-      }
-      console.log('Cleaning up listeners and closing QR engagement');
-      listeners.current.forEach((listener) => {
-        console.log(listener);
-        listener.remove();
-      });
-      if (Platform.OS === 'ios') {
-        try {
-          await ISO18013_5.stopNfc();
-        } catch (_) {}
-      }
-      await ISO18013_5.close();
-      setQrCode(null);
-      setRequest(null);
-      setStatus(PROXIMITY_STATUS.STOPPED);
-    } catch (e) {
-      parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'closeFlow error: ');
-    }
-  }, []);
-
   /**
    * Callback function to handle device disconnection.
    */
@@ -200,7 +276,7 @@ const Iso180135Screen: React.FC = () => {
     try {
       console.log('Sending error response to verifier app');
       await ISO18013_5.sendErrorResponse(errorCode);
-      setStatus(PROXIMITY_STATUS.STOPPED);
+      setStatus(PROXIMITY_STATUS.IDLE);
       console.log('Error response sent');
     } catch (error) {
       parseAndPrintError(
@@ -250,74 +326,85 @@ const Iso180135Screen: React.FC = () => {
   );
 
   /**
-   * Start utility function to start the proximity flow.
-   */
-  const startFlow = useCallback(async () => {
-    setStatus(PROXIMITY_STATUS.STARTING);
-    const hasPermission = await requestBlePermissions();
-    if (!hasPermission) {
-      Alert.alert(
-        'Permission Required',
-        'BLE permissions are needed to proceed.'
-      );
-      setStatus(PROXIMITY_STATUS.STOPPED);
-      return;
-    }
-    try {
-      await ISO18013_5.start(); // Peripheral mode
-
-      listeners.current = [
-        ISO18013_5.addListener('onDeviceConnecting', handleOnDeviceConnecting),
-        ISO18013_5.addListener('onDeviceConnected', handleOnDeviceConnected),
-        ISO18013_5.addListener(
-          'onDocumentRequestReceived',
-          onDocumentRequestReceived
-        ),
-        ISO18013_5.addListener('onDeviceDisconnected', onDeviceDisconnected),
-        ISO18013_5.addListener('onError', onError),
-        ISO18013_5.addListener('onNfcStart', handleOnNfcStart),
-        ISO18013_5.addListener('onNfcStop', handleOnNfcStop),
-      ];
-
-      // Register listeners
-
-      // Generate the QR code string
-      console.log('Generating QR code');
-      const qrString = await ISO18013_5.getQrCodeString();
-      console.log(`Generated QR code: ${qrString}`);
-      setQrCode(qrString);
-      setStatus(PROXIMITY_STATUS.STARTED);
-    } catch (error) {
-      parseAndPrintError(
-        ISO18013_5.ModuleErrorSchema,
-        error,
-        'startFlow error: '
-      );
-    }
-  }, [onDeviceDisconnected, onDocumentRequestReceived, onError]);
-
-  /**
-   * Starts the proximity flow and stops it on unmount.
+   * Stops proximity flow and clear listeners on unmount.
    */
   useEffect(() => {
+    const listeners = [
+      ISO18013_5.addListener('onDeviceConnecting', handleOnDeviceConnecting),
+      ISO18013_5.addListener('onDeviceConnected', handleOnDeviceConnected),
+      ISO18013_5.addListener(
+        'onDocumentRequestReceived',
+        onDocumentRequestReceived
+      ),
+      ISO18013_5.addListener('onDeviceDisconnected', onDeviceDisconnected),
+      ISO18013_5.addListener('onError', onError),
+      ISO18013_5.addListener('onNfcStart', handleOnNfcStart),
+      ISO18013_5.addListener('onNfcStop', handleOnNfcStop),
+    ];
+
     return () => {
+      console.log('Cleaning up listeners');
+      listeners.forEach((listener) => {
+        console.log('Removing listener:', listener);
+        listener.remove();
+      });
       closeFlow();
     };
-  }, [closeFlow, startFlow]);
+  }, [
+    closeFlow,
+    startFlow,
+    onDocumentRequestReceived,
+    onError,
+    onDeviceDisconnected,
+    handleOnNfcStart,
+    handleOnNfcStop,
+  ]);
+
+  useEffect(() => {
+    console.log('Current status:', status);
+  }, [status]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {status === PROXIMITY_STATUS.STARTING && (
+      {status === PROXIMITY_STATUS.IDLE && (
         <Button title="Start Proximity flow" onPress={() => startFlow()} />
       )}
-      {status === PROXIMITY_STATUS.STARTED && qrCode && (
+      {status === PROXIMITY_STATUS.READY && (
+        <>
+          <Button
+            title={'Start QR Engagement'}
+            onPress={() => startQrEngagement()}
+          />
+          <Button
+            title={Platform.select({
+              ios:
+                nfcSessionSeconds > 0
+                  ? `Start NFC Engagement (available in ${nfcSessionSeconds}s)`
+                  : 'Start NFC Engagement',
+              default: 'Start NFC Engagement',
+            })}
+            onPress={() => startNfcEngagement()}
+            disabled={Platform.select({
+              ios: nfcSessionSeconds > 0,
+              default: true,
+            })}
+          />
+        </>
+      )}
+      {status === PROXIMITY_STATUS.ENGAGEMENT && qrCode && (
         <QRCode value={qrCode} size={200} />
       )}
-      {status === PROXIMITY_STATUS.STARTED && Platform.OS === 'ios' && (
-        <Button
-          title={isNfcActive ? 'Stop NFC Engagement' : 'Start NFC Engagement'}
-          onPress={isNfcActive ? stopNfc : startNfc}
-        />
+      {status === PROXIMITY_STATUS.ENGAGEMENT && isNfcActive && (
+        <>
+          <Text>
+            NFC engagement active, tap the back of both device toward each other
+            and hold them together
+          </Text>
+          {Platform.select({
+            ios: <Text>{`NFC session expires in ${nfcSessionSeconds}s`}</Text>,
+            default: null,
+          })}
+        </>
       )}
       {status === PROXIMITY_STATUS.PRESENTING && request && (
         <>
@@ -347,13 +434,12 @@ const Iso180135Screen: React.FC = () => {
           />
         </>
       )}
-      {status === PROXIMITY_STATUS.STOPPED && (
-        <Button title={'Generate QR Engagement'} onPress={() => startFlow()} />
-      )}
-      {(status === PROXIMITY_STATUS.PRESENTING ||
-        status === PROXIMITY_STATUS.STARTED) && (
+
+      {(status === PROXIMITY_STATUS.ENGAGEMENT ||
+        status === PROXIMITY_STATUS.PRESENTING ||
+        status === PROXIMITY_STATUS.ERROR) && (
         <Button
-          title={'Close QR Engagement'}
+          title={'Close Engagement'}
           onPress={() =>
             closeFlow(status === PROXIMITY_STATUS.PRESENTING ? true : false)
           }
