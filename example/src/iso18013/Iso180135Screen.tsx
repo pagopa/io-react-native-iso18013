@@ -1,6 +1,6 @@
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Platform, ScrollView, Text } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, Button, ScrollView, Text } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { styles } from '../styles';
 import {
@@ -301,18 +301,6 @@ const Iso180135Screen: React.FC = () => {
     onDeviceDisconnected,
   ]);
 
-  const nfcTimerRef = useRef<NodeJS.Timeout>(null);
-  const [nfcSessionDuration, setNfcSessionDuration] = useState(0);
-  const [nfcSessionCooldown, setNfcSessionCooldown] = useState(0);
-
-  /**
-   * 15 seconds elapse after the intent assertion initialized
-   * After the intent assertion expires, your app will need to wait 15 seconds before acquiring a new intent assertion.
-   *
-   * See: https://developer.apple.com/support/hce-transactions-in-apps/#:~:text=After%20the%20intent,alternative%20app%20marketplaces.
-   */
-  useEffect(() => {}, [status]);
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {status === PROXIMITY_STATUS.IDLE && (
@@ -325,18 +313,8 @@ const Iso180135Screen: React.FC = () => {
             onPress={() => startQrEngagement()}
           />
           <Button
-            title={Platform.select({
-              ios:
-                nfcSessionSeconds > 0
-                  ? `Start NFC Engagement (available in ${nfcSessionSeconds}s)`
-                  : 'Start NFC Engagement',
-              default: 'Start NFC Engagement',
-            })}
+            title={'Start NFC Engagement'}
             onPress={() => startNfcEngagement()}
-            disabled={Platform.select({
-              ios: nfcSessionSeconds > 0,
-              default: false,
-            })}
           />
         </>
       )}
@@ -349,10 +327,6 @@ const Iso180135Screen: React.FC = () => {
             NFC engagement active, tap the back of both device toward each other
             and hold them together
           </Text>
-          {Platform.select({
-            ios: <Text>{`NFC session expires in ${nfcSessionSeconds}s`}</Text>,
-            default: null,
-          })}
         </>
       )}
       {status === PROXIMITY_STATUS.PRESENTING && request && (
