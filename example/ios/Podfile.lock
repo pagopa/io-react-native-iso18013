@@ -13,7 +13,7 @@ PODS:
     - glog
     - hermes-engine
     - IOWalletCBOR (= 0.2.1)
-    - IOWalletProximity (= 1.4.0)
+    - IOWalletProximity (= 1.4.1)
     - RCT-Folly (= 2024.11.18.00)
     - RCTRequired
     - RCTTypeSafety
@@ -32,7 +32,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - Yoga
   - IOWalletCBOR (0.2.1)
-  - IOWalletProximity (1.4.0)
+  - IOWalletProximity (1.4.1)
   - pagopa-io-react-native-crypto (1.0.1):
     - DoubleConversion
     - glog
@@ -1986,9 +1986,9 @@ SPEC CHECKSUMS:
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: eb93e2f488219332457c3c4eafd2738ddc7e80b8
   hermes-engine: 2771b98fb813fdc6f92edd7c9c0035ecabf9fee7
-  IoReactNativeIso18013: e8ddc422ab87e61fef926886c9b8dcaa5ac553c3
+  IoReactNativeIso18013: 22ddf5d177ce2551f63bb666b3f513f00aa0cbf8
   IOWalletCBOR: 92742ef1cbd1b627ba153d0c7c11b81ad22f45cc
-  IOWalletProximity: 7b7f1ddf3af9efe4d5921ec23bf4425d3a05e68d
+  IOWalletProximity: 1d8fc9acc9d97d34364c42927af3ac682448977e
   pagopa-io-react-native-crypto: b34250ee64b80d058320ee88233177df8d8d03b0
   RCT-Folly: e78785aa9ba2ed998ea4151e314036f6c49e6d82
   RCTDeprecation: be794de7dc6ed8f9f7fbf525f86e7651b8b68746
