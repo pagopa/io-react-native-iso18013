@@ -1,332 +1,92 @@
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, ScrollView, Text } from 'react-native';
+import { Button, Platform, ScrollView, Text } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { styles } from '../styles';
-import {
-  generateAcceptedFields,
-  generateKeyIfNotExists,
-  isRequestMdl,
-  parseAndPrintError,
-  requestBlePermissions,
-} from '../utils';
-import {
-  KEYTAG,
-  MDL_BASE64,
-  MDL_BASE64URL,
-  WELL_KNOWN_CREDENTIALS,
-} from './mocks/proximity';
-
-/**
- * Proximity status enum to track the current state of the flow.
- * - STARTING: The flow is starting, permissions are being requested if necessary.
- * - STARTED: The flow has started, the QR code is being displayed.
- * - PRESENTING: The verifier app has requested a document, the user must decide whether to send it or not.
- * - STOPPED: The flow has been stopped, either by the user or due to an error.
- */
-enum PROXIMITY_STATUS {
-  IDLE = 'IDLE',
-  READY = 'READY',
-  ENGAGEMENT_QRCODE = 'ENGAGEMENT_QRCODE',
-  ENGAGEMENT_NFC = 'ENGAGEMENT_NFC',
-  PRESENTING = 'PRESENTING',
-  ERROR = 'ERROR',
-}
+import { PROXIMITY_STATUS, useProximityFlow } from './hooks/useProximityFlow';
+import { MDL_BASE64, MDL_BASE64URL } from './mocks/proximity';
 
 const Iso180135Screen: React.FC = () => {
-  const [status, setStatus] = useState<PROXIMITY_STATUS>(PROXIMITY_STATUS.IDLE);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [request, setRequest] = useState<
-    ISO18013_5.VerifierRequest['request'] | null
-  >(null);
-
-  /**
-   * Callback function to handle device connection.
-   * Currently does nothing but can be used to update the UI
-   */
-  const handleOnDeviceConnecting = () => {
-    console.log('onDeviceConnecting');
-  };
-
-  /**
-   * Callback function to handle device connection.
-   * Currently does nothing but can be used to update the UI
-   */
-  const handleOnDeviceConnected = () => {
-    console.log('onDeviceConnected');
-  };
-
-  /**
-   * Start utility function to start the proximity flow.
-   */
-  const startFlow = useCallback(async () => {
-    setStatus(PROXIMITY_STATUS.IDLE);
-    const hasPermission = await requestBlePermissions();
-    if (!hasPermission) {
-      Alert.alert(
-        'Permission Required',
-        'BLE permissions are needed to proceed.'
-      );
-      return;
-    }
-    setStatus(PROXIMITY_STATUS.READY);
-  }, []);
-
-  /**
-   * Start QR engagement flow by generating the QR Code
-   */
-  const startQrEngagement = useCallback(async () => {
-    try {
-      await ISO18013_5.startQrCodeEngagement(); // Peripheral mode
-      // Generate the QR code string
-      console.log('Generating QR code');
-      const qrString = await ISO18013_5.getQrCodeString();
-      console.log(`Generated QR code: ${qrString}`);
-      setQrCode(qrString);
-      setStatus(PROXIMITY_STATUS.ENGAGEMENT_QRCODE);
-    } catch (error) {
-      parseAndPrintError(
-        ISO18013_5.ModuleErrorSchema,
-        error,
-        'startQrEngagement error: '
-      );
-    }
-  }, []);
-
-  /**
-   * Start NFC engagement flow by enabling NFC
-   */
-  const startNfcEngagement = useCallback(async () => {
-    try {
-      await ISO18013_5.startNfcEngagement();
-      setStatus(PROXIMITY_STATUS.ENGAGEMENT_NFC);
-    } catch (error) {
-      parseAndPrintError(
-        ISO18013_5.ModuleErrorSchema,
-        error,
-        'startNfcEngagement error: '
-      );
-    }
-  }, []);
-
-  /**
-   * Close utility function to close the proximity flow.
-   */
-  const closeFlow = useCallback(async (sendError: boolean = false) => {
-    try {
-      if (sendError) {
-        await ISO18013_5.sendErrorResponse(
-          ISO18013_5.ErrorCode.SESSION_TERMINATED
-        );
-      }
-
-      await ISO18013_5.close();
-      setQrCode(null);
-      setRequest(null);
-      setStatus(PROXIMITY_STATUS.IDLE);
-    } catch (e) {
-      parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'closeFlow error: ');
-    }
-  }, []);
-
-  /**
-   * Sends the required document to the verifier app.
-   * @param verifierRequest - The request object received from the verifier app
-   */
-  const sendDocument = async (
-    verifierRequest: ISO18013_5.VerifierRequest['request'],
-    mdl: string
-  ) => {
-    try {
-      console.log('Sending document to verifier app');
-      await generateKeyIfNotExists(KEYTAG);
-      const documents: Array<ISO18013_5.RequestedDocument> = [
-        {
-          alias: KEYTAG,
-          docType: WELL_KNOWN_CREDENTIALS.mdl,
-          issuerSignedContent: mdl,
-        },
-      ];
-
-      /*
-       * Generate the response to be sent to the verifier app. Currently we blindly accept all the fields requested by the verifier app.
-       * In an actual implementation, the user would be prompted to accept or reject the requested fields and the `acceptedFields` object
-       * must be generated according to the user's choice, setting the value to true for the accepted fields and false for the rejected ones.
-       * See the `generateResponse` method for more details.
-       */
-      console.log('Generating response');
-      const acceptedFields = generateAcceptedFields(verifierRequest);
-      console.log(JSON.stringify(acceptedFields));
-      console.log('Accepted fields:', JSON.stringify(acceptedFields));
-      const result = await ISO18013_5.generateResponse(
-        documents,
-        acceptedFields
-      );
-      console.log('Response generated:', result);
-
-      /**
-       * Send the response to the verifier app.
-       * Currently we don't know what the verifier app responds with, thus we don't handle the response.
-       * We just wait for 2 seconds before closing the connection and resetting the QR code.
-       * In order to start a new flow a new QR code must be generated.
-       */
-      console.log('Sending response to verifier app');
-      await ISO18013_5.sendResponse(result);
-
-      console.log('Response sent');
-    } catch (e) {
-      parseAndPrintError(
-        ISO18013_5.ModuleErrorSchema,
-        e,
-        'sendDocument error: '
-      );
-    }
-  };
-
-  /**
-   * Callback function to handle device disconnection.
-   */
-  const onDeviceDisconnected = useCallback(async () => {
-    Alert.alert('Device disconnected', 'Check the verifier app');
-    await closeFlow();
-  }, [closeFlow]);
-
-  /**
-   * Callback function to handle errors.
-   * @param data The error data
-   */
-  const onError = useCallback(
-    async (data: ISO18013_5.EventsPayload['onError']) => {
-      try {
-        if (!data || !data.error) {
-          throw new Error('No error data received');
-        }
-        const parsedError = ISO18013_5.OnErrorPayloadSchema.parse(data.error);
-        console.error(`onError: ${parsedError}`);
-      } catch (e) {
-        parseAndPrintError(ISO18013_5.ModuleErrorSchema, e, 'onError error: ');
-      } finally {
-        // Close the flow on error
-        await closeFlow();
-      }
-    },
-    [closeFlow]
-  );
-
-  /**
-   * Sends an error response to the verifier app during the presentation.
-   * @param errorCode The error code to be sent
-   */
-  const sendError = useCallback(async (errorCode: ISO18013_5.ErrorCode) => {
-    try {
-      console.log('Sending error response to verifier app');
-      await ISO18013_5.sendErrorResponse(errorCode);
-      setStatus(PROXIMITY_STATUS.IDLE);
-      console.log('Error response sent');
-    } catch (error) {
-      parseAndPrintError(
-        ISO18013_5.ModuleErrorSchema,
-        error,
-        'sendError error: '
-      );
-    }
-  }, []);
-
-  /**
-   * Callback function to handle a new request received from the verifier app.
-   * @param request The request object
-   * @returns The response object
-   * @throws Error if the request is invalid
-   * @throws Error if the response generation fails
-   */
-  const onDocumentRequestReceived = useCallback(
-    async (payload: ISO18013_5.EventsPayload['onDocumentRequestReceived']) => {
-      try {
-        // A new request has been received
-        console.log('onDocumentRequestReceived', payload);
-        if (!payload || !payload.data) {
-          console.warn('Request does not contain a message.');
-          return;
-        }
-
-        // Parse and verify the received request with the exposed function
-        const parsedJson = JSON.parse(payload.data);
-        console.log('Parsed JSON:', parsedJson);
-        const parsedResponse = ISO18013_5.parseVerifierRequest(parsedJson);
-        console.log('Parsed response:', JSON.stringify(parsedResponse));
-        isRequestMdl(Object.keys(parsedResponse.request));
-        console.log('MDL request found');
-        setRequest(parsedResponse.request);
-        setStatus(PROXIMITY_STATUS.PRESENTING);
-      } catch (error) {
-        parseAndPrintError(
-          ISO18013_5.ModuleErrorSchema,
-          error,
-          'onDocumentRequestReceived error: '
-        );
-        sendError(ISO18013_5.ErrorCode.SESSION_TERMINATED);
-      }
-    },
-    [sendError]
-  );
-
-  /**
-   * Stops proximity flow and clear listeners on unmount.
-   */
-  useEffect(() => {
-    const listeners = [
-      ISO18013_5.addListener('onDeviceConnecting', handleOnDeviceConnecting),
-      ISO18013_5.addListener('onDeviceConnected', handleOnDeviceConnected),
-      ISO18013_5.addListener(
-        'onDocumentRequestReceived',
-        onDocumentRequestReceived
-      ),
-      ISO18013_5.addListener('onDeviceDisconnected', onDeviceDisconnected),
-      ISO18013_5.addListener('onError', onError),
-    ];
-
-    return () => {
-      console.log('Cleaning up listeners');
-      listeners.forEach((listener) => {
-        console.log('Removing listener:', listener);
-        listener.remove();
-      });
-      closeFlow();
-    };
-  }, [
-    closeFlow,
+  const {
+    status,
+    qrCode,
+    request,
+    nfcSessionSecondsLeft,
+    nfcCooldownSecondsLeft,
+    init,
     startFlow,
-    onDocumentRequestReceived,
-    onError,
-    onDeviceDisconnected,
-  ]);
+    closeFlow,
+    sendDocument,
+    sendError,
+  } = useProximityFlow();
+
+  const isNfcUnavailable =
+    Platform.OS === 'ios' && nfcCooldownSecondsLeft !== null;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {status === PROXIMITY_STATUS.IDLE && (
-        <Button title="Start Proximity flow" onPress={() => startFlow()} />
+        <Button title="Start Proximity flow" onPress={init} />
       )}
       {status === PROXIMITY_STATUS.READY && (
         <>
           <Button
-            title={'Start QR Engagement'}
-            onPress={() => startQrEngagement()}
+            title={'Start BLE-BLE'}
+            onPress={() =>
+              startFlow({
+                engagementModes: ['qrcode'],
+                retrievalMethods: ['ble'],
+              })
+            }
           />
           <Button
-            title={'Start NFC Engagement'}
-            onPress={() => startNfcEngagement()}
+            title={'Start BLE-NFC'}
+            onPress={() =>
+              startFlow({
+                engagementModes: ['qrcode'],
+                retrievalMethods: ['nfc'],
+              })
+            }
+            disabled={isNfcUnavailable}
           />
+          <Button
+            title={'Start NFC-BLE'}
+            onPress={() =>
+              startFlow({
+                engagementModes: ['nfc'],
+                retrievalMethods: ['ble'],
+              })
+            }
+            disabled={isNfcUnavailable}
+          />
+          <Button
+            title={'Start NFC-NFC'}
+            onPress={() =>
+              startFlow({
+                engagementModes: ['nfc'],
+                retrievalMethods: ['nfc'],
+              })
+            }
+            disabled={isNfcUnavailable}
+          />
+          {isNfcUnavailable && (
+            <Text>NFC unavailable — please wait {nfcCooldownSecondsLeft}s</Text>
+          )}
         </>
       )}
-      {status === PROXIMITY_STATUS.ENGAGEMENT_QRCODE && qrCode && (
+      {status === PROXIMITY_STATUS.ENGAGEMENT && qrCode && (
         <QRCode value={qrCode} size={200} />
       )}
-      {status === PROXIMITY_STATUS.ENGAGEMENT_NFC && (
+      {status === PROXIMITY_STATUS.ENGAGEMENT && (
         <>
           <Text>
-            NFC engagement active, tap the back of both device toward each other
-            and hold them together
+            NFC engagement active, tap the back of both devices toward each
+            other and hold them together
           </Text>
+          {Platform.OS === 'ios' &&
+            nfcSessionSecondsLeft !== null &&
+            nfcSessionSecondsLeft > 0 && (
+              <Text>Session expires in {nfcSessionSecondsLeft}s</Text>
+            )}
         </>
       )}
       {status === PROXIMITY_STATUS.PRESENTING && request && (
@@ -358,15 +118,12 @@ const Iso180135Screen: React.FC = () => {
         </>
       )}
 
-      {(status === PROXIMITY_STATUS.ENGAGEMENT_NFC ||
-        status === PROXIMITY_STATUS.ENGAGEMENT_QRCODE ||
+      {(status === PROXIMITY_STATUS.ENGAGEMENT ||
         status === PROXIMITY_STATUS.PRESENTING ||
         status === PROXIMITY_STATUS.ERROR) && (
         <Button
           title={'Close Engagement'}
-          onPress={() =>
-            closeFlow(status === PROXIMITY_STATUS.PRESENTING ? true : false)
-          }
+          onPress={() => closeFlow(status === PROXIMITY_STATUS.PRESENTING)}
         />
       )}
     </ScrollView>

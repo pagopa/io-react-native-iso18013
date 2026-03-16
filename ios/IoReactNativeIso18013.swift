@@ -3,20 +3,18 @@ import IOWalletProximity
 import React
 
 @objc(IoReactNativeIso18013)
-class IoReactNativeIso18013: RCTEventEmitter {
+class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
   
   @objc
   override static func requiresMainQueueSetup() -> Bool {
     return true
   }
   
-  override init() {
-    super.init()
-    setupProximityHandler()
-  }
-  
   /**
    Specifies supported events which will be emitted.
+   - `onQrCodeString`: Emitted when the QR Code payload is generated.
+   - `onNfcStarted`: Emitted when NFC starts successfully.
+   - `onNfcStopped`: Emitted when NFC stops successfully.
    - `onDeviceConnecting`: Emitted when the device is connecting to the verifier app.
    - `onDeviceConnected`: Emitted when the device is connected to the verifier app.
    - `onDocumentRequestReceived`: Emitted when a document request is received from the verifier app. Carries a payload containing the request data.
@@ -24,7 +22,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
    - `onError`: Emitted when an error occurs. Carries a payload containing the error data.
    */
   override func supportedEvents() -> [String]! {
-    return ["onDeviceConnected", "onDeviceConnecting", "onDeviceDisconnected", "onDocumentRequestReceived", "onError", "unknown"]
+    return ["onQrCodeString", "onNfcStarted", "onNfcStopped", "onDeviceConnected", "onDeviceConnecting", "onDeviceDisconnected", "onDocumentRequestReceived", "onError", "unknown"]
   }
   
   /**
@@ -36,39 +34,145 @@ class IoReactNativeIso18013: RCTEventEmitter {
   typealias AcceptedFieldsDict = [String: [String: [String: Bool]]]
   
   /**
+   ISO18013Delegate event handler
+   */
+  func onEvent(event: ISO18013Event) {
+    var eventName: String
+    var eventBody: [String: Any] = [:]
+    
+    switch(event) {
+    case .qrCode(let qrCode):
+      eventName = "onQrCodeString"
+      eventBody = ["data": qrCode]
+      break
+
+    case .bleConnecting:
+      eventName = "onDeviceConnecting"
+      break
+      
+    case .bleConnected:
+      eventName = "onDeviceConnected"
+      break
+
+    case .nfcEngagementStarted:
+      eventName = "onDeviceConnecting"
+      break
+      
+    case .nfcEngagementDone:
+      eventName = "onDeviceConnected"
+      break
+      
+    case .dataTransferStarted(let args):
+      eventName = "onDocumentRequestReceived"
+      if let request = args.request {
+        /**
+         The outermost key represents the credential doctype, the inner key represents the namespace and the innermost key represents the requested fields with a boolean value. Example:
+         {
+         "org.iso.18013.5.1.mDL": {
+         "isAuthenticated": true,
+         "org.iso.18013.5.1": {
+         "hair_colour": true,
+         "given_name_national_character": true,
+         "family_name_national_character": true,
+         "given_name": true,
+         }
+         }
+         }
+         */
+        let jsonString = deviceRequestToJson(request: request)
+        // Here we either send the request or an empty string which signals that something went wrong.
+        eventBody = ["data": jsonString ?? ""]
+      }
+
+    case .dataTransferStopped:
+      eventName = "onDeviceDisconnected"
+      break
+    
+    case .nfcStarted:
+      eventName = "onNfcStarted"
+      break
+      
+    case .nfcStopped:
+      eventName = "onNfcStopped"
+      break
+
+    case .error(let error):
+      eventName = "onError"
+      eventBody = ["error": error.localizedDescription]
+      break
+      
+    default:
+      eventName = "unknown"
+      eventBody = ["error": "Received an unknown event"]
+    }
+    
+    self.sendEvent(withName: eventName, body: eventBody)
+  }
+  
+  /**
    Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
    Resolves to true or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
-      - certificates: Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
-      - resolve: The promise to be resolved
-      - reject: The promise to be rejected
-  */
-  @objc(startQrCodeEngagement:withResolver:withRejecter:)
-  func startQrCodeEngagement(
+   - `certificates`: Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
+   - `engagementModes`: Array of strings representing engagement modes (e.g., "qr", "nfc")
+   - `retrievalMethods`: Array of strings representing data transfer modes (e.g., "ble", "nfc")
+   - `resolve`: The promise to be resolved
+   - `reject`: The promise to be rejected
+   */
+  @objc(start:withEngagementModes:withRetrievalMethods:withResolver:withRejecter:)
+  func start(
     certificates: [Any],
+    engagementModes: [String],
+    retrievalMethods: [String],
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
       let certsData = try parseCertificates(certificates)
-      try Proximity.shared.start(certsData)
+      let parsedEngagementModes = try parseEngagementModes(engagementModes)
+      let parsedRetrievalMethods = try parseDataTransferModes(retrievalMethods)
+      
+      ISO18013.shared
+        .start(
+          certsData,
+          engagementModes: parsedEngagementModes,
+          retrivalMethods: parsedRetrievalMethods,
+          delegate: self,
+          isNfcLateEngagement: false
+        )
       resolve(true)
     } catch let proximityError as ProximityError {
-      reject(ModuleErrorCodes.generateResponseError.rawValue, proximityError.description, proximityError)
+      reject(ModuleErrorCodes.startError.rawValue, proximityError.description, proximityError)
     } catch let parsingError as ParsingError{
-      reject(ModuleErrorCodes.generateResponseError.rawValue, parsingError.description, parsingError)
+      reject(ModuleErrorCodes.startError.rawValue, parsingError.description, parsingError)
     } catch {
-      reject(ModuleErrorCodes.generateResponseError.rawValue, error.localizedDescription, error)
+      reject(ModuleErrorCodes.startError.rawValue, error.localizedDescription, error)
     }
+  }
+  
+  /**
+   Closes connections, stops BLE, stops NFC and clears any resource.
+   Resolves to true after closing the connection or rejects with an error code defined in ``ModuleErrorCodes``.
+   - Parameters:
+   - resolve: The promise to be resolved.
+   - reject:  The promise to be rejected.
+   */
+  @objc(close:withRejecter:)
+  func close(
+    resolve: @escaping RCTPromiseResolveBlock,
+    reject: @escaping RCTPromiseRejectBlock
+  ) {
+    ISO18013.shared.stop()
+    resolve(true)
   }
   
   /**
    Utility function to parse an array coming from the React Native Bridge into an array of Data representing DER encoded X.509 certificates.
    - Parameters:
-      - certificates: Two-dimensional array of base64 strings representing DER encoded X.509 certificate
-    - Throws: `ParsingError` if the provided certificate is not a valid base64 encoded string.
-    - Returns: A two-dimensional array of Data containing DER encoded X.509 certificates.
-  */
+   - certificates: Two-dimensional array of base64 strings representing DER encoded X.509 certificate
+   - Throws: `ParsingError` if the provided certificate is not a valid base64 encoded string.
+   - Returns: A two-dimensional array of Data containing DER encoded X.509 certificates.
+   */
   private func parseCertificates(_ certificates: [Any]) throws -> [[Data]] {
     return try certificates.enumerated().compactMap { (chainIndex, item) in
       guard let certStrings = item as? [String] else {
@@ -84,22 +188,42 @@ class IoReactNativeIso18013: RCTEventEmitter {
   }
   
   /**
-   Creates a QR code to be scanned in order to initialize the presentation.
-   Resolves with a string containing the QR code or rejects with an error code defined in ``ModuleErrorCodes``.
+   Utility function to parse engagement mode strings into ISO18013EngagementMode enum values.
    - Parameters:
-      - resolve: The promise to be resolved
-      - reject: The promise to be rejected
+   - modes: Array of strings representing engagement modes (e.g., "QR", "NFC")
+   - Throws: `ParsingError` if an invalid engagement mode string is provided.
+   - Returns: An array of ISO18013EngagementMode values.
    */
-  @objc(getQrCodeString:withRejecter:)
-  func getQrCodeString(
-    resolve: @escaping RCTPromiseResolveBlock,
-    reject: @escaping RCTPromiseRejectBlock
-  ) {
-    do{
-      let qrCodeString = try Proximity.shared.getQrCode()
-      resolve(qrCodeString)
-    } catch {
-      reject(ModuleErrorCodes.getQrCodeError.rawValue, error.localizedDescription, error)
+  private func parseEngagementModes(_ modes: [String]) throws -> [ISO18013EngagementMode] {
+    return try modes.map { modeString in
+      switch modeString.lowercased() {
+      case "qrcode":
+        return .qrCode
+      case "nfc":
+        return .nfc
+      default:
+        throw ParsingError.engagementModeNotValid("Invalid engagement mode: '\(modeString)'. Expected 'qrcode' or 'nfc'.")
+      }
+    }
+  }
+  
+  /**
+   Utility function to parse data transfer mode strings into ISO18013DataTransferMode enum values.
+   - Parameters:
+   - modes: Array of strings representing data transfer modes (e.g., "BLE", "WiFiAware")
+   - Throws: `ParsingError` if an invalid data transfer mode string is provided.
+   - Returns: An array of ISO18013DataTransferMode values.
+   */
+  private func parseDataTransferModes(_ modes: [String]) throws -> [ISO18013DataTransferMode] {
+    return try modes.map { modeString in
+      switch modeString.lowercased() {
+      case "ble":
+        return .ble
+      case "nfc":
+        return .nfc
+      default:
+        throw ParsingError.dataTransferModeNotValid("Invalid data transfer mode: '\(modeString)'. Expected 'ble' or 'nfc'.")
+      }
     }
   }
   
@@ -108,15 +232,15 @@ class IoReactNativeIso18013: RCTEventEmitter {
    It checks if each element in the array has  `issuerSignedContent`, `alias` and `docType` properties in order to build a ``IOWalletProximity.ProximityDocument``, then it appens it to the array.
    The result can be fed to ``IOWalletProximity.generateResponse``.
    - Parameters:
-      - documents: An array containing documents. Each document is defined as a map containing:
-         - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-         - alias which is the alias of the key used to sign the credential;
-         - docType which is the document type.
+   - documents: An array containing documents. Each document is defined as a map containing:
+   - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+   - alias which is the alias of the key used to sign the credential;
+   - docType which is the document type.
    - Throws: `ParsingError`:
-      - If the provided documents array do not contain a dictionary;
-      - If the provided dictionary doesn't adhere to the structure we expect;
-      - If the issuerSignedContent is not a valid base64 or base64url encoded string;
-      - If the creation of a ProximityDdocument fails.
+   - If the provided documents array do not contain a dictionary;
+   - If the provided dictionary doesn't adhere to the structure we expect;
+   - If the issuerSignedContent is not a valid base64 or base64url encoded string;
+   - If the creation of a ProximityDdocument fails.
    - Returns: An array of `ProximityDocument` containg the documents to be presented.
    */
   private func parseDocuments(documents: [Any]) throws -> [ProximityDocument] {
@@ -146,7 +270,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
    It checks if each element in the array is a dictionary where the key is a string, and the value is another dictionary. This nested dictionary has a string as its key and a boolean as its value, then it appens it to the array.
    The result can be fed to ``IOWalletProximity.generateResponse``.
    - Parameters:
-      - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]].
+   - acceptedFields: A dictionary of any elements. In order to be added to the result dictionary each element must be shaped as ``AcceptedFieldsDict`` thus as [String: [String: [String: Bool]]].
    - Throws: `ParsingError` if a value doesn't has the ``AcceptedFieldsDict`` shape or the result dictionary is empty.
    - Returns: An ``AcceptedFieldsDict`` containg the accepted fields to be presented.
    */
@@ -171,26 +295,26 @@ class IoReactNativeIso18013: RCTEventEmitter {
    It parses the untyped ``documents`` and ``acceptedFields`` parameters and feeds them to the ``IOWalletProximity.generateDeviceResponse`` function.
    Resolves with a base64 encoded response or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
-     - documents: An array containing documents. Each document is defined as a map containing:
-         - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-         - alias which is the alias of the key used to sign the credential;
-         - docType which is the document type.
-     - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
-        
-         
-           {
-              "org.iso.18013.5.1.mDL": {
-                "org.iso.18013.5.1": {
-                  "hair_colour": true,
-                  "given_name_national_character": true,
-                  "family_name_national_character": true,
-                  "given_name": true,
-                }
-              }
-           }
-  
-     - resolve: The promise to be resolved.
-     - reject: The promise to be rejected.
+   - documents: An array containing documents. Each document is defined as a map containing:
+   - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+   - alias which is the alias of the key used to sign the credential;
+   - docType which is the document type.
+   - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a [String: [String: [String: Bool]]]. The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
+   
+   
+   {
+   "org.iso.18013.5.1.mDL": {
+   "org.iso.18013.5.1": {
+   "hair_colour": true,
+   "given_name_national_character": true,
+   "family_name_national_character": true,
+   "given_name": true,
+   }
+   }
+   }
+   
+   - resolve: The promise to be resolved.
+   - reject: The promise to be rejected.
    */
   @objc(generateResponse:withAcceptedFields:withResolver:withRejecter:)
   func generateResponse(
@@ -202,7 +326,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
     do {
       let parsedDocuments = try parseDocuments(documents: documents)
       let items = try parseAcceptedFields(acceptedFields: acceptedFields)
-      let deviceResponse = try Proximity.shared.generateDeviceResponse(items: items, documents: parsedDocuments, sessionTranscript: nil)
+      let deviceResponse = try ISO18013.shared.generateDeviceResponse(items: items, documents: parsedDocuments, sessionTranscript: nil)
       let strDeviceResponse = Data(deviceResponse).base64EncodedString()
       resolve(strDeviceResponse)
     }
@@ -221,9 +345,9 @@ class IoReactNativeIso18013: RCTEventEmitter {
    Currently there's not evidence of the verifier app responding to this request, thus we don't handle the response.
    Resolves with a true boolean in case of success or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
-     - response: A base64 encoded string containing the response generated by ``generateResponse``
-     - resolve: The promise to be resolved
-     - reject: The promise to be rejected
+   - response: A base64 encoded string containing the response generated by ``generateResponse``
+   - resolve: The promise to be resolved
+   - reject: The promise to be rejected
    */
   @objc(sendResponse:withResolver:withRejecter:)
   func sendResponse(
@@ -234,7 +358,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
     do{
       if let responseData = Data(base64Encoded: response) {
         let decodedResponse = [UInt8](responseData)
-        try Proximity.shared.dataPresentation(decodedResponse)
+        try ISO18013.shared.dataPresentation(decodedResponse)
         resolve(true)
       }
     }catch let error {
@@ -246,21 +370,21 @@ class IoReactNativeIso18013: RCTEventEmitter {
    Sends an error response during the presentation according to the SessionData status codes defined in table 20 of the ISO18013-5 standard.
    Resolves to true or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
-     - code: The status error to be sent is an integer of type ``SessionDataStatus``:
-       ```
-         10 -> Error: session encryption
-         11 -> Error: CBOR decoding
-         20 -> Session termination
-       ```
-     - resolve: The promise to be resolved.
-     - reject: The promise to be rejected.
+   - code: The status error to be sent is an integer of type ``SessionDataStatus``:
+   ```
+   10 -> Error: session encryption
+   11 -> Error: CBOR decoding
+   20 -> Session termination
+   ```
+   - resolve: The promise to be resolved.
+   - reject: The promise to be rejected.
    */
   @objc(sendErrorResponse:withResolver:withRejecter:)
   func sendErrorResponse(code: UInt64, _ resolve: @escaping RCTPromiseResolveBlock,
-                           reject: @escaping RCTPromiseRejectBlock){
+                         reject: @escaping RCTPromiseRejectBlock){
     do{
       if let statusEnum = SessionDataStatus(rawValue: code) {
-        try Proximity.shared.errorPresentation(statusEnum)
+        try ISO18013.shared.errorPresentation(statusEnum)
       } else {
         reject(ModuleErrorCodes.sendErrorResponseError.rawValue, "Invalid status code provided: \(code)", nil)
       }
@@ -269,30 +393,11 @@ class IoReactNativeIso18013: RCTEventEmitter {
       reject(ModuleErrorCodes.sendErrorResponseError.rawValue, error.localizedDescription, error)
     }
   }
-
-  /**
-   Closes the bluetooth connection and clears any resource.
-   Resolves to true after closing the connection or rejects with an error code defined in ``ModuleErrorCodes``.
-   - Parameters:
-     - resolve: The promise to be resolved.
-     - reject:  The promise to be rejected.
-   */
-  @objc(close:withRejecter:)
-  func close(
-    resolve: @escaping RCTPromiseResolveBlock,
-    reject: @escaping RCTPromiseRejectBlock
-  ) {
-    Task {
-      _ = try? await Proximity.shared.stopNfc()
-      Proximity.shared.stop()
-      resolve(true)
-    }
-  }
   
   /**
    Converts a device requested from the `onDocumentRequestReceived` callback into a serializable JSON.
    - Parameters:
-      - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces and the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the data.
+   - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces and the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the data.
    - Returns: A JSON string representing the device request or nil if an error occurs.
    */
   private func deviceRequestToJson(request: [(docType: String, nameSpaces: [String: [String: Bool]], isAuthenticated: Bool)]?) -> String? {
@@ -321,122 +426,37 @@ class IoReactNativeIso18013: RCTEventEmitter {
       return nil
     }
   }
-
-  /**
-   Sets the proximity handler along with the possible dispatched events and their callbacks.
-   The events are then sent to React Native via `RCTEventEmitter`.
-   */
-  private func setupProximityHandler() {
-    Proximity.shared.proximityHandler = { [weak self] event in
-      guard let self = self else { return }
-      var eventName: String
-      var eventBody: [String: Any] = [:]
-      
-      switch event {
-      case .onDeviceConnecting:
-        eventName = "onDeviceConnecting"
-      case .onDeviceConnected:
-        eventName = "onDeviceConnected"
-      case .onDocumentRequestReceived(let request):
-        eventName = "onDocumentRequestReceived"
-        if let request = request {
-          /**
-           The outermost key represents the credential doctype, the inner key represents the namespace and the innermost key represents the requested fields with a boolean value. Example:
-           {
-             "org.iso.18013.5.1.mDL": {
-               "isAuthenticated": true,
-               "org.iso.18013.5.1": {
-                 "hair_colour": true,
-                 "given_name_national_character": true,
-                 "family_name_national_character": true,
-                 "given_name": true,
-               }
-             }
-           }
-           */
-          let jsonString = deviceRequestToJson(request: request)
-          // Here we either send the request or an empty string which signals that something went wrong.
-          eventBody = ["data": jsonString ?? ""]
-        }
-      case .onDeviceDisconnected:
-        eventName = "onDeviceDisconnected"
-      case .onError(let error):
-        eventName = "onError"
-        eventBody = ["error": error.localizedDescription]
-      default:
-        eventName = "unknown"
-        eventBody = ["error": "Received an unknown event"]
-      }
-      
-      self.sendEvent(withName: eventName, body: eventBody)
-    }
-  }
-  
-  /**
-   Starts NFC engagement (HCE - Host Card Emulation) to broadcast the device engagement via NDEF
-   so that a verifier can initiate the BLE proximity exchange by tapping phones.
-   Requires iOS 17.4 or later. Resolves to true on success or rejects with an error.
-   - Parameters:
-     - resolve: The promise to be resolved.
-     - reject: The promise to be rejected.
-   */
-  @objc(startNfcEngagement:withResolver:withRejecter:)
-  func startNfcEngagement(
-    certificates: [Any],
-    resolve: @escaping RCTPromiseResolveBlock,
-    reject: @escaping RCTPromiseRejectBlock
-  ) {
-    if #available(iOS 17.4, *) {
-      Task {
-        do {
-          let certsData = try parseCertificates(certificates)
-          try Proximity.shared.start(certsData)
-          
-          let result = try await Proximity.shared.startNfc()
-          resolve(result)
-        } catch let proximityError as ProximityError {
-          reject(ModuleErrorCodes.generateResponseError.rawValue, proximityError.description, proximityError)
-        } catch let parsingError as ParsingError{
-          reject(ModuleErrorCodes.generateResponseError.rawValue, parsingError.description, parsingError)
-        } catch {
-          reject(ModuleErrorCodes.startNfcError.rawValue, error.localizedDescription, error)
-        }
-      }
-    } else {
-      reject(ModuleErrorCodes.startNfcError.rawValue, "NFC engagement requires iOS 17.4 or later", nil)
-    }
-  }
   
   /**
    Generates a CBOR encoded device response for ISO 18013-7 mDL remote presentation using OID4VP.
    Resolves with the base64 encoded device response or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
-      - clientId: The client id extracted from OID4VP session.
-      - responseUri: The response URI extracted from OID4VP session.
-      - authorizationRequestNonce - The authorization request nonce extracted from OID4VP session.
-      - mdocGeneratedNonce - the mdoc generated nonce to be generated.
-      - documents: An array containing documents. Each document is defined as a map containing:
-           - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
-           - alias which is the alias of the key used to sign the credential;
-           - docType which is the document type.
-      - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a `[String: [String: [String: Bool]]]`. The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
-          
-           
-             {
-                "org.iso.18013.5.1.mDL": {
-                  "org.iso.18013.5.1": {
-                    "hair_colour": true,
-                    "given_name_national_character": true,
-                    "family_name_national_character": true,
-                    "given_name": true,
-                  },
-                  {...}
-                },
-                {...}
-             }
-
-       - resolve: The promise to be resolved.
-       - reject: The promise to be rejected.
+   - clientId: The client id extracted from OID4VP session.
+   - responseUri: The response URI extracted from OID4VP session.
+   - authorizationRequestNonce - The authorization request nonce extracted from OID4VP session.
+   - mdocGeneratedNonce - the mdoc generated nonce to be generated.
+   - documents: An array containing documents. Each document is defined as a map containing:
+   - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
+   - alias which is the alias of the key used to sign the credential;
+   - docType which is the document type.
+   - acceptedFields: A dictionary of elements, where each element must adhere to the structure of AcceptedFieldsDict—specifically, a `[String: [String: [String: Bool]]]`. The outermost key represents the credential doctype. The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value, which indicates whether the user is willing to present the corresponding claim. Example:
+   
+   
+   {
+   "org.iso.18013.5.1.mDL": {
+   "org.iso.18013.5.1": {
+   "hair_colour": true,
+   "given_name_national_character": true,
+   "family_name_national_character": true,
+   "given_name": true,
+   },
+   {...}
+   },
+   {...}
+   }
+   
+   - resolve: The promise to be resolved.
+   - reject: The promise to be rejected.
    */
   @objc(generateOID4VPDeviceResponse:withResponseUri:withAuthorizationRequestNonce:withMdocGeneratedNonce:withDocuments:withAcceptedFields:withResolver:withRejecter:)
   func generateOID4VPDeviceResponse(
@@ -451,7 +471,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
   ) {
     
     do {
-      let sessionTranscript = Proximity.shared.generateOID4VPSessionTranscriptCBOR(
+      let sessionTranscript = ISO18013.shared.generateOID4VPSessionTranscriptCBOR(
         clientId: clientId,
         responseUri: responseUri,
         authorizationRequestNonce: authorizationRequestNonce,
@@ -460,7 +480,7 @@ class IoReactNativeIso18013: RCTEventEmitter {
       
       let documentsAsProximityDocument = try parseDocuments(documents: documents)
       let items = try parseAcceptedFields(acceptedFields: acceptedFields)
-      let response = try Proximity.shared.generateDeviceResponse(items: items, documents: documentsAsProximityDocument, sessionTranscript: sessionTranscript)
+      let response = try ISO18013.shared.generateDeviceResponse(items: items, documents: documentsAsProximityDocument, sessionTranscript: sessionTranscript)
       resolve(Data(response).base64EncodedString())
     } catch let parsingError as ParsingError{
       reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, parsingError.description, parsingError)
@@ -471,35 +491,40 @@ class IoReactNativeIso18013: RCTEventEmitter {
       reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, error.localizedDescription, error)
     }
   }
-    
+  
   /**
    Custom Error which is thrown when a parsing error occurs in our utility functions which converts data from the bridge to what
    our underlying functions expect.
    This is needed in order to provide a customized description which can include more debug information.
    */
   enum ParsingError : Error, CustomStringConvertible {
-      case documentsNotValid(String)
-      case certificatesNotValid(String)
-      case acceptedFieldsNotValid(String)
-      
-      public var description: String {
-          switch(self) {
-            case .documentsNotValid(let message):
-                return message
-            case .certificatesNotValid(let message):
-              return message
-            case .acceptedFieldsNotValid(let message):
-              return message
-          }
+    case documentsNotValid(String)
+    case certificatesNotValid(String)
+    case acceptedFieldsNotValid(String)
+    case engagementModeNotValid(String)
+    case dataTransferModeNotValid(String)
+    
+    public var description: String {
+      switch(self) {
+      case .documentsNotValid(let message):
+        return message
+      case .certificatesNotValid(let message):
+        return message
+      case .acceptedFieldsNotValid(let message):
+        return message
+      case .engagementModeNotValid(let message):
+        return message
+      case .dataTransferModeNotValid(let message):
+        return message
       }
+    }
   }
   
   // Errors which this module uses to reject a promise
   private enum ModuleErrorCodes: String, CaseIterable {
     // ISO18013-5 related errors
-    case startQrCodeError = "START_QRCODE_ERROR"
-    case startNfcError = "START_NFC_ERROR"
-    case getQrCodeError = "GET_QR_CODE_ERROR"
+    case startError = "START_ERROR"
+    case stopError = "STOP_ERROR"
     case sendResponseError = "SEND_RESPONSE_ERROR"
     case sendErrorResponseError = "SEND_ERROR_RESPONSE_ERROR"
     case generateResponseError = "GENERATE_RESPONSE_ERROR"

@@ -12,14 +12,14 @@ export {
   ErrorCode,
   type Events,
   type EventsPayload,
+  type EngagementMode,
+  type RetrievalMethod,
   addListener,
+  start,
   close,
   generateResponse,
-  getQrCodeString,
   sendErrorResponse,
   sendResponse,
-  startQrCodeEngagement,
-  startNfcEngagement,
 } from './proximity';
 
 export { type RequestedDocument, type AcceptedFields } from '../types';

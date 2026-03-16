@@ -6,6 +6,9 @@ const eventEmitter = new NativeEventEmitter(IoReactNativeIso18013);
 
 /**
  * Events emitted by the native module:
+ * - `onQrCodeString`: Emitted when the QR Code payload is generated.
+ * - `onNfcStarted`: Emitted when NFC starts successfully.
+ * - `onNfcStopped`: Emitted when NFC stops successfully.
  * - `onDeviceConnecting`: (iOS only) Emitted when the device is connecting to the verifier app.
  * - `onDeviceConnected`: Emitted when the device is connected to the verifier app.
  * - `onDocumentRequestReceived`: Emitted when a document request is received from the verifier app. Carries a payload containing the request data.
@@ -13,6 +16,9 @@ const eventEmitter = new NativeEventEmitter(IoReactNativeIso18013);
  * - `onError`: Emitted when an error occurs. Carries a payload containing the error data.
  */
 export type EventsPayload = {
+  onQrCodeString: { data: string };
+  onNfcStarted: undefined;
+  onNfcStopped: undefined;
   onDeviceConnecting: undefined;
   onDeviceConnected: undefined;
   // The message payload is a JSON string that can be parsed into a `VerifierRequest` structure via `parseVerifierRequest`.
@@ -38,69 +44,63 @@ export enum ErrorCode {
 }
 
 /**
+ * Supported modes for proximity engagement.
+ * - QRCode: the engagement is initiated by scanning a QR code containing the engagement data.
+ * - NFC: the engagement is initiated by bringing the device close to the verifier app which will trigger the NFC communication.
+ */
+export type EngagementMode = 'qrcode' | 'nfc';
+
+/**
+ * Supported methods for retrieving the requested data from the user device.
+ * - ble: the requested data is retrieved via Bluetooth Low Energy communication between the user device and the verifier app.
+ * - nfc: the requested data is retrieved via NFC communication between the user device and the verifier app.
+ */
+export type RetrievalMethod = 'ble' | 'nfc';
+
+/**
  * Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
  * Resolves to true or rejects in case of error.
  * @param config.peripheralMode (Android only) - Whether the device is in peripheral mode. Defaults to true
  * @param config.centralClientMode (Android only) - Whether the device is in central client mode. Defaults to false
  * @param config.clearBleCache (Android only) - Whether the BLE cache should be cleared. Defaults to true
  * @param config.certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
+ * @param config.engagementModes - Array of supported engagement modes. Defaults to ['qrcode']
+ * @param config.retrivalMethods - Array of supported retrieval methods. Defaults to ['ble']
  * @throws {ModuleError} in case of error which can be parsed with {@link ModuleErrorSchema}
  */
-export function startQrCodeEngagement(
+export function start(
   config: {
     peripheralMode?: boolean;
     centralClientMode?: boolean;
     clearBleCache?: boolean;
-    certificates?: Array<Array<String>>;
+    certificates?: ReadonlyArray<ReadonlyArray<String>>;
+    engagementModes?: ReadonlyArray<EngagementMode>;
+    retrievalMethods?: ReadonlyArray<RetrievalMethod>;
   } = {}
 ): Promise<boolean> {
-  const { peripheralMode, centralClientMode, clearBleCache, certificates } =
-    config;
+  const {
+    peripheralMode = true,
+    centralClientMode = false,
+    clearBleCache = true,
+    certificates = [],
+    engagementModes = ['qrcode'],
+    retrievalMethods = ['ble'],
+  } = config;
+
   if (Platform.OS === 'ios') {
-    return IoReactNativeIso18013.startQrCodeEngagement(
-      certificates ? certificates : []
+    return IoReactNativeIso18013.start(
+      certificates,
+      engagementModes,
+      retrievalMethods
     );
   } else {
     return IoReactNativeIso18013.startQrCodeEngagement(
-      peripheralMode ? peripheralMode : true,
-      centralClientMode ? centralClientMode : false,
-      clearBleCache ? clearBleCache : true,
-      certificates ? certificates : []
+      peripheralMode,
+      centralClientMode,
+      clearBleCache,
+      certificates
     );
   }
-}
-
-/**
- * Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
- * On iOS, requires iOS 17.4 or later.
- * On Android, requires NFC and HCE support.
- * Must be called after {@link start} since the BLE server and device engagement
- * must already be initialised.
- * Resolves to true on success or rejects in case of error.
- * @throws {ModuleError} if NFC engagement fails
- */
-export function startNfcEngagement(
-  config: {
-    certificates?: Array<Array<String>>;
-  } = {}
-): Promise<boolean> {
-  const { certificates } = config;
-  if (Platform.OS === 'ios') {
-    return IoReactNativeIso18013.startNfcEngagement(
-      certificates ? certificates : []
-    );
-  } else {
-    return IoReactNativeIso18013.startNfcEngagement();
-  }
-}
-
-/**
- * Creates a QR code to be scanned in order to initialize the presentation.
- * Resolves with a string containing the QR code or rejects in case of error.
- * @throws {ModuleError} in case of error which can be parsed with {@link ModuleErrorSchema}
- */
-export function getQrCodeString(): Promise<string> {
-  return IoReactNativeIso18013.getQrCodeString();
 }
 
 /**
