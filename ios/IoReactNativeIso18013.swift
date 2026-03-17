@@ -114,28 +114,28 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
    Resolves to true or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
    - `certificates`: Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
-   - `engagementModes`: Array of strings representing engagement modes (e.g., "qr", "nfc")
+   - `engagementMode`: String representing the engagement mode (e.g., "qrcode", "nfc")
    - `retrievalMethods`: Array of strings representing data transfer modes (e.g., "ble", "nfc")
    - `resolve`: The promise to be resolved
    - `reject`: The promise to be rejected
    */
-  @objc(start:withEngagementModes:withRetrievalMethods:withResolver:withRejecter:)
+  @objc(start:withEngagementMode:withRetrievalMethods:withResolver:withRejecter:)
   func start(
     certificates: [Any],
-    engagementModes: [String],
+    engagementMode: String,
     retrievalMethods: [String],
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
       let certsData = try parseCertificates(certificates)
-      let parsedEngagementModes = try parseEngagementModes(engagementModes)
+      let parsedEngagementMode = try parseEngagementMode(engagementMode)
       let parsedRetrievalMethods = try parseDataTransferModes(retrievalMethods)
       
       ISO18013.shared
         .start(
           certsData,
-          engagementModes: parsedEngagementModes,
+          engagementModes: [parsedEngagementMode],
           retrivalMethods: parsedRetrievalMethods,
           delegate: self,
           isNfcLateEngagement: false
@@ -188,22 +188,20 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
   }
   
   /**
-   Utility function to parse engagement mode strings into ISO18013EngagementMode enum values.
+   Utility function to parse an engagement mode string into an ISO18013EngagementMode enum value.
    - Parameters:
-   - modes: Array of strings representing engagement modes (e.g., "QR", "NFC")
+   - mode: String representing the engagement mode (e.g., "qrcode", "nfc")
    - Throws: `ParsingError` if an invalid engagement mode string is provided.
-   - Returns: An array of ISO18013EngagementMode values.
+   - Returns: An ISO18013EngagementMode value.
    */
-  private func parseEngagementModes(_ modes: [String]) throws -> [ISO18013EngagementMode] {
-    return try modes.map { modeString in
-      switch modeString.lowercased() {
-      case "qrcode":
-        return .qrCode
-      case "nfc":
-        return .nfc
-      default:
-        throw ParsingError.engagementModeNotValid("Invalid engagement mode: '\(modeString)'. Expected 'qrcode' or 'nfc'.")
-      }
+  private func parseEngagementMode(_ mode: String) throws -> ISO18013EngagementMode {
+    switch mode.lowercased() {
+    case "qrcode":
+      return .qrCode
+    case "nfc":
+      return .nfc
+    default:
+      throw ParsingError.engagementModeNotValid("Invalid engagement mode: '\(mode)'. Expected 'qrcode' or 'nfc'.")
     }
   }
   

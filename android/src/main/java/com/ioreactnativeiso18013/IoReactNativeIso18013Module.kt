@@ -51,7 +51,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @param centralClientMode whether the device is in central client mode. Defaults to false
    * @param clearBleCache whether the BLE cache should be cleared. Defaults to true
    * @param certificates two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
-   * @param engagementModes array containing the requested engagement modes. The first element wins.
+   * @param engagementMode the requested engagement mode.
    * @param retrievalMethods array containing the requested retrieval methods.
    * @param promise the promise which will be resolved in case of success or rejected in case of failure.
    */
@@ -61,22 +61,22 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     centralClientMode: Boolean,
     clearBleCache: Boolean,
     certificates: ReadableArray,
-    engagementModes: ReadableArray,
+    engagementMode: String,
     retrievalMethods: ReadableArray,
     promise: Promise
   ) {
     try {
       val certificatesList = parseCertificates(certificates)
-      val engagementMode = parseEngagementMode(engagementModes)
+      val parsedEngagementMode = parseEngagementMode(engagementMode)
       val parsedRetrievalMethods = buildRetrievalMethods(
-        engagementMode = engagementMode,
+        engagementMode = parsedEngagementMode,
         retrievalMethods = retrievalMethods,
         peripheralMode = peripheralMode,
         centralClientMode = centralClientMode,
         clearBleCache = clearBleCache
       )
 
-      when (engagementMode) {
+      when (parsedEngagementMode) {
         NativeEngagementMode.QR_CODE ->
           startQrEngagementInternal(certificatesList, parsedRetrievalMethods)
         NativeEngagementMode.NFC ->
@@ -154,14 +154,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     sendEvent("onQrCodeString", data)
   }
 
-  private fun parseEngagementMode(engagementModes: ReadableArray): NativeEngagementMode {
-    if (engagementModes.size() == 0) {
-      return NativeEngagementMode.QR_CODE
-    }
-
-    val engagementMode = engagementModes.getString(0)
-      ?: throw IllegalArgumentException("Engagement mode at index 0 is null")
-
+  private fun parseEngagementMode(engagementMode: String): NativeEngagementMode {
     return NativeEngagementMode.fromBridgeValue(engagementMode)
   }
 

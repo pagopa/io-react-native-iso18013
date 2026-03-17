@@ -33,7 +33,7 @@ const Iso180135Screen: React.FC = () => {
             title={'Start BLE-BLE'}
             onPress={() =>
               startFlow({
-                engagementModes: ['qrcode'],
+                engagementMode: 'qrcode',
                 retrievalMethods: ['ble'],
               })
             }
@@ -42,8 +42,18 @@ const Iso180135Screen: React.FC = () => {
             title={'Start BLE-NFC'}
             onPress={() =>
               startFlow({
-                engagementModes: ['qrcode'],
+                engagementMode: 'qrcode',
                 retrievalMethods: ['nfc'],
+              })
+            }
+            disabled={isNfcUnavailable}
+          />
+          <Button
+            title={'Start BLE-BLE+NFC'}
+            onPress={() =>
+              startFlow({
+                engagementMode: 'qrcode',
+                retrievalMethods: ['ble', 'nfc'],
               })
             }
             disabled={isNfcUnavailable}
@@ -52,7 +62,7 @@ const Iso180135Screen: React.FC = () => {
             title={'Start NFC-BLE'}
             onPress={() =>
               startFlow({
-                engagementModes: ['nfc'],
+                engagementMode: 'nfc',
                 retrievalMethods: ['ble'],
               })
             }
@@ -62,7 +72,7 @@ const Iso180135Screen: React.FC = () => {
             title={'Start NFC-NFC'}
             onPress={() =>
               startFlow({
-                engagementModes: ['nfc'],
+                engagementMode: 'nfc',
                 retrievalMethods: ['nfc'],
               })
             }

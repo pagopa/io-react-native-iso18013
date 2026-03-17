@@ -4,7 +4,7 @@
 @interface RCT_EXTERN_MODULE(IoReactNativeIso18013, RCTEventEmitter)
 
 RCT_EXTERN_METHOD(start:(NSArray *)certificates
-                  withEngagementModes:(NSArray *)engagementModes
+                  withEngagementMode:(NSString *)engagementMode
                   withRetrievalMethods:(NSArray *)retrievalMethods
                   withResolver:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)

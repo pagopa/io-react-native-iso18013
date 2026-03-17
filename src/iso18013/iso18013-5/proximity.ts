@@ -64,8 +64,8 @@ export type RetrievalMethod = 'ble' | 'nfc';
  * @param config.centralClientMode (Android only) - Whether the device is in central client mode. Defaults to false
  * @param config.clearBleCache (Android only) - Whether the BLE cache should be cleared. Defaults to true
  * @param config.certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
- * @param config.engagementModes - Array of supported engagement modes. Defaults to ['qrcode']
- * @param config.retrivalMethods - Array of supported retrieval methods. Defaults to ['ble']
+ * @param config.engagementMode - The engagement mode to use. Defaults to 'qrcode'
+ * @param config.retrievalMethods - Array of supported retrieval methods. Defaults to ['ble']
  * @throws {ModuleError} in case of error which can be parsed with {@link ModuleErrorSchema}
  */
 export function start(
@@ -74,7 +74,7 @@ export function start(
     centralClientMode?: boolean;
     clearBleCache?: boolean;
     certificates?: ReadonlyArray<ReadonlyArray<String>>;
-    engagementModes?: ReadonlyArray<EngagementMode>;
+    engagementMode?: EngagementMode;
     retrievalMethods?: ReadonlyArray<RetrievalMethod>;
   } = {}
 ): Promise<boolean> {
@@ -83,14 +83,14 @@ export function start(
     centralClientMode = false,
     clearBleCache = true,
     certificates = [],
-    engagementModes = ['qrcode'],
+    engagementMode = 'qrcode',
     retrievalMethods = ['ble'],
   } = config;
 
   if (Platform.OS === 'ios') {
     return IoReactNativeIso18013.start(
       certificates,
-      engagementModes,
+      engagementMode,
       retrievalMethods
     );
   } else {
@@ -99,7 +99,7 @@ export function start(
       centralClientMode,
       clearBleCache,
       certificates,
-      engagementModes,
+      engagementMode,
       retrievalMethods
     );
   }

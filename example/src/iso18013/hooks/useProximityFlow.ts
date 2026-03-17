@@ -88,12 +88,12 @@ export const useProximityFlow = () => {
 
   const startFlow = useCallback(
     async (args: {
-      engagementModes: ReadonlyArray<ISO18013_5.EngagementMode>;
+      engagementMode: ISO18013_5.EngagementMode;
       retrievalMethods: ReadonlyArray<ISO18013_5.RetrievalMethod>;
     }) => {
       try {
         await ISO18013_5.start({
-          engagementModes: args.engagementModes,
+          engagementMode: args.engagementMode,
           retrievalMethods: args.retrievalMethods,
         });
         setStatus(PROXIMITY_STATUS.ENGAGEMENT);
