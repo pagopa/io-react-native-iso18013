@@ -12,6 +12,6 @@ import it.pagopa.io.wallet.proximity.nfc.NfcEngagementService
  *
  * All NFC engagement logic is handled by the library's [NfcEngagementService] base class and
  * events are surfaced through [it.pagopa.io.wallet.proximity.nfc.NfcEngagementEventBus].
- * See [IoReactNativeIso18013Module.startNfcEventCollection] for the event handling.
+ * See [IoReactNativeIso18013Module.setupNfcEventCollection] for the event handling.
  */
 class IoNfcEngagementService : NfcEngagementService()

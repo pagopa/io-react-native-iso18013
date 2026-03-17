@@ -94,11 +94,13 @@ export function start(
       retrievalMethods
     );
   } else {
-    return IoReactNativeIso18013.startQrCodeEngagement(
+    return IoReactNativeIso18013.start(
       peripheralMode,
       centralClientMode,
       clearBleCache,
-      certificates
+      certificates,
+      engagementModes,
+      retrievalMethods
     );
   }
 }
