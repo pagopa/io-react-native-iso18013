@@ -73,7 +73,7 @@ export function start(
     peripheralMode?: boolean;
     centralClientMode?: boolean;
     clearBleCache?: boolean;
-    certificates?: ReadonlyArray<ReadonlyArray<String>>;
+    certificates?: ReadonlyArray<ReadonlyArray<string>>;
     engagementMode?: EngagementMode;
     retrievalMethods?: ReadonlyArray<RetrievalMethod>;
   } = {}

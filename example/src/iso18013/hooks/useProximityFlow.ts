@@ -30,6 +30,8 @@ export enum PROXIMITY_STATUS {
 export const useProximityFlow = () => {
   const [status, setStatus] = useState<PROXIMITY_STATUS>(PROXIMITY_STATUS.IDLE);
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [engagementMode, setEngagementMode] =
+    useState<ISO18013_5.EngagementMode | null>(null);
   const [request, setRequest] = useState<
     ISO18013_5.VerifierRequest['request'] | null
   >(null);
@@ -75,6 +77,7 @@ export const useProximityFlow = () => {
 
   const init = useCallback(async () => {
     setStatus(PROXIMITY_STATUS.IDLE);
+    setEngagementMode(null);
     const hasPermission = await requestBlePermissions();
     if (!hasPermission) {
       Alert.alert(
@@ -96,8 +99,10 @@ export const useProximityFlow = () => {
           engagementMode: args.engagementMode,
           retrievalMethods: args.retrievalMethods,
         });
+        setEngagementMode(args.engagementMode);
         setStatus(PROXIMITY_STATUS.ENGAGEMENT);
       } catch (error) {
+        setEngagementMode(null);
         parseAndPrintError(
           ISO18013_5.ModuleErrorSchema,
           error,
@@ -117,6 +122,7 @@ export const useProximityFlow = () => {
       }
       await ISO18013_5.close();
       setQrCode(null);
+      setEngagementMode(null);
       setRequest(null);
       setStatus(PROXIMITY_STATUS.READY);
     } catch (e) {
@@ -124,20 +130,23 @@ export const useProximityFlow = () => {
     }
   }, []);
 
-  const sendError = useCallback(async (errorCode: ISO18013_5.ErrorCode) => {
-    try {
-      console.log('Sending error response to verifier app');
-      await ISO18013_5.sendErrorResponse(errorCode);
-      setStatus(PROXIMITY_STATUS.IDLE);
-      console.log('Error response sent');
-    } catch (error) {
-      parseAndPrintError(
-        ISO18013_5.ModuleErrorSchema,
-        error,
-        'sendError error: '
-      );
-    }
-  }, []);
+  const sendError = useCallback(
+    async (errorCode: ISO18013_5.ErrorCode) => {
+      try {
+        console.log('Sending error response to verifier app');
+        await ISO18013_5.sendErrorResponse(errorCode);
+        await closeFlow();
+        console.log('Error response sent');
+      } catch (error) {
+        parseAndPrintError(
+          ISO18013_5.ModuleErrorSchema,
+          error,
+          'sendError error: '
+        );
+      }
+    },
+    [closeFlow]
+  );
 
   const sendDocument = useCallback(
     async (
@@ -257,7 +266,13 @@ export const useProximityFlow = () => {
         console.log('Removing listener:', listener);
         listener.remove();
       });
-      closeFlow();
+      ISO18013_5.close().catch((error) => {
+        parseAndPrintError(
+          ISO18013_5.ModuleErrorSchema,
+          error,
+          'cleanup error: '
+        );
+      });
     };
   }, [
     handleQrCodeString,
@@ -274,6 +289,7 @@ export const useProximityFlow = () => {
   return {
     status,
     qrCode,
+    engagementMode,
     request,
     nfcSessionSecondsLeft,
     nfcCooldownSecondsLeft,

@@ -27,7 +27,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
@@ -77,9 +76,9 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       )
 
       when (parsedEngagementMode) {
-        NativeEngagementMode.QR_CODE ->
+        EngagementMode.QR_CODE ->
           startQrEngagementInternal(certificatesList, parsedRetrievalMethods)
-        NativeEngagementMode.NFC ->
+        EngagementMode.NFC ->
           startNfcEngagementInternal(certificatesList, parsedRetrievalMethods)
       }
 
@@ -154,12 +153,12 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     sendEvent("onQrCodeString", data)
   }
 
-  private fun parseEngagementMode(engagementMode: String): NativeEngagementMode {
-    return NativeEngagementMode.fromBridgeValue(engagementMode)
+  private fun parseEngagementMode(engagementMode: String): EngagementMode {
+    return EngagementMode.fromBridgeValue(engagementMode)
   }
 
   private fun buildRetrievalMethods(
-    engagementMode: NativeEngagementMode,
+    engagementMode: EngagementMode,
     retrievalMethods: ReadableArray,
     peripheralMode: Boolean,
     centralClientMode: Boolean,
@@ -168,13 +167,13 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     val parsedRetrievalMethods = parseRetrievalMethods(retrievalMethods)
     val builtMethods = mutableListOf<DeviceRetrievalMethod>()
 
-    if (engagementMode == NativeEngagementMode.NFC) {
+    if (engagementMode == EngagementMode.NFC) {
       builtMethods.add(NfcRetrievalMethod())
     }
 
     parsedRetrievalMethods.forEach { method ->
       when (method) {
-        NativeRetrievalMethod.BLE -> {
+        RetrievalMethod.BLE -> {
           val bleRetrievalMethod = BleRetrievalMethod(
             peripheralServerMode = peripheralMode,
             centralClientMode = centralClientMode,
@@ -184,7 +183,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
             builtMethods.add(bleRetrievalMethod)
           }
         }
-        NativeRetrievalMethod.NFC -> {
+        RetrievalMethod.NFC -> {
           val nfcRetrievalMethod = NfcRetrievalMethod()
           if (nfcRetrievalMethod !in builtMethods) {
             builtMethods.add(nfcRetrievalMethod)
@@ -196,15 +195,15 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     return builtMethods
   }
 
-  private fun parseRetrievalMethods(retrievalMethods: ReadableArray): List<NativeRetrievalMethod> {
+  private fun parseRetrievalMethods(retrievalMethods: ReadableArray): List<RetrievalMethod> {
     if (retrievalMethods.size() == 0) {
-      return listOf(NativeRetrievalMethod.BLE)
+      return listOf(RetrievalMethod.BLE)
     }
 
     return (0 until retrievalMethods.size()).map { index ->
       val retrievalMethod = retrievalMethods.getString(index)
         ?: throw IllegalArgumentException("Retrieval method at index $index is null")
-      NativeRetrievalMethod.fromBridgeValue(retrievalMethod)
+      RetrievalMethod.fromBridgeValue(retrievalMethod)
     }
   }
 
@@ -491,6 +490,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           is NfcEngagementEvent.DocumentRequestReceived -> {
             val data: WritableMap = Arguments.createMap()
             data.putString("data", event.request)
+            // data.putString("data", event.onlyNfc)
             sendEvent("onDocumentRequestReceived", data)
           }
           is NfcEngagementEvent.NotSupported ->
@@ -535,28 +535,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     */
   }
 
-  private enum class NativeEngagementMode(val bridgeValue: String) {
-    QR_CODE("qrcode"),
-    NFC("nfc");
-
-    companion object {
-      fun fromBridgeValue(value: String): NativeEngagementMode =
-        NativeEngagementMode.entries.firstOrNull { it.bridgeValue == value.lowercase() }
-          ?: throw IllegalArgumentException("Invalid engagement mode: '$value'. Expected 'qrcode' or 'nfc'.")
-    }
-  }
-
-  private enum class NativeRetrievalMethod(val bridgeValue: String) {
-    BLE("ble"),
-    NFC("nfc");
-
-    companion object {
-      fun fromBridgeValue(value: String): NativeRetrievalMethod =
-        NativeRetrievalMethod.entries.firstOrNull { it.bridgeValue == value.lowercase() }
-          ?: throw IllegalArgumentException("Invalid retrieval method: '$value'. Expected 'ble' or 'nfc'.")
-    }
-  }
-
   companion object {
     const val NAME = "IoReactNativeIso18013"
     const val NOT_INITIALIZED_ERROR_MESSAGE = "Resources not initialized properly, call the start method before this one."
@@ -573,6 +551,38 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
       // ISO18013-7 related errors
       const val GENERATE_OID4VP_RESPONSE_ERROR = "GENERATE_OID4VP_RESPONSE_ERROR"
+    }
+
+    /**
+     * Engagement mode supported by the native bridge
+     * - qrcode: BLE engagement with QR Code scan
+     * - nfc: NFC engagement with tap mode
+     */
+    private enum class EngagementMode(val bridgeValue: String) {
+      QR_CODE("qrcode"),
+      NFC("nfc");
+
+      companion object {
+        fun fromBridgeValue(value: String): EngagementMode =
+          EngagementMode.entries.firstOrNull { it.bridgeValue == value.lowercase() }
+            ?: throw IllegalArgumentException("Invalid engagement mode: '$value'. Expected 'qrcode' or 'nfc'.")
+      }
+    }
+
+    /**
+     * Retrieval method supported by the native bridge
+     * - ble: BLE data transfer
+     * - nfc: NFC data transfer
+     */
+    private enum class RetrievalMethod(val bridgeValue: String) {
+      BLE("ble"),
+      NFC("nfc");
+
+      companion object {
+        fun fromBridgeValue(value: String): RetrievalMethod =
+          RetrievalMethod.entries.firstOrNull { it.bridgeValue == value.lowercase() }
+            ?: throw IllegalArgumentException("Invalid retrieval method: '$value'. Expected 'ble' or 'nfc'.")
+      }
     }
 
     /**
