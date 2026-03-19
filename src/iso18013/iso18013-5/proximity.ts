@@ -44,13 +44,6 @@ export enum ErrorCode {
 }
 
 /**
- * Supported modes for proximity engagement.
- * - QRCode: the engagement is initiated by scanning a QR code containing the engagement data.
- * - NFC: the engagement is initiated by bringing the device close to the verifier app which will trigger the NFC communication.
- */
-export type EngagementMode = 'qrcode' | 'nfc';
-
-/**
  * Supported methods for retrieving the requested data from the user device.
  * - ble: the requested data is retrieved via Bluetooth Low Energy communication between the user device and the verifier app.
  * - nfc: the requested data is retrieved via NFC communication between the user device and the verifier app.
@@ -58,23 +51,57 @@ export type EngagementMode = 'qrcode' | 'nfc';
 export type RetrievalMethod = 'ble' | 'nfc';
 
 /**
- * Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
+ * Starts QR code engagement with BLE-only retrieval.
  * Resolves to true or rejects in case of error.
  * @param config.peripheralMode (Android only) - Whether the device is in peripheral mode. Defaults to true
  * @param config.centralClientMode (Android only) - Whether the device is in central client mode. Defaults to false
  * @param config.clearBleCache (Android only) - Whether the BLE cache should be cleared. Defaults to true
  * @param config.certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
- * @param config.engagementMode - The engagement mode to use. Defaults to 'qrcode'
- * @param config.retrievalMethods - Array of supported retrieval methods. Defaults to ['ble']
  * @throws {ModuleError} in case of error which can be parsed with {@link ModuleErrorSchema}
  */
-export function start(
+export function startQrCodeEngagement(
   config: {
     peripheralMode?: boolean;
     centralClientMode?: boolean;
     clearBleCache?: boolean;
     certificates?: ReadonlyArray<ReadonlyArray<string>>;
-    engagementMode?: EngagementMode;
+  } = {}
+): Promise<boolean> {
+  const {
+    peripheralMode = true,
+    centralClientMode = false,
+    clearBleCache = true,
+    certificates = [],
+  } = config;
+
+  if (Platform.OS === 'ios') {
+    return IoReactNativeIso18013.startQrCodeEngagement(certificates);
+  } else {
+    return IoReactNativeIso18013.startQrCodeEngagement(
+      peripheralMode,
+      centralClientMode,
+      clearBleCache,
+      certificates
+    );
+  }
+}
+
+/**
+ * Starts NFC engagement with caller-controlled retrieval methods.
+ * Resolves to true or rejects in case of error.
+ * @param config.peripheralMode (Android only) - Whether the device is in peripheral mode. Defaults to true
+ * @param config.centralClientMode (Android only) - Whether the device is in central client mode. Defaults to false
+ * @param config.clearBleCache (Android only) - Whether the BLE cache should be cleared. Defaults to true
+ * @param config.certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
+ * @param config.retrievalMethods - Array of supported retrieval methods. Defaults to ['ble']
+ * @throws {ModuleError} in case of error which can be parsed with {@link ModuleErrorSchema}
+ */
+export function startNfcEngagement(
+  config: {
+    peripheralMode?: boolean;
+    centralClientMode?: boolean;
+    clearBleCache?: boolean;
+    certificates?: ReadonlyArray<ReadonlyArray<string>>;
     retrievalMethods?: ReadonlyArray<RetrievalMethod>;
   } = {}
 ): Promise<boolean> {
@@ -83,23 +110,20 @@ export function start(
     centralClientMode = false,
     clearBleCache = true,
     certificates = [],
-    engagementMode = 'qrcode',
     retrievalMethods = ['ble'],
   } = config;
 
   if (Platform.OS === 'ios') {
-    return IoReactNativeIso18013.start(
+    return IoReactNativeIso18013.startNfcEngagement(
       certificates,
-      engagementMode,
       retrievalMethods
     );
   } else {
-    return IoReactNativeIso18013.start(
+    return IoReactNativeIso18013.startNfcEngagement(
       peripheralMode,
       centralClientMode,
       clearBleCache,
       certificates,
-      engagementMode,
       retrievalMethods
     );
   }

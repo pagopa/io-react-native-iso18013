@@ -21,7 +21,8 @@ import kotlinx.coroutines.SupervisorJob
  * and the ISO 18013-7 OID4VP remote presentation flow for the IT-Wallet ecosystem.
  *
  * This module exposes the following bridge methods:
- * - [start]: initializes Device Engagement via QR code or NFC
+ * - [startQrCodeEngagement]: initializes Device Engagement via QR code with BLE retrieval
+ * - [startNfcEngagement]: initializes Device Engagement via NFC with caller-controlled retrieval
  * - [close]: tears down the BLE/NFC connection and releases resources
  * - [generateResponse]: builds a CBOR DeviceResponse for proximity presentation
  * - [sendResponse]: sends the DeviceResponse over the established session channel
@@ -52,38 +53,53 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   internal val activity get() = currentActivity
 
   /**
-   * Starts the proximity flow by allocating the necessary resources and initializing the requested
-   * engagement mode.
+   * Starts the proximity flow using QR code engagement with BLE-only retrieval.
    * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
    */
   @ReactMethod
-  fun start(
+  fun startQrCodeEngagement(
     peripheralMode: Boolean,
     centralClientMode: Boolean,
     clearBleCache: Boolean,
     certificates: ReadableArray,
-    engagementMode: String,
+    promise: Promise
+  ) {
+    try {
+      val certificatesList = parseCertificates(certificates)
+      val retrievalMethods = buildBleRetrievalMethods(
+        peripheralMode = peripheralMode,
+        centralClientMode = centralClientMode,
+        clearBleCache = clearBleCache
+      )
+      startQrEngagement(certificatesList, retrievalMethods)
+      promise.resolve(true)
+    } catch (e: Exception) {
+      promise.reject(ModuleErrorCodes.START_ERROR, e.message, e)
+    }
+  }
+
+  /**
+   * Starts the proximity flow using NFC engagement with caller-controlled retrieval methods.
+   * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
+   */
+  @ReactMethod
+  fun startNfcEngagement(
+    peripheralMode: Boolean,
+    centralClientMode: Boolean,
+    clearBleCache: Boolean,
+    certificates: ReadableArray,
     retrievalMethods: ReadableArray,
     promise: Promise
   ) {
     try {
       val certificatesList = parseCertificates(certificates)
-      val parsedEngagementMode = EngagementMode.fromBridgeValue(engagementMode)
-      val parsedRetrievalMethods = buildRetrievalMethods(
-        engagementMode = parsedEngagementMode,
+      val parsedRetrievalMethods = buildNfcRetrievalMethods(
         retrievalMethods = retrievalMethods,
         peripheralMode = peripheralMode,
         centralClientMode = centralClientMode,
         clearBleCache = clearBleCache
       )
-
-      when (parsedEngagementMode) {
-        EngagementMode.QR_CODE ->
-          startQrEngagement(certificatesList, parsedRetrievalMethods)
-        EngagementMode.NFC ->
-          startNfcEngagement(certificatesList, parsedRetrievalMethods)
-      }
-
+      startNfcEngagement(certificatesList, parsedRetrievalMethods)
       promise.resolve(true)
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.START_ERROR, e.message, e)
@@ -251,7 +267,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
      * during the ISO 18013-5 proximity flow and ISO 18013-7 remote presentation flow.
      */
     private object ModuleErrorCodes {
-      /** The DeviceRetrievalHelper is not initialized; [IoReactNativeIso18013Module.start] must be called first. */
+      /** The DeviceRetrievalHelper is not initialized; engagement must be started first. */
       const val DRH_NOT_DEFINED = "DRH_NOT_DEFINED"
       /** An error occurred during the Device Engagement initialization phase (QR code or NFC). */
       const val START_ERROR = "START_ERROR"

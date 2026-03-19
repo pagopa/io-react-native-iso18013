@@ -30,8 +30,9 @@ export enum PROXIMITY_STATUS {
 export const useProximityFlow = () => {
   const [status, setStatus] = useState<PROXIMITY_STATUS>(PROXIMITY_STATUS.IDLE);
   const [qrCode, setQrCode] = useState<string | null>(null);
-  const [engagementMode, setEngagementMode] =
-    useState<ISO18013_5.EngagementMode | null>(null);
+  const [engagementMode, setEngagementMode] = useState<'qrcode' | 'nfc' | null>(
+    null
+  );
   const [request, setRequest] = useState<
     ISO18013_5.VerifierRequest['request'] | null
   >(null);
@@ -91,14 +92,17 @@ export const useProximityFlow = () => {
 
   const startFlow = useCallback(
     async (args: {
-      engagementMode: ISO18013_5.EngagementMode;
-      retrievalMethods: ReadonlyArray<ISO18013_5.RetrievalMethod>;
+      engagementMode: 'qrcode' | 'nfc';
+      retrievalMethods?: ReadonlyArray<ISO18013_5.RetrievalMethod>;
     }) => {
       try {
-        await ISO18013_5.start({
-          engagementMode: args.engagementMode,
-          retrievalMethods: args.retrievalMethods,
-        });
+        if (args.engagementMode === 'qrcode') {
+          await ISO18013_5.startQrCodeEngagement();
+        } else {
+          await ISO18013_5.startNfcEngagement({
+            retrievalMethods: args.retrievalMethods,
+          });
+        }
         setEngagementMode(args.engagementMode);
         setStatus(PROXIMITY_STATUS.ENGAGEMENT);
       } catch (error) {
@@ -106,7 +110,7 @@ export const useProximityFlow = () => {
         parseAndPrintError(
           ISO18013_5.ModuleErrorSchema,
           error,
-          'startQrEngagement error: '
+          'startEngagement error: '
         );
       }
     },

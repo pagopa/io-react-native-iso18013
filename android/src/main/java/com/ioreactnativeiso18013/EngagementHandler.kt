@@ -43,17 +43,10 @@ internal fun IoReactNativeIso18013Module.startQrEngagement(
     if (certificatesList.isNotEmpty()) {
       withReaderTrustStore(certificatesList)
     }
+    configure()
   }
-  qrEngagement?.configure()
+
   setupQrCodeEngagementHandler()
-
-  if (retrievalMethods.any { it is NfcRetrievalMethod }) {
-    enableNfcEngagement(
-      retrievalMethods = listOf(NfcRetrievalMethod()),
-      certificatesList = certificatesList
-    )
-  }
-
   emitQrCodeString()
 }
 
@@ -140,52 +133,58 @@ internal fun IoReactNativeIso18013Module.emitQrCodeString() {
 }
 
 /**
- * Builds the list of [DeviceRetrievalMethod] instances from the bridge parameters.
+ * Builds a BLE-only list of [DeviceRetrievalMethod] for QR code engagement.
  *
- * Device retrieval methods define how the Wallet Instance and Relying Party Instance
- * exchange SessionEstablishment and SessionData messages after Device Engagement.
- * ISO 18013-5 supports BLE (Section 11.1) and NFC (Section 9.2.2) as retrieval methods.
+ * @param peripheralMode whether the Wallet Instance should act as BLE peripheral (GATT server)
+ * @param centralClientMode whether the Wallet Instance should act as BLE central (GATT client)
+ * @param clearBleCache whether to clear the BLE cache before starting
+ * @return a single-element list containing the configured [BleRetrievalMethod]
+ */
+internal fun buildBleRetrievalMethods(
+  peripheralMode: Boolean,
+  centralClientMode: Boolean,
+  clearBleCache: Boolean
+): List<DeviceRetrievalMethod> = listOf(
+  BleRetrievalMethod(
+    peripheralServerMode = peripheralMode,
+    centralClientMode = centralClientMode,
+    clearBleCache = clearBleCache
+  )
+)
+
+/**
+ * Builds the list of [DeviceRetrievalMethod] for NFC engagement from the bridge parameters.
  *
- * When the engagement mode is NFC or the caller explicitly requests NFC retrieval,
- * an [NfcRetrievalMethod] is added. BLE retrieval is configured with the given
- * peripheral/central roles and cache settings.
+ * Parses the caller-provided retrieval methods and builds the corresponding list of
+ * BLE and/or NFC retrieval methods. No implicit NFC retrieval is added.
  *
- * @param engagementMode the engagement mode (QR code or NFC)
  * @param retrievalMethods the retrieval methods requested from the bridge; defaults to BLE if empty
  * @param peripheralMode whether the Wallet Instance should act as BLE peripheral (GATT server)
  * @param centralClientMode whether the Wallet Instance should act as BLE central (GATT client)
  * @param clearBleCache whether to clear the BLE cache before starting
  * @return the configured list of device retrieval methods
  */
-internal fun IoReactNativeIso18013Module.buildRetrievalMethods(
-  engagementMode: EngagementMode,
+internal fun buildNfcRetrievalMethods(
   retrievalMethods: ReadableArray,
   peripheralMode: Boolean,
   centralClientMode: Boolean,
   clearBleCache: Boolean
 ): List<DeviceRetrievalMethod> {
   val parsedMethods = parseRetrievalMethods(retrievalMethods)
-
-  val needsNfc = engagementMode == EngagementMode.NFC ||
-    parsedMethods.any { it == RetrievalMethod.NFC }
-
-  val result = mutableListOf<DeviceRetrievalMethod>()
-
-  if (needsNfc) {
-    result.add(NfcRetrievalMethod())
-  }
-
-  if (parsedMethods.any { it == RetrievalMethod.BLE }) {
-    result.add(
-      BleRetrievalMethod(
-        peripheralServerMode = peripheralMode,
-        centralClientMode = centralClientMode,
-        clearBleCache = clearBleCache
+  return mutableListOf<DeviceRetrievalMethod>().apply {
+    if (parsedMethods.any { it == RetrievalMethod.NFC }) {
+      add(NfcRetrievalMethod())
+    }
+    if (parsedMethods.any { it == RetrievalMethod.BLE }) {
+      add(
+        BleRetrievalMethod(
+          peripheralServerMode = peripheralMode,
+          centralClientMode = centralClientMode,
+          clearBleCache = clearBleCache
+        )
       )
-    )
+    }
   }
-
-  return result
 }
 
 /**

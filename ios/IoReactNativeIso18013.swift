@@ -110,32 +110,55 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
   }
   
   /**
-   Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
+   Starts QR code engagement with BLE-only retrieval.
    Resolves to true or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
    - `certificates`: Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
-   - `engagementMode`: String representing the engagement mode (e.g., "qrcode", "nfc")
-   - `retrievalMethods`: Array of strings representing data transfer modes (e.g., "ble", "nfc")
    - `resolve`: The promise to be resolved
    - `reject`: The promise to be rejected
    */
-  @objc(start:withEngagementMode:withRetrievalMethods:withResolver:withRejecter:)
-  func start(
+  @objc(startQrCodeEngagement:withResolver:withRejecter:)
+  func startQrCodeEngagement(
     certificates: [Any],
-    engagementMode: String,
+    resolve: @escaping RCTPromiseResolveBlock,
+    reject: @escaping RCTPromiseRejectBlock
+  ){
+    do {
+      let certsData = try parseCertificates(certificates)
+
+      ISO18013.shared
+        .start(
+          certsData,
+          engagementModes: [.qrCode],
+          retrivalMethods: [.ble],
+          delegate: self,
+          isNfcLateEngagement: false
+        )
+      resolve(true)
+    } catch let proximityError as ProximityError {
+      reject(ModuleErrorCodes.startError.rawValue, proximityError.description, proximityError)
+    } catch let parsingError as ParsingError{
+      reject(ModuleErrorCodes.startError.rawValue, parsingError.description, parsingError)
+    } catch {
+      reject(ModuleErrorCodes.startError.rawValue, error.localizedDescription, error)
+    }
+  }
+
+  @objc(startNfcEngagement:withRetrievalMethods:withResolver:withRejecter:)
+  func startNfcEngagement(
+    certificates: [Any],
     retrievalMethods: [String],
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
       let certsData = try parseCertificates(certificates)
-      let parsedEngagementMode = try parseEngagementMode(engagementMode)
       let parsedRetrievalMethods = try parseDataTransferModes(retrievalMethods)
-      
+
       ISO18013.shared
         .start(
           certsData,
-          engagementModes: [parsedEngagementMode],
+          engagementModes: [.nfc],
           retrivalMethods: parsedRetrievalMethods,
           delegate: self,
           isNfcLateEngagement: false
@@ -184,24 +207,6 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
         }
         return data
       }
-    }
-  }
-  
-  /**
-   Utility function to parse an engagement mode string into an ISO18013EngagementMode enum value.
-   - Parameters:
-   - mode: String representing the engagement mode (e.g., "qrcode", "nfc")
-   - Throws: `ParsingError` if an invalid engagement mode string is provided.
-   - Returns: An ISO18013EngagementMode value.
-   */
-  private func parseEngagementMode(_ mode: String) throws -> ISO18013EngagementMode {
-    switch mode.lowercased() {
-    case "qrcode":
-      return .qrCode
-    case "nfc":
-      return .nfc
-    default:
-      throw ParsingError.engagementModeNotValid("Invalid engagement mode: '\(mode)'. Expected 'qrcode' or 'nfc'.")
     }
   }
   
@@ -499,7 +504,6 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
     case documentsNotValid(String)
     case certificatesNotValid(String)
     case acceptedFieldsNotValid(String)
-    case engagementModeNotValid(String)
     case dataTransferModeNotValid(String)
     
     public var description: String {
@@ -509,8 +513,6 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
       case .certificatesNotValid(let message):
         return message
       case .acceptedFieldsNotValid(let message):
-        return message
-      case .engagementModeNotValid(let message):
         return message
       case .dataTransferModeNotValid(let message):
         return message

@@ -3,8 +3,11 @@
 
 @interface RCT_EXTERN_MODULE(IoReactNativeIso18013, RCTEventEmitter)
 
-RCT_EXTERN_METHOD(start:(NSArray *)certificates
-                  withEngagementMode:(NSString *)engagementMode
+RCT_EXTERN_METHOD(startQrCodeEngagement:(NSArray *)certificates
+                  withResolver:(RCTPromiseResolveBlock)resolve
+                  withRejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(startNfcEngagement:(NSArray *)certificates
                   withRetrievalMethods:(NSArray *)retrievalMethods
                   withResolver:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)
