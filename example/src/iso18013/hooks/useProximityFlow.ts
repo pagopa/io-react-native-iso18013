@@ -90,27 +90,33 @@ export const useProximityFlow = () => {
     setStatus(PROXIMITY_STATUS.READY);
   }, []);
 
-  const startFlow = useCallback(
-    async (args: {
-      engagementMode: 'qrcode' | 'nfc';
-      retrievalMethods?: ReadonlyArray<ISO18013_5.RetrievalMethod>;
-    }) => {
+  const startQrCodeFlow = useCallback(async () => {
+    try {
+      await ISO18013_5.startQrCodeEngagement();
+      setEngagementMode('qrcode');
+      setStatus(PROXIMITY_STATUS.ENGAGEMENT);
+    } catch (error) {
+      setEngagementMode(null);
+      parseAndPrintError(
+        ISO18013_5.ModuleErrorSchema,
+        error,
+        'startQrCodeEngagement error: '
+      );
+    }
+  }, []);
+
+  const startNfcFlow = useCallback(
+    async (retrievalMethods?: ReadonlyArray<ISO18013_5.RetrievalMethod>) => {
       try {
-        if (args.engagementMode === 'qrcode') {
-          await ISO18013_5.startQrCodeEngagement();
-        } else {
-          await ISO18013_5.startNfcEngagement({
-            retrievalMethods: args.retrievalMethods,
-          });
-        }
-        setEngagementMode(args.engagementMode);
+        await ISO18013_5.startNfcEngagement({ retrievalMethods });
+        setEngagementMode('nfc');
         setStatus(PROXIMITY_STATUS.ENGAGEMENT);
       } catch (error) {
         setEngagementMode(null);
         parseAndPrintError(
           ISO18013_5.ModuleErrorSchema,
           error,
-          'startEngagement error: '
+          'startNfcEngagement error: '
         );
       }
     },
@@ -298,7 +304,8 @@ export const useProximityFlow = () => {
     nfcSessionSecondsLeft,
     nfcCooldownSecondsLeft,
     init,
-    startFlow,
+    startQrCodeFlow,
+    startNfcFlow,
     closeFlow,
     sendDocument,
     sendError,

@@ -14,7 +14,8 @@ const Iso180135Screen: React.FC = () => {
     nfcSessionSecondsLeft,
     nfcCooldownSecondsLeft,
     init,
-    startFlow,
+    startQrCodeFlow,
+    startNfcFlow,
     closeFlow,
     sendDocument,
     sendError,
@@ -31,52 +32,22 @@ const Iso180135Screen: React.FC = () => {
       {status === PROXIMITY_STATUS.READY && (
         <>
           <Button
-            title={'Start BLE-BLE'}
-            onPress={() =>
-              startFlow({
-                engagementMode: 'qrcode',
-                retrievalMethods: ['ble'],
-              })
-            }
+            title={'Start QR Code (BLE)'}
+            onPress={() => startQrCodeFlow()}
           />
           <Button
-            title={'Start BLE-NFC'}
-            onPress={() =>
-              startFlow({
-                engagementMode: 'qrcode',
-                retrievalMethods: ['nfc'],
-              })
-            }
+            title={'Start NFC->BLE'}
+            onPress={() => startNfcFlow(['ble'])}
             disabled={isNfcUnavailable}
           />
           <Button
-            title={'Start BLE-BLE+NFC'}
-            onPress={() =>
-              startFlow({
-                engagementMode: 'qrcode',
-                retrievalMethods: ['ble', 'nfc'],
-              })
-            }
+            title={'Start NFC->NFC'}
+            onPress={() => startNfcFlow(['nfc'])}
             disabled={isNfcUnavailable}
           />
           <Button
-            title={'Start NFC-BLE'}
-            onPress={() =>
-              startFlow({
-                engagementMode: 'nfc',
-                retrievalMethods: ['ble'],
-              })
-            }
-            disabled={isNfcUnavailable}
-          />
-          <Button
-            title={'Start NFC-NFC'}
-            onPress={() =>
-              startFlow({
-                engagementMode: 'nfc',
-                retrievalMethods: ['nfc'],
-              })
-            }
+            title={'Start NFC->BLE+NFC'}
+            onPress={() => startNfcFlow(['ble', 'nfc'])}
             disabled={isNfcUnavailable}
           />
           {isNfcUnavailable && (

@@ -81,18 +81,15 @@ internal fun parseDocRequested(documents: ReadableArray): Array<DocRequested> {
       val issuerSignedContentStr = entry.getString("issuerSignedContent")
       val docType = entry.getString("docType")
 
-      if (
-        alias == null || entry.getType("alias") != ReadableType.String ||
-        issuerSignedContentStr == null || entry.getType("issuerSignedContent") != ReadableType.String ||
-        docType == null || entry.getType("docType") != ReadableType.String
+      if (alias == null || entry.getType("alias") != ReadableType.String || issuerSignedContentStr == null || entry.getType(
+          "issuerSignedContent"
+        ) != ReadableType.String || docType == null || entry.getType("docType") != ReadableType.String
       ) throw IllegalArgumentException("Unable to decode the provided documents at index $i")
 
       val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
 
       DocRequested(
-        issuerSignedContent,
-        alias,
-        docType
+        issuerSignedContent, alias, docType
       )
     }.toTypedArray()
   } catch (e: Exception) {
@@ -109,19 +106,48 @@ internal fun parseDocRequested(documents: ReadableArray): Array<DocRequested> {
  */
 internal fun parseCertificates(certificates: ReadableArray): List<List<ByteArray>> =
   (0 until certificates.size()).mapNotNull { chainIndex ->
-    val chain = runCatching { certificates.getArray(chainIndex) }
-      .getOrElse { throw IllegalArgumentException("Certificate chain at $chainIndex is not an array", it) }
-      ?: throw IllegalArgumentException("Certificate chain at index $chainIndex is null")
+    val chain = runCatching { certificates.getArray(chainIndex) }.getOrElse {
+        throw IllegalArgumentException(
+          "Certificate chain at $chainIndex is not an array",
+          it
+        )
+      } ?: throw IllegalArgumentException("Certificate chain at index $chainIndex is null")
 
     (0 until chain.size()).mapNotNull { certIndex ->
-      val base64 = runCatching { chain.getString(certIndex) }
-        .getOrElse { throw IllegalArgumentException("Failed to get certificate string at chain $chainIndex, cert $certIndex", it) }
-        ?: throw IllegalArgumentException("Certificate at index $certIndex is null")
+      val base64 = runCatching { chain.getString(certIndex) }.getOrElse {
+          throw IllegalArgumentException(
+            "Failed to get certificate string at chain $chainIndex, cert $certIndex",
+            it
+          )
+        } ?: throw IllegalArgumentException("Certificate at index $certIndex is null")
 
       runCatching {
         Base64Utils.decodeBase64(base64)
       }.getOrElse {
-        throw IllegalArgumentException("Certificate at index $certIndex in the chain at index $chainIndex is not a valid base64 string", it)
+        throw IllegalArgumentException(
+          "Certificate at index $certIndex in the chain at index $chainIndex is not a valid base64 string",
+          it
+        )
       }
     }
   }
+
+/**
+ * Parses the retrieval methods array from the React Native bridge into a list of [RetrievalMethod].
+ *
+ * @param retrievalMethods array of string values ("ble" or "nfc") from the bridge.
+ *   If empty, defaults to BLE-only retrieval.
+ * @return the parsed list of retrieval methods
+ * @throws IllegalArgumentException if a value is null or not a recognized retrieval method
+ */
+internal fun parseRetrievalMethods(retrievalMethods: ReadableArray): List<RetrievalMethod> {
+  if (retrievalMethods.size() == 0) {
+    return listOf(RetrievalMethod.BLE)
+  }
+
+  return (0 until retrievalMethods.size()).map { index ->
+    val retrievalMethod = retrievalMethods.getString(index)
+      ?: throw IllegalArgumentException("Retrieval method at index $index is null")
+    RetrievalMethod.fromBridgeValue(retrievalMethod)
+  }
+}
