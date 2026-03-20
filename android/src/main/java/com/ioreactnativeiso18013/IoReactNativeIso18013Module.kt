@@ -20,6 +20,7 @@ import it.pagopa.io.wallet.proximity.nfc.utils.OnlyNfcEvents
 import it.pagopa.io.wallet.proximity.qr_code.QrEngagement
 import it.pagopa.io.wallet.proximity.request.DocRequested
 import it.pagopa.io.wallet.proximity.response.ResponseGenerator
+import it.pagopa.io.wallet.proximity.retrieval.sendErrorResponse
 import it.pagopa.io.wallet.proximity.session_data.SessionDataStatus
 import it.pagopa.io.wallet.proximity.wrapper.DeviceRetrievalHelperWrapper
 import kotlinx.coroutines.CoroutineScope
@@ -40,7 +41,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
   private var nfcEventJob: Job? = null
   private val nfcScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-  
+
   private var sessionRetrievalMethod: RetrievalMethod? = null
 
   /**
@@ -202,10 +203,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun sendErrorResponse(code: Double, promise: Promise) {
     try {
-      deviceRetrievalHelper?.let { drh ->
+      deviceRetrievalHelper?.let { it ->
         val sessionDataStatus = SessionDataStatus.entries.find { it.value == code.toLong() }
         if (sessionDataStatus != null) {
-          drh.sendResponse(null, sessionDataStatus.value)
+          it.sendErrorResponse(sessionDataStatus)
           promise.resolve(true)
         } else {
           promise.reject(
@@ -391,8 +392,9 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         sendEvent("onDocumentRequestReceived", data)
       }
 
-      override fun onDeviceDisconnected(transportSpecificTermination: Boolean) =
+      override fun onDeviceDisconnected(transportSpecificTermination: Boolean) {
         sendEvent("onDeviceDisconnected", transportSpecificTermination.toString())
+      }
     })
   }
 
