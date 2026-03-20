@@ -71,7 +71,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         }
       }
       qrEngagement?.configure()
-
       setupProximityHandler()
       emitQrCodeString()
 
