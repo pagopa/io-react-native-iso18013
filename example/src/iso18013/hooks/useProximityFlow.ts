@@ -8,7 +8,7 @@ import {
   parseAndPrintError,
   requestBlePermissions,
 } from '../../utils';
-import { KEYTAG, WELL_KNOWN_CREDENTIALS } from '../mocks/proximity';
+import { KEYTAG, MDL_BASE64, WELL_KNOWN_CREDENTIALS } from '../mocks/proximity';
 import { useNfcTimers } from './useNfcTimers';
 
 /**
@@ -213,6 +213,12 @@ export const useProximityFlow = () => {
         isRequestMdl(Object.keys(parsedResponse.request));
         console.log('MDL request found');
 
+        if (engagementMode === 'nfc') {
+          // If NFC retrieval mode we send documents immediately after receiving the request, without waiting for user interaction
+          sendDocument(parsedResponse.request, MDL_BASE64);
+          return;
+        }
+
         setRequest(parsedResponse.request);
         setStatus(PROXIMITY_STATUS.PRESENTING);
       } catch (error) {
@@ -224,7 +230,7 @@ export const useProximityFlow = () => {
         sendError(ISO18013_5.ErrorCode.SESSION_TERMINATED);
       }
     },
-    [sendError]
+    [sendError, sendDocument, engagementMode]
   );
 
   const onDeviceDisconnected = useCallback(async () => {

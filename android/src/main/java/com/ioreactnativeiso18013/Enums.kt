@@ -1,10 +1,7 @@
 package com.ioreactnativeiso18013
 
-/**
- * Retrieval method supported by the native bridge
- * - ble: BLE data transfer
- * - nfc: NFC data transfer
- */
+import com.facebook.react.bridge.ReadableArray
+
 internal enum class RetrievalMethod(val bridgeValue: String) {
   BLE("ble"),
   NFC("nfc");
@@ -13,5 +10,14 @@ internal enum class RetrievalMethod(val bridgeValue: String) {
     fun fromBridgeValue(value: String): RetrievalMethod =
       entries.firstOrNull { it.bridgeValue == value.lowercase() }
         ?: throw IllegalArgumentException("Invalid retrieval method: '$value'. Expected 'ble' or 'nfc'.")
+  }
+}
+
+internal fun parseRetrievalMethods(retrievalMethods: ReadableArray): List<RetrievalMethod> {
+  if (retrievalMethods.size() == 0) return listOf(RetrievalMethod.BLE)
+  return (0 until retrievalMethods.size()).map { index ->
+    val method = retrievalMethods.getString(index)
+      ?: throw IllegalArgumentException("Retrieval method at index $index is null")
+    RetrievalMethod.fromBridgeValue(method)
   }
 }
