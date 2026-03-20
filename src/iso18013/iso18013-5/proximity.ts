@@ -64,24 +64,19 @@ export function startQrCodeEngagement(
     peripheralMode?: boolean;
     centralClientMode?: boolean;
     clearBleCache?: boolean;
-    certificates?: ReadonlyArray<ReadonlyArray<string>>;
+    certificates?: Array<Array<String>>;
   } = {}
 ): Promise<boolean> {
-  const {
-    peripheralMode = true,
-    centralClientMode = false,
-    clearBleCache = true,
-    certificates = [],
-  } = config;
-
+  const { peripheralMode, centralClientMode, clearBleCache, certificates } =
+    config;
   if (Platform.OS === 'ios') {
-    return IoReactNativeIso18013.startQrCodeEngagement(certificates);
+    return IoReactNativeIso18013.start(certificates ? certificates : []);
   } else {
-    return IoReactNativeIso18013.startQrCodeEngagement(
-      peripheralMode,
-      centralClientMode,
-      clearBleCache,
-      certificates
+    return IoReactNativeIso18013.start(
+      peripheralMode ? peripheralMode : true,
+      centralClientMode ? centralClientMode : false,
+      clearBleCache ? clearBleCache : true,
+      certificates ? certificates : []
     );
   }
 }
