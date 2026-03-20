@@ -31,12 +31,16 @@ import kotlinx.coroutines.launch
 class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
 
-  override fun getName(): String = NAME
+  override fun getName(): String {
+    return NAME
+  }
 
   private var qrEngagement: QrEngagement? = null
   private var deviceRetrievalHelper: DeviceRetrievalHelperWrapper? = null
+
   private var nfcEventJob: Job? = null
   private val nfcScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+  
   private var sessionRetrievalMethod: RetrievalMethod? = null
 
   /**
