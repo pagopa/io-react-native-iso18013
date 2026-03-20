@@ -278,19 +278,18 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun sendResponse(response: String, promise: Promise) {
     try {
-      val data = Base64Utils.decodeBase64(response)
+      val responseBytes = Base64Utils.decodeBase64(response)
 
       when (sessionRetrievalMethod) {
         RetrievalMethod.NFC -> {
           check(
-            NfcEngagementEventBus.sendDocumentResponse(response = data)
-          ) { "Unable to send reponse over NFC" }
+            NfcEngagementEventBus.sendDocumentResponse(response = responseBytes)
+          ) { "Unable to send response over NFC" }
           promise.resolve(true)
         }
-
         else -> {
           deviceRetrievalHelper?.let { drh ->
-            drh.sendResponse(data, 0L)
+            drh.sendResponse(responseBytes, 0L)
             promise.resolve(true)
           } ?: run {
             promise.reject(
@@ -371,6 +370,9 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    */
   private fun setupProximityHandler() {
     qrEngagement?.withListener(object : EngagementListener {
+      /**
+       * This event currently doesn't get called due to an issue with the underlying native library.
+       */
       override fun onDeviceConnecting() = sendEvent("onDeviceConnecting", "")
 
       override fun onDeviceConnected(deviceRetrievalHelper: DeviceRetrievalHelperWrapper) {
