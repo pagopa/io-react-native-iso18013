@@ -70,9 +70,11 @@ export function startQrCodeEngagement(
   const { peripheralMode, centralClientMode, clearBleCache, certificates } =
     config;
   if (Platform.OS === 'ios') {
-    return IoReactNativeIso18013.start(certificates ? certificates : []);
+    return IoReactNativeIso18013.startQrCodeEngagement(
+      certificates ? certificates : []
+    );
   } else {
-    return IoReactNativeIso18013.start(
+    return IoReactNativeIso18013.startQrCodeEngagement(
       peripheralMode ? peripheralMode : true,
       centralClientMode ? centralClientMode : false,
       clearBleCache ? clearBleCache : true,
