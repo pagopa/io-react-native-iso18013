@@ -55,23 +55,33 @@ More info can be found in the [official Android documentation](https://developer
 
 This library emits the following events:
 | Event | Payload | Description |
-|---------------------------|--------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| onDeviceConnecting | `undefined` | Event dispatched when the verifier app is connecting |
+|---------------------------|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| onQrCodeString | `{ data: string }` | Event dispatched when the QR Code payload is generated. Contains the QR code string to display. |
+| onNfcStarted | `undefined` | Event dispatched when NFC starts successfully. |
+| onNfcStopped | `undefined` | Event dispatched when NFC stops successfully. |
+| onDeviceConnecting | `undefined` | Event dispatched when the verifier app is connecting (iOS only). |
 | onDeviceConnected | `undefined` | Event dispatched when the verifier app is connected. |
-| onDocumentRequestReceived | `{ data: string } \| undefined` | Event dispatched when the consumer app receives a new request, contained in the data payload. It can be parsed via the `parseVerifierRequest` function. |
+| onDocumentRequestReceived | `{ data: string; retrievalMethod: RetrievalMethod } \| undefined` | Event dispatched when the consumer app receives a new request. The `data` payload can be parsed via the `parseVerifierRequest` function. The `retrievalMethod` indicates whether BLE or NFC was used. |
 | onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects by sending the END (0x02) flag. |
-| onError | `{ error: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed with `ISO18013_5.OnErrorPayloadSchema`. |
+| onError | `{ error?: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed with `ISO18013_5.OnErrorPayloadSchema`. |
+
+Where `RetrievalMethod` is defined as `'ble' | 'nfc'`.
 
 The events flow is described in the following diagram:
 
 ```mermaid
 flowchart LR
+    onQrCodeString["onQrCodeString"]
+    onNfcStarted["onNfcStarted"]
+    onNfcStopped["onNfcStopped"]
     onDeviceConnecting["onDeviceConnecting"]
     onDeviceConnected["onDeviceConnected"]
     onDocumentRequestReceived["onDocumentRequestReceived"]
     onDeviceDisconnected["onDeviceDisconnected"]
     onError["onError"]
 
+    onQrCodeString -- "QR code generated" --> onDeviceConnecting
+    onNfcStarted -- "NFC engagement started" --> onDeviceConnecting
     onDeviceConnecting -- "Verifier app connects" --> onDeviceConnected
 
     onDeviceConnected -- "Verifier app sends request" --> onDocumentRequestReceived
@@ -175,37 +185,57 @@ ISO18013_5.addListener(
 
 #### `startQrCodeEngagement`
 
-Starts the proximity flow and starts the bluetooth service for QR Code engagement. This method also accepts optional parameters to configure the initialization on Android, along with the possibility to specify a certificates of array to verify the reader app.
+Starts the proximity flow and starts the bluetooth service for QR Code engagement. This method accepts an optional configuration object.
+
+| Parameter | Platform | Default | Description |
+|-----------|----------|---------|-------------|
+| `peripheralMode` | Android | `true` | Whether the device is in peripheral mode |
+| `centralClientMode` | Android | `false` | Whether the device is in central client mode |
+| `clearBleCache` | Android | `true` | Whether the BLE cache should be cleared |
+| `certificates` | Android/iOS | `[]` | Two-dimensional array of base64 strings representing DER encoded X.509 certificates used to authenticate the verifier app |
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
 await ISO18013_5.startQrCodeEngagement();
+
+// With optional configuration
+await ISO18013_5.startQrCodeEngagement({
+  peripheralMode: true,
+  centralClientMode: false,
+  clearBleCache: true,
+  certificates: [['base64DerCert1', 'base64DerCert2']],
+});
 ```
 
 #### `startNfcEngagement`
 
 Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
-This method must be called after `start`.
 On iOS, requires iOS 17.4 or later.
 On Android, requires HCE support (most mid-to-high-end devices).
+This method accepts an optional configuration object.
+
+| Parameter | Platform | Default | Description |
+|-----------|----------|---------|-------------|
+| `peripheralMode` | Android | `true` | Whether the device is in peripheral mode |
+| `centralClientMode` | Android | `false` | Whether the device is in central client mode |
+| `clearBleCache` | Android | `true` | Whether the BLE cache should be cleared |
+| `certificates` | Android/iOS | `[]` | Two-dimensional array of base64 strings representing DER encoded X.509 certificates used to authenticate the verifier app |
+| `retrievalMethods` | Android/iOS | `['ble']` | Array of supported retrieval methods (`'ble'` and/or `'nfc'`) |
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
 await ISO18013_5.startNfcEngagement();
-```
 
-#### `getQrCodeString`
-
-Returns the QR code string which contains a base64url encoded CBOR object which encodes the bluetooth engagement data.
-It can be used to display the QR code in the UI which will be scanned by the verifier app.
-
-```typescript
-import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-
-const qrCodeString = await ISO18013_5.getQrCodeString();
-console.log(qrCodeString);
+// With optional configuration
+await ISO18013_5.startNfcEngagement({
+  peripheralMode: true,
+  centralClientMode: false,
+  clearBleCache: true,
+  certificates: [['base64DerCert1']],
+  retrievalMethods: ['ble', 'nfc'],
+});
 ```
 
 #### `generateResponse`
@@ -260,9 +290,8 @@ await ISO18013_5.sendErrorResponse(ISO18013_5.ErrorCode.SESSION_ENCRYPTION);
 
 #### `close`
 
-Closes the QR/NFC engagement by releasing the resources allocated during the `start` method.
+Closes the QR/NFC engagement by releasing the bluetooth connection and clearing any allocated resources.
 Before starting a new flow, it is necessary to call this method to ensure that the previous flow is properly closed.
-Listeners can be added using the `addListener` method and removed using the `removeListener` method.
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
@@ -272,7 +301,7 @@ await ISO18013_5.close();
 
 ## Proximity Sequence Diagram
 
-This section describes a high level overview of the happy flow interactions between an app implementing the `io-react-native-proximity` library and a verifier app.
+This section describes a high level overview of the happy flow interactions between an app implementing the `io-react-native-iso18013` library and a verifier app.
 
 ```mermaid
 sequenceDiagram
@@ -281,9 +310,8 @@ sequenceDiagram
     participant verifier as Verifier App
 
     Note over proximity, verifier: If an error occurs during the flow, the onError callback is triggered
-    app->>+proximity: Calls start()
-    app->>+proximity: Calls getQrCodeString()
-    proximity-->>+app: QR code string
+    app->>+proximity: Calls startQrCodeEngagement()
+    proximity->>+app: Triggers the onQrCodeString callback with QR code data
     app->>+app: Renders the QR code string
     verifier->>+app: Scans the QR code
     proximity->>+app: Triggers the onDeviceConnecting callback
@@ -322,15 +350,12 @@ This table contains the list of error codes that can be thrown by the `ISO18013_
 
 | Type                      | Platform    | Description                                                                  |
 | ------------------------- | ----------- | ---------------------------------------------------------------------------- |
-| DRH_NOT_DEFINED           | Android     | The device retrieval helper hasn't been initialized, call the `start` method |
-| QR_ENGAGEMENT_NOT_DEFINED | Android     | The QR engagement hasn't been initialized, call the `start` method           |
-| START_QRCODE_ERROR        | Android/iOS | An error occurred while initializing QRCode engagement resources             |
-| START_NFC_ERROR           | Android/iOS | An error occurred while starting NFC engagement                              |
-| GET_QR_CODE_ERROR         | Android/iOS | An error occurred while generating the engagement QR code                    |
+| DRH_NOT_DEFINED           | Android     | The device retrieval helper hasn't been initialized                          |
+| START_ERROR               | Android/iOS | An error occurred while starting the engagement                              |
 | SEND_RESPONSE_ERROR       | Android/iOS | An error occurred while sending the response for the verifier app            |
 | SEND_ERROR_RESPONSE_ERROR | Android/iOS | An error occurred while sending the error response to the verifier app       |
 | GENERATE_RESPONSE_ERROR   | Android/iOS | An error occurred while generating the response for the verifier app         |
-| CLOSE_ERROR               | Android     | An error occured while closing the required resources                        |
+| CLOSE_ERROR               | Android     | An error occurred while closing the required resources                       |
 | EUNSPECIFIED              | Android     | Default error when no other error is specified                               |
 
 An error can be parsed using the `ModuleErrorSchema` with type `ModuleErrorCodes` exposed by the `ISO18013_5` module. The error can be parsed as follows:

@@ -52,7 +52,7 @@ This table contains the list of error codes that can be thrown by the `ISO18013_
 | ------------------------------ | ----------- | ----------------------------------------------- |
 | GENERATE_OID4VP_RESPONSE_ERROR | Android/iOS | An error occurred while generating the response |
 
-An error can be parsed using the `ModuleErrorSchema` with type `ModuleErrorCodes` exposed by the `ISO18013_5` module. The error can be parsed as follows:
+An error can be parsed using the `ModuleErrorSchema` with type `ModuleErrorCodes` exposed by the `ISO18013_7` module. The error can be parsed as follows:
 
 ```typescript
 import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';

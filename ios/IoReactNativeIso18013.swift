@@ -81,7 +81,10 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
          */
         let jsonString = deviceRequestToJson(request: request)
         // Here we either send the request or an empty string which signals that something went wrong.
-        eventBody = ["data": jsonString ?? ""]
+        eventBody = [
+          "data": jsonString ?? "",
+          "retrievalMethod": retrivalMethodToString(args.retrivalMethod)
+        ]
       }
 
     case .dataTransferStopped:
@@ -520,6 +523,18 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
     }
   }
   
+  /**
+   Maps a retrival method enum value to its string representation.
+   */
+  private func retrivalMethodToString(_ method: ISO18013DataTransferMode) -> String {
+    switch method {
+    case .ble:
+      return "ble"
+    case .nfc:
+      return "nfc"
+    }
+  }
+
   // Errors which this module uses to reject a promise
   private enum ModuleErrorCodes: String, CaseIterable {
     // ISO18013-5 related errors
