@@ -22,7 +22,8 @@ import { useNfcTimers } from './useNfcTimers';
 export enum PROXIMITY_STATUS {
   IDLE = 'IDLE',
   READY = 'READY',
-  ENGAGEMENT = 'ENGAGEMENT',
+  ENGAGEMENT_BLE = 'ENGAGEMENT_BLE',
+  ENGAGEMENT_NFC = 'ENGAGEMENT_NFC',
   PRESENTING = 'PRESENTING',
   ERROR = 'ERROR',
 }
@@ -30,13 +31,9 @@ export enum PROXIMITY_STATUS {
 export const useProximityFlow = () => {
   const [status, setStatus] = useState<PROXIMITY_STATUS>(PROXIMITY_STATUS.IDLE);
   const [qrCode, setQrCode] = useState<string | null>(null);
-  const [engagementMode, setEngagementMode] = useState<'qrcode' | 'nfc' | null>(
-    null
-  );
   const [request, setRequest] = useState<
     ISO18013_5.VerifierRequest['request'] | null
   >(null);
-
   const isNfcActiveRef = useRef(false);
 
   const {
@@ -78,7 +75,6 @@ export const useProximityFlow = () => {
 
   const init = useCallback(async () => {
     setStatus(PROXIMITY_STATUS.IDLE);
-    setEngagementMode(null);
     const hasPermission = await requestBlePermissions();
     if (!hasPermission) {
       Alert.alert(
@@ -93,10 +89,8 @@ export const useProximityFlow = () => {
   const startQrCodeFlow = useCallback(async () => {
     try {
       await ISO18013_5.startQrCodeEngagement();
-      setEngagementMode('qrcode');
-      setStatus(PROXIMITY_STATUS.ENGAGEMENT);
+      setStatus(PROXIMITY_STATUS.ENGAGEMENT_BLE);
     } catch (error) {
-      setEngagementMode(null);
       parseAndPrintError(
         ISO18013_5.ModuleErrorSchema,
         error,
@@ -109,10 +103,8 @@ export const useProximityFlow = () => {
     async (retrievalMethods?: ReadonlyArray<ISO18013_5.RetrievalMethod>) => {
       try {
         await ISO18013_5.startNfcEngagement({ retrievalMethods });
-        setEngagementMode('nfc');
-        setStatus(PROXIMITY_STATUS.ENGAGEMENT);
+        setStatus(PROXIMITY_STATUS.ENGAGEMENT_NFC);
       } catch (error) {
-        setEngagementMode(null);
         parseAndPrintError(
           ISO18013_5.ModuleErrorSchema,
           error,
@@ -131,8 +123,8 @@ export const useProximityFlow = () => {
         );
       }
       await ISO18013_5.close();
+
       setQrCode(null);
-      setEngagementMode(null);
       setRequest(null);
       setStatus(PROXIMITY_STATUS.READY);
     } catch (e) {
@@ -213,7 +205,7 @@ export const useProximityFlow = () => {
         isRequestMdl(Object.keys(parsedResponse.request));
         console.log('MDL request found');
 
-        if (engagementMode === 'nfc') {
+        if (payload.retrievalMethod === 'nfc') {
           // If NFC retrieval mode we send documents immediately after receiving the request, without waiting for user interaction
           sendDocument(parsedResponse.request, MDL_BASE64);
           return;
@@ -230,7 +222,7 @@ export const useProximityFlow = () => {
         sendError(ISO18013_5.ErrorCode.SESSION_TERMINATED);
       }
     },
-    [sendError, sendDocument, engagementMode]
+    [sendError, sendDocument]
   );
 
   const onDeviceDisconnected = useCallback(async () => {
@@ -282,13 +274,6 @@ export const useProximityFlow = () => {
         console.log('Removing listener:', listener);
         listener.remove();
       });
-      ISO18013_5.close().catch((error) => {
-        parseAndPrintError(
-          ISO18013_5.ModuleErrorSchema,
-          error,
-          'cleanup error: '
-        );
-      });
     };
   }, [
     handleQrCodeString,
@@ -299,13 +284,24 @@ export const useProximityFlow = () => {
     onDocumentRequestReceived,
     onDeviceDisconnected,
     onError,
-    closeFlow,
   ]);
+
+  // Close the engagement only on unmount
+  useEffect(() => {
+    return () => {
+      ISO18013_5.close().catch((error) => {
+        parseAndPrintError(
+          ISO18013_5.ModuleErrorSchema,
+          error,
+          'cleanup error: '
+        );
+      });
+    };
+  }, []);
 
   return {
     status,
     qrCode,
-    engagementMode,
     request,
     nfcSessionSecondsLeft,
     nfcCooldownSecondsLeft,

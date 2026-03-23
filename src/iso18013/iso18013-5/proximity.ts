@@ -11,7 +11,7 @@ const eventEmitter = new NativeEventEmitter(IoReactNativeIso18013);
  * - `onNfcStopped`: Emitted when NFC stops successfully.
  * - `onDeviceConnecting`: (iOS only) Emitted when the device is connecting to the verifier app.
  * - `onDeviceConnected`: Emitted when the device is connected to the verifier app.
- * - `onDocumentRequestReceived`: Emitted when a document request is received from the verifier app. Carries a payload containing the request data.
+ * - `onDocumentRequestReceived`: Emitted when a document request is received from the verifier app. Carries a payload containing the request data and the retrieval method.
  * - `onDeviceDisconnected`: Emitted when the device is disconnected from the verifier app.
  * - `onError`: Emitted when an error occurs. Carries a payload containing the error data.
  */
@@ -22,7 +22,9 @@ export type EventsPayload = {
   onDeviceConnecting: undefined;
   onDeviceConnected: undefined;
   // The message payload is a JSON string that can be parsed into a `VerifierRequest` structure via `parseVerifierRequest`.
-  onDocumentRequestReceived: { data?: string } | undefined;
+  onDocumentRequestReceived:
+    | { data: string; retrievalMethod: RetrievalMethod }
+    | undefined;
   onDeviceDisconnected: undefined;
   onError: { error?: string } | undefined;
 };

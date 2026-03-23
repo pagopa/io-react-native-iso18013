@@ -9,7 +9,6 @@ const Iso180135Screen: React.FC = () => {
   const {
     status,
     qrCode,
-    engagementMode,
     request,
     nfcSessionSecondsLeft,
     nfcCooldownSecondsLeft,
@@ -55,10 +54,10 @@ const Iso180135Screen: React.FC = () => {
           )}
         </>
       )}
-      {status === PROXIMITY_STATUS.ENGAGEMENT && qrCode && (
+      {status === PROXIMITY_STATUS.ENGAGEMENT_BLE && qrCode && (
         <QRCode value={qrCode} size={200} />
       )}
-      {status === PROXIMITY_STATUS.ENGAGEMENT && engagementMode === 'nfc' && (
+      {status === PROXIMITY_STATUS.ENGAGEMENT_NFC && (
         <>
           <Text>
             NFC engagement active, tap the back of both devices toward each
@@ -100,7 +99,8 @@ const Iso180135Screen: React.FC = () => {
         </>
       )}
 
-      {(status === PROXIMITY_STATUS.ENGAGEMENT ||
+      {(status === PROXIMITY_STATUS.ENGAGEMENT_BLE ||
+        status === PROXIMITY_STATUS.ENGAGEMENT_NFC ||
         status === PROXIMITY_STATUS.PRESENTING ||
         status === PROXIMITY_STATUS.ERROR) && (
         <Button

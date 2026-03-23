@@ -10,13 +10,13 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import com.facebook.react.bridge.WritableMap
 import it.pagopa.io.wallet.proximity.OpenID4VP
+import it.pagopa.io.wallet.proximity.ProximityLogger
 import it.pagopa.io.wallet.proximity.bluetooth.BleRetrievalMethod
 import it.pagopa.io.wallet.proximity.engagement.EngagementListener
 import it.pagopa.io.wallet.proximity.nfc.NfcEngagementEvent
 import it.pagopa.io.wallet.proximity.nfc.NfcEngagementEventBus
 import it.pagopa.io.wallet.proximity.nfc.NfcEngagementService
 import it.pagopa.io.wallet.proximity.nfc.NfcRetrievalMethod
-import it.pagopa.io.wallet.proximity.nfc.utils.OnlyNfcEvents
 import it.pagopa.io.wallet.proximity.qr_code.QrEngagement
 import it.pagopa.io.wallet.proximity.request.DocRequested
 import it.pagopa.io.wallet.proximity.response.ResponseGenerator
@@ -32,6 +32,10 @@ import kotlinx.coroutines.launch
 class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
 
+  init {
+    ProximityLogger.enabled = BuildConfig.DEBUG
+  }
+
   override fun getName(): String {
     return NAME
   }
@@ -43,6 +47,9 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   private val nfcScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
   private var sessionRetrievalMethod: RetrievalMethod? = null
+
+  // Session transcript received by the NFC engagement, stored for the current session
+  private var sessionTranscript: ByteArray? = null
 
   /**
    * Starts the QR Code proximity flow by allocating the necessary resources, initializing the
@@ -171,16 +178,15 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun close(promise: Promise) {
     try {
-      val activity = checkNotNull(currentActivity) { "No activity available" }
-
-      NfcEngagementService.disable(activity)
-      nfcEventJob?.cancel()
-      nfcEventJob = null
       qrEngagement?.close()
       qrEngagement = null
-      sessionRetrievalMethod = null
       deviceRetrievalHelper?.disconnect()
       deviceRetrievalHelper = null
+      sessionRetrievalMethod = null
+      sessionTranscript = null
+      nfcEventJob?.cancel()
+      nfcEventJob = null
+      currentActivity?.let { NfcEngagementService.disable(it) }
       promise.resolve(true)
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.CLOSE_ERROR, message = e.message, e)
@@ -203,18 +209,17 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun sendErrorResponse(code: Double, promise: Promise) {
     try {
-      deviceRetrievalHelper?.let { it ->
-        val sessionDataStatus = SessionDataStatus.entries.find { it.value == code.toLong() }
-        if (sessionDataStatus != null) {
-          it.sendErrorResponse(sessionDataStatus)
-          promise.resolve(true)
-        } else {
-          promise.reject(
-            ModuleErrorCodes.SEND_ERROR_RESPONSE_ERROR, message = "Invalid status code"
-          )
-        }
+      deviceRetrievalHelper?.let { drh ->
+        val sessionDataStatus =
+          checkNotNull(SessionDataStatus.entries.find { it.value == code.toLong() }) {
+            "Invalid status code"
+          }
+        drh.sendErrorResponse(sessionDataStatus)
+        promise.resolve(true)
       } ?: run {
-        promise.reject(ModuleErrorCodes.DRH_NOT_DEFINED, message = NOT_INITIALIZED_ERROR_MESSAGE)
+        promise.reject(
+          ModuleErrorCodes.DRH_NOT_DEFINED, message = NOT_INITIALIZED_ERROR_MESSAGE
+        )
       }
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.SEND_ERROR_RESPONSE_ERROR, message = e.message, e)
@@ -252,16 +257,43 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     documents: ReadableArray, acceptedFields: ReadableMap, promise: Promise
   ) {
     try {
-      deviceRetrievalHelper?.let { devHelper ->
-        createAndResolveResponse(
-          sessionTranscript = devHelper.sessionTranscript(),
-          documents = documents,
-          acceptedFields = acceptedFields,
-          errorCode = ModuleErrorCodes.GENERATE_RESPONSE_ERROR,
-          promise = promise
-        )
-      } ?: run {
-        promise.reject(ModuleErrorCodes.DRH_NOT_DEFINED, message = NOT_INITIALIZED_ERROR_MESSAGE)
+      when (sessionRetrievalMethod) {
+
+        // For NFC retrievals we use the session transcript received during the device connection event
+        RetrievalMethod.NFC -> {
+          val sessionTranscript = checkNotNull(sessionTranscript) { "Session transcript is null" }
+          createAndResolveResponse(
+            sessionTranscript = sessionTranscript,
+            documents = documents,
+            acceptedFields = acceptedFields,
+            errorCode = ModuleErrorCodes.GENERATE_RESPONSE_ERROR,
+            promise = promise
+          )
+        }
+
+        // For BLE retrievals we use the session transcript obtained from the DeviceRetrievalHelper
+        RetrievalMethod.BLE -> {
+          deviceRetrievalHelper?.let { drh ->
+            createAndResolveResponse(
+              sessionTranscript = drh.sessionTranscript(),
+              documents = documents,
+              acceptedFields = acceptedFields,
+              errorCode = ModuleErrorCodes.GENERATE_RESPONSE_ERROR,
+              promise = promise
+            )
+          } ?: run {
+            promise.reject(
+              ModuleErrorCodes.DRH_NOT_DEFINED,
+              message = NOT_INITIALIZED_ERROR_MESSAGE
+            )
+          }
+        }
+
+        else -> {
+          promise.reject(
+            ModuleErrorCodes.GENERATE_RESPONSE_ERROR, message = "Invalid retrieval method"
+          )
+        }
       }
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.GENERATE_RESPONSE_ERROR, message = e.message, e)
@@ -281,13 +313,17 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       val responseBytes = Base64Utils.decodeBase64(response)
 
       when (sessionRetrievalMethod) {
+
+        // For NFC retrievals we use NfcEngagementEventBus to send the response over NFC
         RetrievalMethod.NFC -> {
           check(
             NfcEngagementEventBus.sendDocumentResponse(response = responseBytes)
           ) { "Unable to send response over NFC" }
           promise.resolve(true)
         }
-        else -> {
+
+        // For BLE retrievals we use the DeviceRetrievalHelper to send the response over BLE
+        RetrievalMethod.BLE -> {
           deviceRetrievalHelper?.let { drh ->
             drh.sendResponse(responseBytes, 0L)
             promise.resolve(true)
@@ -296,6 +332,12 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
               ModuleErrorCodes.DRH_NOT_DEFINED, message = NOT_INITIALIZED_ERROR_MESSAGE
             )
           }
+        }
+
+        else -> {
+          promise.reject(
+            ModuleErrorCodes.SEND_RESPONSE_ERROR, message = "Invalid retrieval method"
+          )
         }
       }
 
@@ -391,6 +433,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
         val data: WritableMap = Arguments.createMap()
         data.putString("data", request)
+        data.putString("retrievalMethod", sessionRetrievalMethod?.bridgeValue)
         sendEvent("onDocumentRequestReceived", data)
       }
 
@@ -415,7 +458,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     nfcEventJob = nfcScope.launch {
       NfcEngagementEventBus.events.collect { event ->
         when (event) {
-          is NfcEngagementEvent.Connecting -> sendEvent("onDeviceConnecting", "")
+          is NfcEngagementEvent.Connecting -> {
+            sendEvent("onDeviceConnecting", "")
+          }
+
           is NfcEngagementEvent.Connected -> {
             deviceRetrievalHelper = event.device
             sendEvent("onDeviceConnected", "")
@@ -433,19 +479,17 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
           is NfcEngagementEvent.DocumentRequestReceived -> {
             sessionRetrievalMethod = if (event.onlyNfc) RetrievalMethod.NFC else RetrievalMethod.BLE
+            sessionTranscript = event.sessionTranscript
 
             val data: WritableMap = Arguments.createMap()
             data.putString("data", event.request)
+            data.putString("retrievalMethod", sessionRetrievalMethod?.bridgeValue)
             sendEvent("onDocumentRequestReceived", data)
           }
 
           is NfcEngagementEvent.NotSupported -> sendEvent("onNfcStopped", null)
-          is NfcEngagementEvent.NfcOnlyEventListener -> when (event.event) {
-            OnlyNfcEvents.NFC_ENGAGEMENT_STARTED -> qrEngagement?.setupDeviceEngagementForNfc()
-            OnlyNfcEvents.DATA_TRANSFER_STARTED -> if (deviceRetrievalHelper == null) {
-              sessionRetrievalMethod = RetrievalMethod.NFC
-              sendEvent("onDeviceConnected", "")
-            }
+
+          is NfcEngagementEvent.NfcOnlyEventListener -> { /* NOT HANDLED */
           }
 
           is NfcEngagementEvent.DocumentSent -> sendEvent("onDeviceDisconnected", null)
@@ -454,6 +498,15 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     }
   }
 
+  /**
+   * Utility function that generates the response using the ResponseGeneration from a session
+   * transcript
+   * @param sessionTranscript the session transcript to be used to generate the response
+   * @param documents the documents to be included in the response
+   * @param acceptedFields the accepted fields to be presented
+   * @param errorCode the error code to be used in case of error
+   * @param promise the promise which will be resolved in case of success or rejected in case of failure.
+   */
   private fun createAndResolveResponse(
     sessionTranscript: ByteArray,
     documents: ReadableArray,
