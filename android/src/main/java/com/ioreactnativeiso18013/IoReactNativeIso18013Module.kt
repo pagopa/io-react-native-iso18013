@@ -472,7 +472,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
           is NfcEngagementEvent.Connected -> {
             deviceRetrievalHelper = event.device
-            sendEvent("onDeviceConnected", "")
+            sendEvent("onDeviceConnected", null)
           }
 
           is NfcEngagementEvent.Error -> {
