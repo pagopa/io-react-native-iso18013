@@ -195,11 +195,23 @@ export const useProximityFlow = () => {
           console.warn('Request does not contain a message.');
           return;
         }
+        // String -> JSON
         const parsedJson = JSON.parse(payload.data);
         console.log('Parsed JSON:', parsedJson);
+
+        // JSON -> VerifierRequest
         const parsedResponse = ISO18013_5.parseVerifierRequest(parsedJson);
         console.log('Parsed response:', JSON.stringify(parsedResponse));
-        isRequestMdl(Object.keys(parsedResponse.request));
+
+        // Remove WIA from request, if verifier is requesting it
+        // We don't have it and it's not needed for the demo
+        const {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          [WELL_KNOWN_CREDENTIALS.walletAttestation]: _,
+          ...requestedDocuments
+        } = parsedResponse.request;
+
+        isRequestMdl(Object.keys(requestedDocuments));
         console.log('MDL request found');
 
         if (payload.retrievalMethod === 'nfc') {
