@@ -105,14 +105,14 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
-   * Starts the QR Code proximity flow by allocating the necessary resources, initializing the
-   * NFC and Bluetooth stack (if required).
+   * Starts the NFC proximity flow by allocating the necessary resources, enabling NFC
+   * engagement/HCE and initializing the Bluetooth stack (if required).
    * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
    * @param peripheralMode whether the device is in peripheral mode. Defaults to true
    * @param centralClientMode whether the device is in central client mode. Defaults to false
    * @param clearBleCache whether the BLE cache should be cleared. Defaults to true
    * @param certificates two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
-   * @param retrievalMethods array of strings representing the retrieval methods to be used.
+   * @param retrievalMethods array of strings representing the retrieval methods (e.g. NFC, BLE) to be used.
    * @param promise the promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
