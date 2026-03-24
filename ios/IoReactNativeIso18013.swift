@@ -85,6 +85,12 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
           "data": jsonString ?? "",
           "retrievalMethod": retrivalMethodToString(args.retrivalMethod)
         ]
+      } else {
+        // When request is nil, still emit the event with safe default values.
+        eventBody = [
+          "data": "",
+          "retrievalMethod": retrivalMethodToString(args.retrivalMethod)
+        ]
       }
 
     case .dataTransferStopped:
@@ -216,7 +222,7 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
   /**
    Utility function to parse data transfer mode strings into ISO18013DataTransferMode enum values.
    - Parameters:
-   - modes: Array of strings representing data transfer modes (e.g., "BLE", "WiFiAware")
+   - modes: Array of strings representing data transfer modes (e.g., "BLE", "NFC")
    - Throws: `ParsingError` if an invalid data transfer mode string is provided.
    - Returns: An array of ISO18013DataTransferMode values.
    */

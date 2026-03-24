@@ -32,14 +32,6 @@ import kotlinx.coroutines.launch
 class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
 
-  init {
-    ProximityLogger.enabled = BuildConfig.DEBUG
-  }
-
-  override fun getName(): String {
-    return NAME
-  }
-
   private var qrEngagement: QrEngagement? = null
   private var deviceRetrievalHelper: DeviceRetrievalHelperWrapper? = null
 
@@ -50,6 +42,22 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
   // Session transcript received by the NFC engagement, stored for the current session
   private var sessionTranscript: ByteArray? = null
+
+  init {
+    ProximityLogger.enabled = BuildConfig.DEBUG
+  }
+
+  override fun getName(): String {
+    return NAME
+  }
+
+  override fun invalidate() {
+    super.invalidate()
+    nfcEventJob?.cancel()
+    nfcEventJob = null
+    nfcScope.coroutineContext[Job]?.cancel()
+    currentActivity?.let { NfcEngagementService.disable(it) }
+  }
 
   /**
    * Starts the QR Code proximity flow by allocating the necessary resources, initializing the
@@ -187,6 +195,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       nfcEventJob?.cancel()
       nfcEventJob = null
       currentActivity?.let { NfcEngagementService.disable(it) }
+      sendEvent("onNfcStopped", null)
       promise.resolve(true)
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.CLOSE_ERROR, message = e.message, e)

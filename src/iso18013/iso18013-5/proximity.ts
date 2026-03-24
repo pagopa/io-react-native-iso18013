@@ -22,9 +22,8 @@ export type EventsPayload = {
   onDeviceConnecting: undefined;
   onDeviceConnected: undefined;
   // The message payload is a JSON string that can be parsed into a `VerifierRequest` structure via `parseVerifierRequest`.
-  onDocumentRequestReceived:
-    | { data: string; retrievalMethod: RetrievalMethod }
-    | undefined;
+  // When the request cannot be parsed, `data` may be an empty string.
+  onDocumentRequestReceived: { data: string; retrievalMethod: RetrievalMethod };
   onDeviceDisconnected: undefined;
   onError: { error?: string } | undefined;
 };

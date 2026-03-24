@@ -1,5 +1,5 @@
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import {
   generateAcceptedFields,
@@ -34,7 +34,6 @@ export const useProximityFlow = () => {
   const [request, setRequest] = useState<
     ISO18013_5.VerifierRequest['request'] | null
   >(null);
-  const isNfcActiveRef = useRef(false);
 
   const {
     nfcSessionSecondsLeft,
@@ -54,13 +53,11 @@ export const useProximityFlow = () => {
 
   const handleNfcStarted = useCallback(() => {
     console.log('onNfcStarted');
-    isNfcActiveRef.current = true;
     startSessionTimer();
   }, [startSessionTimer]);
 
   const handleNfcStopped = useCallback(() => {
     console.log('onNfcStopped');
-    isNfcActiveRef.current = false;
     clearSessionTimer();
     startCooldownTimer();
   }, [clearSessionTimer, startCooldownTimer]);

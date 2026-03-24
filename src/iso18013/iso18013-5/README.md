@@ -61,7 +61,7 @@ This library emits the following events:
 | onNfcStopped | `undefined` | Event dispatched when NFC stops successfully. |
 | onDeviceConnecting | `undefined` | Event dispatched when the verifier app is connecting (iOS only). |
 | onDeviceConnected | `undefined` | Event dispatched when the verifier app is connected. |
-| onDocumentRequestReceived | `{ data: string; retrievalMethod: RetrievalMethod } \| undefined` | Event dispatched when the consumer app receives a new request. The `data` payload can be parsed via the `parseVerifierRequest` function. The `retrievalMethod` indicates whether BLE or NFC was used. |
+| onDocumentRequestReceived | `{ data: string; retrievalMethod: RetrievalMethod }` | Event dispatched when the consumer app receives a new request. The `data` payload can be parsed via the `parseVerifierRequest` function. The `retrievalMethod` indicates whether BLE or NFC was used. |
 | onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects by sending the END (0x02) flag. |
 | onError | `{ error?: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed with `ISO18013_5.OnErrorPayloadSchema`. |
 

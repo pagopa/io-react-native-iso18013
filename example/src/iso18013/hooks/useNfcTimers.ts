@@ -24,6 +24,10 @@ export const useNfcTimers = () => {
       return;
     }
 
+    if (sessionIntervalRef.current) {
+      clearInterval(sessionIntervalRef.current);
+    }
+
     setNfcSessionSecondsLeft(SESSION_DURATION_S);
     sessionIntervalRef.current = setInterval(() => {
       setNfcSessionSecondsLeft((prev) => {
