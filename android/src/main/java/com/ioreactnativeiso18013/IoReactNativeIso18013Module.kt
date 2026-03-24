@@ -195,7 +195,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       nfcEventJob?.cancel()
       nfcEventJob = null
       currentActivity?.let { NfcEngagementService.disable(it) }
-      sendEvent("onNfcStopped", null)
       promise.resolve(true)
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.CLOSE_ERROR, message = e.message, e)
