@@ -423,7 +423,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       /**
        * This event currently doesn't get called due to an issue with the underlying native library.
        */
-      override fun onDeviceConnecting() = sendEvent("onDeviceConnecting", "")
+      override fun onDeviceConnecting() = sendEvent("onDeviceConnecting", null)
 
       override fun onDeviceConnected(deviceRetrievalHelper: DeviceRetrievalHelperWrapper) {
         this@IoReactNativeIso18013Module.deviceRetrievalHelper = deviceRetrievalHelper
@@ -440,7 +440,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         sessionRetrievalMethod = RetrievalMethod.BLE
 
         val data: WritableMap = Arguments.createMap()
-        data.putString("data", request)
+        data.putString("data", request ?: "")
         data.putString("retrievalMethod", sessionRetrievalMethod?.bridgeValue)
         sendEvent("onDocumentRequestReceived", data)
       }
@@ -467,7 +467,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       NfcEngagementEventBus.events.collect { event ->
         when (event) {
           is NfcEngagementEvent.Connecting -> {
-            sendEvent("onDeviceConnecting", "")
+            sendEvent("onDeviceConnecting", null)
           }
 
           is NfcEngagementEvent.Connected -> {
@@ -482,7 +482,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           }
 
           is NfcEngagementEvent.Disconnected -> sendEvent(
-            "onDeviceDisconnected", event.transportSpecificTermination.toString()
+            "onDeviceDisconnected", null
           )
 
           is NfcEngagementEvent.DocumentRequestReceived -> {

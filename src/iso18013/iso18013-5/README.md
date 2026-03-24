@@ -105,7 +105,7 @@ flowchart LR
     onDeviceDisconnected["onDeviceDisconnected"]
     onError["onError"]
 
-    onNfcStarted -- "Verifiers taps the NFC" --> onDeviceConnecting
+    onNfcStarted -- "Verifier taps NFC" --> onDeviceConnecting
     onDeviceConnecting -- "Verifier app connects" --> onDeviceConnected
 
     onDeviceConnected -- "Verifier app sends request" --> onDocumentRequestReceived
@@ -141,7 +141,7 @@ import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 ISO18013_5.addListener(
   'onQrCodeString',
   (payload: ISO18013_5.EventsPayload['onQrCodeString']) => {
-    console.log('QR Code pyaload received: ', payload.data);
+    console.log('QR Code payload received: ', payload.data);
   }
 );
 ```

@@ -9,7 +9,7 @@ const eventEmitter = new NativeEventEmitter(IoReactNativeIso18013);
  * - `onQrCodeString`: Emitted when the QR Code payload is generated.
  * - `onNfcStarted`: Emitted when NFC starts successfully.
  * - `onNfcStopped`: Emitted when NFC stops successfully.
- * - `onDeviceConnecting`: (iOS only) Emitted when the device is connecting to the verifier app.
+ * - `onDeviceConnecting`: Emitted when the device is connecting to the verifier app (QR and NFC flows on both iOS and Android).
  * - `onDeviceConnected`: Emitted when the device is connected to the verifier app.
  * - `onDocumentRequestReceived`: Emitted when a document request is received from the verifier app. Carries a payload containing the request data and the retrieval method.
  * - `onDeviceDisconnected`: Emitted when the device is disconnected from the verifier app.
