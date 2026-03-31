@@ -60,39 +60,81 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
-   * Starts the QR Code proximity flow by allocating the necessary resources, initializing the
-   * Bluetooth stack and generating the QR Code payload.
+   * Starts the NFC proximity flow by allocating the necessary resources, enabling NFC
+   * engagement/HCE and initializing the Bluetooth stack (if required).
    * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
    * @param peripheralMode whether the device is in peripheral mode. Defaults to true
    * @param centralClientMode whether the device is in central client mode. Defaults to false
    * @param clearBleCache whether the BLE cache should be cleared. Defaults to true
    * @param certificates two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
+   * @param enagementModes array of strings representing the engagement modes (e.g. QR_CODE, BLE) to be used.
+   * @param retrievalMethods array of strings representing the retrieval methods (e.g. NFC, BLE) to be used.
    * @param promise the promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
-  fun startQrCodeEngagement(
+  fun startEngagement(
     peripheralMode: Boolean,
     centralClientMode: Boolean,
     clearBleCache: Boolean,
     certificates: ReadableArray,
+    enagementModes: ReadableArray,
+    retrievalMethods: ReadableArray,
     promise: Promise
   ) {
     try {
-      val retrievalMethod = BleRetrievalMethod(
-        peripheralServerMode = peripheralMode,
-        centralClientMode = centralClientMode,
-        clearBleCache = clearBleCache
-      )
+      val activity = checkNotNull(currentActivity) { "No activity available" }
 
       val certificatesList = parseCertificates(certificates)
-      qrEngagement = QrEngagement.build(reactApplicationContext, listOf(retrievalMethod)).apply {
-        if (certificatesList.isNotEmpty()) {
-          withReaderTrustStore(certificatesList)
+      val parsedEngagementModes = parseEngagementModes(enagementModes)
+      val parsedRetrievalMethods = parseRetrievalMethods(retrievalMethods)
+
+      val methods = buildList {
+        if (parsedRetrievalMethods.any { it == RetrievalMethod.BLE }) {
+          add(
+            BleRetrievalMethod(
+              peripheralServerMode = peripheralMode,
+              centralClientMode = centralClientMode,
+              clearBleCache = clearBleCache
+            )
+          )
+        }
+        if (parsedRetrievalMethods.any { it == RetrievalMethod.NFC }) {
+          add(NfcRetrievalMethod())
         }
       }
-      qrEngagement?.configure()
-      setupProximityHandler()
-      emitQrCodeString()
+
+      // NFC engagement
+
+      if (parsedEngagementModes.any { it == EngagementMode.NFC }) {
+        val readerTrustStore = certificatesList.takeIf { it.isNotEmpty() }
+          ?.map { chain -> chain.map<ByteArray, Any> { it } }
+
+        check(
+          NfcEngagementEventBus.setupNfcService(
+            retrievalMethods = methods, readerTrustStore = readerTrustStore
+          )
+        ) { "Unable to setup NFC engagement service" }
+
+        val status = NfcEngagementService.enable(
+          activity = activity, preferredNfcEngSerCls = IoNfcEngagementService::class.java
+        )
+        check(status.canWork()) { "HCE not available: $status" }
+        setupNfcHandler()
+        sendEvent("onNfcStarted", null)
+      }
+
+      // QR Code engagement
+
+      if (parsedEngagementModes.any { it == EngagementMode.QR_CODE }) {
+        qrEngagement = QrEngagement.build(reactApplicationContext, methods).apply {
+          if (certificatesList.isNotEmpty()) {
+            withReaderTrustStore(certificatesList)
+          }
+        }
+        qrEngagement?.configure()
+        setupProximityHandler()
+        emitQrCodeString()
+      }
 
       promise.resolve(true)
     } catch (e: Exception) {
@@ -110,70 +152,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     val data: WritableMap = Arguments.createMap()
     data.putString("data", qrCodeString)
     sendEvent("onQrCodeString", data)
-  }
-
-  /**
-   * Starts the NFC proximity flow by allocating the necessary resources, enabling NFC
-   * engagement/HCE and initializing the Bluetooth stack (if required).
-   * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
-   * @param peripheralMode whether the device is in peripheral mode. Defaults to true
-   * @param centralClientMode whether the device is in central client mode. Defaults to false
-   * @param clearBleCache whether the BLE cache should be cleared. Defaults to true
-   * @param certificates two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
-   * @param retrievalMethods array of strings representing the retrieval methods (e.g. NFC, BLE) to be used.
-   * @param promise the promise which will be resolved in case of success or rejected in case of failure.
-   */
-  @ReactMethod
-  fun startNfcEngagement(
-    peripheralMode: Boolean,
-    centralClientMode: Boolean,
-    clearBleCache: Boolean,
-    certificates: ReadableArray,
-    retrievalMethods: ReadableArray,
-    promise: Promise
-  ) {
-    try {
-      val activity = checkNotNull(currentActivity) { "No activity available" }
-
-      val certificatesList = parseCertificates(certificates)
-      val parsedMethods = parseRetrievalMethods(retrievalMethods)
-
-      val methods = buildList {
-        if (parsedMethods.any { it == RetrievalMethod.NFC }) {
-          add(NfcRetrievalMethod())
-        }
-        if (parsedMethods.any { it == RetrievalMethod.BLE }) {
-          add(
-            BleRetrievalMethod(
-              peripheralServerMode = peripheralMode,
-              centralClientMode = centralClientMode,
-              clearBleCache = clearBleCache
-            )
-          )
-        }
-      }
-
-      val readerTrustStore = certificatesList.takeIf { it.isNotEmpty() }
-        ?.map { chain -> chain.map<ByteArray, Any> { it } }
-
-      check(
-        NfcEngagementEventBus.setupNfcService(
-          retrievalMethods = methods, readerTrustStore = readerTrustStore
-        )
-      ) { "Unable to setup NFC engagement service" }
-
-      val status = NfcEngagementService.enable(
-        activity = activity, preferredNfcEngSerCls = IoNfcEngagementService::class.java
-      )
-      check(status.canWork()) { "HCE not available: $status" }
-
-      setupNfcHandler()
-
-      sendEvent("onNfcStarted", null)
-      promise.resolve(true)
-    } catch (e: Exception) {
-      promise.reject(ModuleErrorCodes.START_ERROR, e.message, e)
-    }
   }
 
   /**
@@ -291,8 +269,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
             )
           } ?: run {
             promise.reject(
-              ModuleErrorCodes.DRH_NOT_DEFINED,
-              message = NOT_INITIALIZED_ERROR_MESSAGE
+              ModuleErrorCodes.DRH_NOT_DEFINED, message = NOT_INITIALIZED_ERROR_MESSAGE
             )
           }
         }
@@ -423,7 +400,9 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       /**
        * This event currently doesn't get called due to an issue with the underlying native library.
        */
-      override fun onDeviceConnecting() = sendEvent("onDeviceConnecting", null)
+      override fun onDeviceConnecting() {
+        sendEvent("onDeviceConnecting", null)
+      }
 
       override fun onDeviceConnected(deviceRetrievalHelper: DeviceRetrievalHelperWrapper) {
         this@IoReactNativeIso18013Module.deviceRetrievalHelper = deviceRetrievalHelper

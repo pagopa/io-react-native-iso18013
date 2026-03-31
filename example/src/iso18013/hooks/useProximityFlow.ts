@@ -1,5 +1,5 @@
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import {
   generateAcceptedFields,
@@ -22,8 +22,7 @@ import { useNfcTimers } from './useNfcTimers';
 export enum PROXIMITY_STATUS {
   IDLE = 'IDLE',
   READY = 'READY',
-  ENGAGEMENT_BLE = 'ENGAGEMENT_BLE',
-  ENGAGEMENT_NFC = 'ENGAGEMENT_NFC',
+  ENGAGEMENT = 'ENGAGEMENT',
   PRESENTING = 'PRESENTING',
   ERROR = 'ERROR',
 }
@@ -34,6 +33,7 @@ export const useProximityFlow = () => {
   const [request, setRequest] = useState<
     ISO18013_5.VerifierRequest['request'] | null
   >(null);
+  const isNfcEnabled = useRef<boolean>(false);
 
   const {
     nfcSessionSecondsLeft,
@@ -54,12 +54,14 @@ export const useProximityFlow = () => {
   const handleNfcStarted = useCallback(() => {
     console.log('onNfcStarted');
     startSessionTimer();
+    isNfcEnabled.current = true;
   }, [startSessionTimer]);
 
   const handleNfcStopped = useCallback(() => {
     console.log('onNfcStopped');
     clearSessionTimer();
     startCooldownTimer();
+    isNfcEnabled.current = false;
   }, [clearSessionTimer, startCooldownTimer]);
 
   const handleOnDeviceConnecting = useCallback(() => {
@@ -83,24 +85,17 @@ export const useProximityFlow = () => {
     setStatus(PROXIMITY_STATUS.READY);
   }, []);
 
-  const startQrCodeFlow = useCallback(async () => {
-    try {
-      await ISO18013_5.startQrCodeEngagement();
-      setStatus(PROXIMITY_STATUS.ENGAGEMENT_BLE);
-    } catch (error) {
-      parseAndPrintError(
-        ISO18013_5.ModuleErrorSchema,
-        error,
-        'startQrCodeEngagement error: '
-      );
-    }
-  }, []);
-
-  const startNfcFlow = useCallback(
-    async (retrievalMethods?: ReadonlyArray<ISO18013_5.RetrievalMethod>) => {
+  const startFlow = useCallback(
+    async (
+      engagementModes?: ReadonlyArray<ISO18013_5.EngagementMode>,
+      retrievalMethods?: ReadonlyArray<ISO18013_5.RetrievalMethod>
+    ) => {
       try {
-        await ISO18013_5.startNfcEngagement({ retrievalMethods });
-        setStatus(PROXIMITY_STATUS.ENGAGEMENT_NFC);
+        await ISO18013_5.startEngagement({
+          engagementModes,
+          retrievalMethods,
+        });
+        setStatus(PROXIMITY_STATUS.ENGAGEMENT);
       } catch (error) {
         parseAndPrintError(
           ISO18013_5.ModuleErrorSchema,
@@ -314,9 +309,9 @@ export const useProximityFlow = () => {
     request,
     nfcSessionSecondsLeft,
     nfcCooldownSecondsLeft,
+    isNfcEnabled: isNfcEnabled.current,
     init,
-    startQrCodeFlow,
-    startNfcFlow,
+    startFlow,
     closeFlow,
     sendDocument,
     sendError,

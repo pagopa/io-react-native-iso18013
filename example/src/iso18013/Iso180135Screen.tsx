@@ -12,9 +12,9 @@ const Iso180135Screen: React.FC = () => {
     request,
     nfcSessionSecondsLeft,
     nfcCooldownSecondsLeft,
+    isNfcEnabled,
     init,
-    startQrCodeFlow,
-    startNfcFlow,
+    startFlow,
     closeFlow,
     sendDocument,
     sendError,
@@ -31,22 +31,27 @@ const Iso180135Screen: React.FC = () => {
       {status === PROXIMITY_STATUS.READY && (
         <>
           <Button
-            title={'Start QR Code (BLE)'}
-            onPress={() => startQrCodeFlow()}
+            title={'Start QRCODE->BLE'}
+            onPress={() => startFlow(['qrcode'], ['ble'])}
+          />
+          <Button
+            title={'Start QRCODE->NFC'}
+            onPress={() => startFlow(['qrcode'], ['nfc'])}
+            disabled={isNfcUnavailable}
           />
           <Button
             title={'Start NFC->BLE'}
-            onPress={() => startNfcFlow(['ble'])}
+            onPress={() => startFlow(['nfc'], ['ble'])}
             disabled={isNfcUnavailable}
           />
           <Button
             title={'Start NFC->NFC'}
-            onPress={() => startNfcFlow(['nfc'])}
+            onPress={() => startFlow(['nfc'], ['nfc'])}
             disabled={isNfcUnavailable}
           />
           <Button
-            title={'Start NFC->BLE+NFC'}
-            onPress={() => startNfcFlow(['ble', 'nfc'])}
+            title={'Start QRCODE+NFC->BLE+NFC'}
+            onPress={() => startFlow(['qrcode', 'nfc'], ['ble', 'nfc'])}
             disabled={isNfcUnavailable}
           />
           {isNfcUnavailable && (
@@ -54,10 +59,10 @@ const Iso180135Screen: React.FC = () => {
           )}
         </>
       )}
-      {status === PROXIMITY_STATUS.ENGAGEMENT_BLE && qrCode && (
+      {status === PROXIMITY_STATUS.ENGAGEMENT && qrCode && (
         <QRCode value={qrCode} size={200} />
       )}
-      {status === PROXIMITY_STATUS.ENGAGEMENT_NFC && (
+      {status === PROXIMITY_STATUS.ENGAGEMENT && isNfcEnabled && (
         <>
           <Text>
             NFC engagement active, tap the back of both devices toward each
@@ -99,8 +104,7 @@ const Iso180135Screen: React.FC = () => {
         </>
       )}
 
-      {(status === PROXIMITY_STATUS.ENGAGEMENT_BLE ||
-        status === PROXIMITY_STATUS.ENGAGEMENT_NFC ||
+      {(status === PROXIMITY_STATUS.ENGAGEMENT ||
         status === PROXIMITY_STATUS.PRESENTING ||
         status === PROXIMITY_STATUS.ERROR) && (
         <Button

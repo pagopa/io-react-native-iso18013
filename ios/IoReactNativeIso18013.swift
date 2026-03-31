@@ -109,57 +109,34 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
     
     self.sendEvent(withName: eventName, body: eventBody)
   }
-  
+
   /**
-   Starts QR code engagement with BLE-only retrieval.
+   Starts proximity engagement with QR Code/NFC engagement and BLE/NFC retrieval.
    Resolves to true or rejects with an error code defined in ``ModuleErrorCodes``.
    - Parameters:
    - `certificates`: Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
+   - `engagementModes`: Array of strings representing engamgnes modes (e.g., "QRCODE", "NFC")
+   - `retrievalMethods`: Array of strings representing data transfer modes (e.g., "BLE", "NFC")
    - `resolve`: The promise to be resolved
    - `reject`: The promise to be rejected
    */
-  @objc(startQrCodeEngagement:withResolver:withRejecter:)
-  func startQrCodeEngagement(
+  @objc(startEngagement:withEngagementModes:withRetrievalMethods:withResolver:withRejecter:)
+  func startEngagement(
     certificates: [Any],
-    resolve: @escaping RCTPromiseResolveBlock,
-    reject: @escaping RCTPromiseRejectBlock
-  ){
-    do {
-      let certsData = try parseCertificates(certificates)
-
-      ISO18013.shared
-        .start(
-          certsData,
-          engagementModes: [.qrCode],
-          retrivalMethods: [.ble],
-          delegate: self,
-          isNfcLateEngagement: false
-        )
-      resolve(true)
-    } catch let proximityError as ProximityError {
-      reject(ModuleErrorCodes.startError.rawValue, proximityError.description, proximityError)
-    } catch let parsingError as ParsingError{
-      reject(ModuleErrorCodes.startError.rawValue, parsingError.description, parsingError)
-    } catch {
-      reject(ModuleErrorCodes.startError.rawValue, error.localizedDescription, error)
-    }
-  }
-
-  @objc(startNfcEngagement:withRetrievalMethods:withResolver:withRejecter:)
-  func startNfcEngagement(
-    certificates: [Any],
+    engagementModes: [String],
     retrievalMethods: [String],
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
       let certsData = try parseCertificates(certificates)
+      let parsedEngagementModes = try parseEngagementMode(engagementModes)
       let parsedRetrievalMethods = try parseDataTransferModes(retrievalMethods)
 
       ISO18013.shared
         .start(
           certsData,
-          engagementModes: [.nfc],
+          engagementModes: parsedEngagementModes,
           retrivalMethods: parsedRetrievalMethods,
           delegate: self,
           isNfcLateEngagement: false
@@ -207,6 +184,26 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
           throw ParsingError.certificatesNotValid("Certificate at index \(certIndex) in the chain at index \(chainIndex) is not a valid base64 string.")
         }
         return data
+      }
+    }
+  }
+  
+  /**
+   Utility function to parse engagement mode strings into ISO18013EngagementMode enum values.
+   - Parameters:
+   - modes: Array of strings representing engamgnes modes (e.g., "QRCODE", "NFC")
+   - Throws: `ParsingError` if an invalid data transfer mode string is provided.
+   - Returns: An array of ISO18013EngagementMode values.
+   */
+  private func parseEngagementMode(_ modes: [String]) throws -> [ISO18013EngagementMode] {
+    return try modes.map { modeString in
+      switch modeString.lowercased() {
+      case "qrcode":
+        return .qrCode
+      case "nfc":
+        return .nfc
+      default:
+        throw ParsingError.dataTransferModeNotValid("Invalid data engagement mode: '\(modeString)'. Expected 'qrcode' or 'nfc'.")
       }
     }
   }
@@ -447,16 +444,16 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
    
    
    {
-   "org.iso.18013.5.1.mDL": {
-   "org.iso.18013.5.1": {
-   "hair_colour": true,
-   "given_name_national_character": true,
-   "family_name_national_character": true,
-   "given_name": true,
-   },
-   {...}
-   },
-   {...}
+     "org.iso.18013.5.1.mDL": {
+       "org.iso.18013.5.1": {
+         "hair_colour": true,
+         "given_name_national_character": true,
+         "family_name_national_character": true,
+         "given_name": true,
+       },
+       {...}
+     },
+     {...}
    }
    
    - resolve: The promise to be resolved.
