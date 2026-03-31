@@ -59,7 +59,7 @@ This library emits the following events:
 | onQrCodeString | `{ data: string }` | Event dispatched when the QR Code payload is generated. Contains the QR code string to display. |
 | onNfcStarted | `undefined` | Event dispatched when NFC starts successfully. |
 | onNfcStopped | `undefined` | Event dispatched when NFC stops successfully. |
-| onDeviceConnecting | `undefined` | Event dispatched when the verifier app is connecting (iOS only). |
+| onDeviceConnecting | `undefined` | Event dispatched when the verifier app is connecting. |
 | onDeviceConnected | `undefined` | Event dispatched when the verifier app is connected. |
 | onDocumentRequestReceived | `{ data: string; retrievalMethod: RetrievalMethod }` | Event dispatched when the consumer app receives a new request. The `data` payload can be parsed via the `parseVerifierRequest` function. The `retrievalMethod` indicates whether BLE or NFC was used. |
 | onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects by sending the END (0x02) flag. |
@@ -245,58 +245,36 @@ ISO18013_5.addListener(
 
 ## Methods
 
-#### `startQrCodeEngagement`
+#### `startEngagement`
 
-Starts the proximity flow and starts the bluetooth service for QR Code engagement. This method accepts an optional configuration object.
+Starts the proximity flow with the specified engagement and retrieval modes. By default enables both QR code and NFC engagement with both BLE and NFC retrieval. NFC engagement requires iOS 17.4+ on iOS and HCE support on Android.
 
-| Parameter           | Platform    | Default | Description                                                                                                               |
-| ------------------- | ----------- | ------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `peripheralMode`    | Android     | `true`  | Whether the device is in peripheral mode                                                                                  |
-| `centralClientMode` | Android     | `false` | Whether the device is in central client mode                                                                              |
-| `clearBleCache`     | Android     | `true`  | Whether the BLE cache should be cleared                                                                                   |
-| `certificates`      | Android/iOS | `[]`    | Two-dimensional array of base64 strings representing DER encoded X.509 certificates used to authenticate the verifier app |
+| Parameter           | Platform    | Default              | Description                                                                                                               |
+| ------------------- | ----------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `peripheralMode`    | Android     | `true`               | Whether the device is in peripheral mode                                                                                  |
+| `centralClientMode` | Android     | `false`              | Whether the device is in central client mode                                                                              |
+| `clearBleCache`     | Android     | `true`               | Whether the BLE cache should be cleared                                                                                   |
+| `certificates`      | Android/iOS | `[]`                 | Two-dimensional array of base64 strings representing DER encoded X.509 certificates used to authenticate the verifier app |
+| `engagementModes`   | Android/iOS | `['qrcode', 'nfc']`  | Array of engagement modes to activate (`'qrcode'` and/or `'nfc'`)                                                        |
+| `retrievalMethods`  | Android/iOS | `['ble', 'nfc']`     | Array of supported retrieval methods (`'ble'` and/or `'nfc'`)                                                             |
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
-await ISO18013_5.startQrCodeEngagement();
+// Starts both QR and NFC engagement with BLE and NFC retrieval (defaults)
+await ISO18013_5.startEngagement();
 
-// With optional configuration
-await ISO18013_5.startQrCodeEngagement({
-  peripheralMode: true,
-  centralClientMode: false,
-  clearBleCache: true,
-  certificates: [['base64DerCert1', 'base64DerCert2']],
+// QR code engagement only (BLE retrieval)
+await ISO18013_5.startEngagement({
+  engagementModes: ['qrcode'],
+  retrievalMethods: ['ble'],
 });
-```
 
-#### `startNfcEngagement`
-
-Starts NFC engagement (HCE) so a verifier can initiate the proximity flow by tapping phones.
-On iOS, requires iOS 17.4 or later.
-On Android, requires HCE support (most mid-to-high-end devices).
-This method accepts an optional configuration object.
-
-| Parameter           | Platform    | Default   | Description                                                                                                               |
-| ------------------- | ----------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `peripheralMode`    | Android     | `true`    | Whether the device is in peripheral mode                                                                                  |
-| `centralClientMode` | Android     | `false`   | Whether the device is in central client mode                                                                              |
-| `clearBleCache`     | Android     | `true`    | Whether the BLE cache should be cleared                                                                                   |
-| `certificates`      | Android/iOS | `[]`      | Two-dimensional array of base64 strings representing DER encoded X.509 certificates used to authenticate the verifier app |
-| `retrievalMethods`  | Android/iOS | `['ble']` | Array of supported retrieval methods (`'ble'` and/or `'nfc'`)                                                             |
-
-```typescript
-import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-
-await ISO18013_5.startNfcEngagement();
-
-// With optional configuration
-await ISO18013_5.startNfcEngagement({
-  peripheralMode: true,
-  centralClientMode: false,
-  clearBleCache: true,
-  certificates: [['base64DerCert1']],
+// NFC engagement only, with both retrieval methods
+await ISO18013_5.startEngagement({
+  engagementModes: ['nfc'],
   retrievalMethods: ['ble', 'nfc'],
+  certificates: [['base64DerCert1']],
 });
 ```
 
@@ -372,7 +350,7 @@ sequenceDiagram
     participant verifier as Verifier App
 
     Note over proximity, verifier: If an error occurs during the flow, the onError callback is triggered
-    app->>+proximity: Calls startQrCodeEngagement()
+    app->>+proximity: Calls startEngagement()
     proximity->>+app: Triggers the onQrCodeString callback with QR code data
     app->>+app: Renders the QR code string
     verifier->>+app: Scans the QR code
