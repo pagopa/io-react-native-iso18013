@@ -1,5 +1,6 @@
 export const WELL_KNOWN_CREDENTIALS = {
   mdl: 'org.iso.18013.5.1.mDL',
+  walletAttestation: 'org.iso.18013.5.1.IT.WalletAttestation',
 } as const;
 
 export const KEYTAG = 'TEST_PROXIMITY_KEYTAG';

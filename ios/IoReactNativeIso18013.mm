@@ -3,24 +3,23 @@
 
 @interface RCT_EXTERN_MODULE(IoReactNativeIso18013, RCTEventEmitter)
 
-RCT_EXTERN_METHOD(start:(NSArray *)certificates
+RCT_EXTERN_METHOD(startEngagement:(NSArray *)certificates
+                  withEngagementModes:(NSArray *)engagementModes
+                  withRetrievalMethods:(NSArray *)retrievalMethods
                   withResolver:(RCTPromiseResolveBlock)resolve
-                  withRejecter:(RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(getQrCodeString:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(close:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(generateResponse:(NSArray *)documents
-                 withAcceptedFields:(NSDictionary *)acceptedFields
-                 withResolver:(RCTPromiseResolveBlock)resolve
-                 withRejecter:(RCTPromiseRejectBlock)reject)
+                  withAcceptedFields:(NSDictionary *)acceptedFields
+                  withResolver:(RCTPromiseResolveBlock)resolve
+                  withRejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(sendResponse:(NSString *)response
-                 withResolver:(RCTPromiseResolveBlock)resolve
-                 withRejecter:(RCTPromiseRejectBlock)reject)
+                  withResolver:(RCTPromiseResolveBlock)resolve
+                  withRejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(sendErrorResponse:(NSInteger *)code
                   withResolver:(RCTPromiseResolveBlock)resolve

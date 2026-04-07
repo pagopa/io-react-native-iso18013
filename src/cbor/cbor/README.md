@@ -42,8 +42,9 @@ This table contains the list of error codes that can be thrown by the `CBOR` mod
 | DECODE_ERROR | Android/iOS | An error occurred while decoding the CBOR |
 | DECODE_DOCUMENTS_ERROR | Android/iOS | An error occurred while decoding a CBOR mDOC |
 | DECODE_ISSUER_SIGNED_ERROR | Android/iOS | An error occurred while decoding a CBOR Issuer Signed object |
+| EUNSPECIFIED               | Android     | Default error when no other error is specified               |
 
-An error can be parsed using the `ModuleErrorSchema` with type `ModuleErrorCodes` exposed by the `ISO18013_5` module. The error can be parsed as follows:
+An error can be parsed using the `ModuleErrorSchema` with type `ModuleErrorCodes` exposed by the `CBOR` module. The error can be parsed as follows:
 
 ```typescript
 import { CBOR } from '@pagopa/io-react-native-iso18013';

@@ -13,7 +13,7 @@ npm install @pagopa/io-react-native-iso18013
 This library includes two native modules for both iOS and Android:
 
 - [IoReactNativeIso18013](src/iso18013/iso18013-5/proximity.ts) for ISO 18013-5 and ISO 18013-7 implementations;
-- [IoReactNativeCbor](src/cbor/cbor.ts) for CBOR and COSE implementations.
+- [IoReactNativeCbor](src/cbor/index.ts) for CBOR and COSE implementations.
 
 On the javascript side, the library exposes the following modules:
 

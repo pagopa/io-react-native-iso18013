@@ -13,9 +13,7 @@ export type OnErrorPayload = z.infer<typeof OnErrorPayloadSchema>;
  */
 const ModuleErrorCodesSchema = z.enum([
   'DRH_NOT_DEFINED', // Android only
-  'QR_ENGAGEMENT_NOT_DEFINED', // Android only
   'START_ERROR',
-  'GET_QR_CODE_ERROR',
   'SEND_RESPONSE_ERROR',
   'SEND_ERROR_RESPONSE_ERROR',
   'GENERATE_RESPONSE_ERROR',

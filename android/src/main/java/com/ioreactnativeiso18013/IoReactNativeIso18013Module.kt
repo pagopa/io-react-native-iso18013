@@ -10,56 +10,132 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import com.facebook.react.bridge.WritableMap
 import it.pagopa.io.wallet.proximity.OpenID4VP
+import it.pagopa.io.wallet.proximity.ProximityLogger
 import it.pagopa.io.wallet.proximity.bluetooth.BleRetrievalMethod
+import it.pagopa.io.wallet.proximity.engagement.EngagementListener
+import it.pagopa.io.wallet.proximity.nfc.NfcEngagementEvent
+import it.pagopa.io.wallet.proximity.nfc.NfcEngagementEventBus
+import it.pagopa.io.wallet.proximity.nfc.NfcEngagementService
+import it.pagopa.io.wallet.proximity.nfc.NfcRetrievalMethod
 import it.pagopa.io.wallet.proximity.qr_code.QrEngagement
-import it.pagopa.io.wallet.proximity.qr_code.QrEngagementListener
 import it.pagopa.io.wallet.proximity.request.DocRequested
 import it.pagopa.io.wallet.proximity.response.ResponseGenerator
+import it.pagopa.io.wallet.proximity.retrieval.sendErrorResponse
 import it.pagopa.io.wallet.proximity.session_data.SessionDataStatus
 import it.pagopa.io.wallet.proximity.wrapper.DeviceRetrievalHelperWrapper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
+
+  private var qrEngagement: QrEngagement? = null
+  private var deviceRetrievalHelper: DeviceRetrievalHelperWrapper? = null
+
+  private var nfcEventJob: Job? = null
+  private val nfcScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+  private var sessionRetrievalMethod: RetrievalMethod? = null
+
+  // Session transcript received by the NFC engagement, stored for the current session
+  private var sessionTranscript: ByteArray? = null
+
+  init {
+    ProximityLogger.enabled = BuildConfig.DEBUG
+  }
 
   override fun getName(): String {
     return NAME
   }
 
-  private var qrEngagement: QrEngagement? = null
-  private var deviceRetrievalHelper: DeviceRetrievalHelperWrapper? = null
+  override fun invalidate() {
+    super.invalidate()
+    nfcEventJob?.cancel()
+    nfcEventJob = null
+    nfcScope.coroutineContext[Job]?.cancel()
+    currentActivity?.let { NfcEngagementService.disable(it) }
+  }
 
   /**
-   * Starts the proximity flow by allocating the necessary resources and initializing the Bluetooth stack.
+   * Starts the NFC proximity flow by allocating the necessary resources, enabling NFC
+   * engagement/HCE and initializing the Bluetooth stack (if required).
    * Resolves to true or rejects with an error code defined in [ModuleErrorCodes].
    * @param peripheralMode whether the device is in peripheral mode. Defaults to true
    * @param centralClientMode whether the device is in central client mode. Defaults to false
    * @param clearBleCache whether the BLE cache should be cleared. Defaults to true
    * @param certificates two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
+   * @param enagementModes array of strings representing the engagement modes (e.g. QR_CODE, BLE) to be used.
+   * @param retrievalMethods array of strings representing the retrieval methods (e.g. NFC, BLE) to be used.
    * @param promise the promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
-  fun start(
+  fun startEngagement(
     peripheralMode: Boolean,
     centralClientMode: Boolean,
     clearBleCache: Boolean,
     certificates: ReadableArray,
+    enagementModes: ReadableArray,
+    retrievalMethods: ReadableArray,
     promise: Promise
   ) {
     try {
-      val retrievalMethod = BleRetrievalMethod(
-        peripheralServerMode = peripheralMode,
-        centralClientMode = centralClientMode,
-        clearBleCache = clearBleCache
-      )
+      val activity = checkNotNull(currentActivity) { "No activity available" }
 
       val certificatesList = parseCertificates(certificates)
-      qrEngagement = QrEngagement.build(reactApplicationContext, listOf(retrievalMethod)).apply {
-        if (certificatesList.isNotEmpty()) {
-          withReaderTrustStore(certificatesList)
+      val parsedEngagementModes = parseEngagementModes(enagementModes)
+      val parsedRetrievalMethods = parseRetrievalMethods(retrievalMethods)
+
+      val methods = buildList {
+        if (parsedRetrievalMethods.any { it == RetrievalMethod.BLE }) {
+          add(
+            BleRetrievalMethod(
+              peripheralServerMode = peripheralMode,
+              centralClientMode = centralClientMode,
+              clearBleCache = clearBleCache
+            )
+          )
+        }
+        if (parsedRetrievalMethods.any { it == RetrievalMethod.NFC }) {
+          add(NfcRetrievalMethod())
         }
       }
-      qrEngagement?.configure()
-      setupProximityHandler()
+
+      // NFC engagement
+
+      if (parsedEngagementModes.any { it == EngagementMode.NFC }) {
+        val readerTrustStore = certificatesList.takeIf { it.isNotEmpty() }
+          ?.map { chain -> chain.map<ByteArray, Any> { it } }
+
+        check(
+          NfcEngagementEventBus.setupNfcService(
+            retrievalMethods = methods, readerTrustStore = readerTrustStore
+          )
+        ) { "Unable to setup NFC engagement service" }
+
+        val status = NfcEngagementService.enable(
+          activity = activity, preferredNfcEngSerCls = IoNfcEngagementService::class.java
+        )
+        check(status.canWork()) { "HCE not available: $status" }
+        setupNfcHandler()
+        sendEvent("onNfcStarted", null)
+      }
+
+      // QR Code engagement
+
+      if (parsedEngagementModes.any { it == EngagementMode.QR_CODE }) {
+        qrEngagement = QrEngagement.build(reactApplicationContext, methods).apply {
+          if (certificatesList.isNotEmpty()) {
+            withReaderTrustStore(certificatesList)
+          }
+        }
+        qrEngagement?.configure()
+        setupProximityHandler()
+        emitQrCodeString()
+      }
+
       promise.resolve(true)
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.START_ERROR, e.message, e)
@@ -67,22 +143,15 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   /**
-   * Creates a QR code to be scanned in order to initialize the presentation.
-   * Resolves with a string containing the QR code or rejects with an error code defined in [ModuleErrorCodes].
-   * @param promise the promise which will be resolved in case of success or rejected in case of failure.
+   * Generates and send QR Code string payload to React Native via `RCTEventEmitter`.
    */
-  @ReactMethod
-  fun getQrCodeString(promise: Promise) {
-    try {
-      qrEngagement?.let {
-        val qrCodeString = it.getQrCodeString()
-        promise.resolve(qrCodeString)
-      } ?: run {
-        promise.reject(ModuleErrorCodes.QR_ENGAGEMENT_NOT_DEFINED,NOT_INITIALIZED_ERROR_MESSAGE)
-      }
-    } catch (e: Exception) {
-      promise.reject(ModuleErrorCodes.GET_QR_CODE_ERROR, e.message, e)
-    }
+  private fun emitQrCodeString() {
+    val qrCodeString =
+      checkNotNull(qrEngagement?.getQrCodeString()) { NOT_INITIALIZED_ERROR_MESSAGE }
+
+    val data: WritableMap = Arguments.createMap()
+    data.putString("data", qrCodeString)
+    sendEvent("onQrCodeString", data)
   }
 
   /**
@@ -96,12 +165,20 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   fun close(promise: Promise) {
     try {
       qrEngagement?.close()
+      qrEngagement = null
       deviceRetrievalHelper?.disconnect()
+      deviceRetrievalHelper = null
+      sessionRetrievalMethod = null
+      sessionTranscript = null
+      nfcEventJob?.cancel()
+      nfcEventJob = null
+      currentActivity?.let { NfcEngagementService.disable(it) }
       promise.resolve(true)
     } catch (e: Exception) {
-      promise.reject(ModuleErrorCodes.CLOSE_ERROR, message=e.message, e)
+      promise.reject(ModuleErrorCodes.CLOSE_ERROR, message = e.message, e)
     }
   }
+
 
   /**
    * Sends an error response during the presentation according to the SessionData status codes
@@ -118,19 +195,20 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun sendErrorResponse(code: Double, promise: Promise) {
     try {
-      qrEngagement?.let { it ->
-        val sessionDataStatus = SessionDataStatus.entries.find { it.value == code.toLong() }
-        if (sessionDataStatus != null) {
-          it.sendErrorResponse(sessionDataStatus)
-          promise.resolve(true)
-        } else {
-          promise.reject(ModuleErrorCodes.SEND_ERROR_RESPONSE_ERROR, message="Invalid status code")
-        }
+      deviceRetrievalHelper?.let { drh ->
+        val sessionDataStatus =
+          checkNotNull(SessionDataStatus.entries.find { it.value == code.toLong() }) {
+            "Invalid status code"
+          }
+        drh.sendErrorResponse(sessionDataStatus)
+        promise.resolve(true)
       } ?: run {
-        promise.reject(ModuleErrorCodes.QR_ENGAGEMENT_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
+        promise.reject(
+          ModuleErrorCodes.DRH_NOT_DEFINED, message = NOT_INITIALIZED_ERROR_MESSAGE
+        )
       }
     } catch (e: Exception) {
-      promise.reject(ModuleErrorCodes.SEND_ERROR_RESPONSE_ERROR, message=e.message, e)
+      promise.reject(ModuleErrorCodes.SEND_ERROR_RESPONSE_ERROR, message = e.message, e)
     }
   }
 
@@ -162,34 +240,48 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    */
   @ReactMethod
   fun generateResponse(
-    documents: ReadableArray,
-    acceptedFields: ReadableMap,
-    promise: Promise
+    documents: ReadableArray, acceptedFields: ReadableMap, promise: Promise
   ) {
     try {
-      deviceRetrievalHelper?.let { devHelper ->
-        // Get the DocRequested list and if it's empty then reject the promise and return
-        val docRequestedList = parseDocRequested(documents)
+      when (sessionRetrievalMethod) {
 
-        val sessionTranscript = devHelper.sessionTranscript()
-        val responseGenerator = ResponseGenerator(sessionTranscript)
-        val parsedAcceptedFields = parseAcceptedFields(acceptedFields)
-        responseGenerator.createResponse(docRequestedList,
-          parsedAcceptedFields,
-          object : ResponseGenerator.Response {
-            override fun onResponseGenerated(response: ByteArray) {
-              promise.resolve(Base64Utils.encodeBase64(response))
-            }
+        // For NFC retrievals we use the session transcript received during the device connection event
+        RetrievalMethod.NFC -> {
+          val sessionTranscript = checkNotNull(sessionTranscript) { "Session transcript is null" }
+          createAndResolveResponse(
+            sessionTranscript = sessionTranscript,
+            documents = documents,
+            acceptedFields = acceptedFields,
+            errorCode = ModuleErrorCodes.GENERATE_RESPONSE_ERROR,
+            promise = promise
+          )
+        }
 
-            override fun onError(message: String) {
-              promise.reject(ModuleErrorCodes.GENERATE_RESPONSE_ERROR, message)
-            }
-          })
-      } ?: run {
-        promise.reject(ModuleErrorCodes.DRH_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
+        // For BLE retrievals we use the session transcript obtained from the DeviceRetrievalHelper
+        RetrievalMethod.BLE -> {
+          deviceRetrievalHelper?.let { drh ->
+            createAndResolveResponse(
+              sessionTranscript = drh.sessionTranscript(),
+              documents = documents,
+              acceptedFields = acceptedFields,
+              errorCode = ModuleErrorCodes.GENERATE_RESPONSE_ERROR,
+              promise = promise
+            )
+          } ?: run {
+            promise.reject(
+              ModuleErrorCodes.DRH_NOT_DEFINED, message = NOT_INITIALIZED_ERROR_MESSAGE
+            )
+          }
+        }
+
+        else -> {
+          promise.reject(
+            ModuleErrorCodes.GENERATE_RESPONSE_ERROR, message = "Invalid retrieval method"
+          )
+        }
       }
     } catch (e: Exception) {
-      promise.reject(ModuleErrorCodes.GENERATE_RESPONSE_ERROR, message=e.message, e)
+      promise.reject(ModuleErrorCodes.GENERATE_RESPONSE_ERROR, message = e.message, e)
     }
   }
 
@@ -203,14 +295,37 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun sendResponse(response: String, promise: Promise) {
     try {
-      qrEngagement?.let { qrEng ->
-        val responseBytes = Base64Utils.decodeBase64(response)
-        qrEng.sendResponse(responseBytes)
-        promise.resolve(true)
-      }
-        ?: run {
-          promise.reject(ModuleErrorCodes.QR_ENGAGEMENT_NOT_DEFINED, message=NOT_INITIALIZED_ERROR_MESSAGE)
+      val responseBytes = Base64Utils.decodeBase64(response)
+
+      when (sessionRetrievalMethod) {
+
+        // For NFC retrievals we use NfcEngagementEventBus to send the response over NFC
+        RetrievalMethod.NFC -> {
+          check(
+            NfcEngagementEventBus.sendDocumentResponse(response = responseBytes)
+          ) { "Unable to send response over NFC" }
+          promise.resolve(true)
         }
+
+        // For BLE retrievals we use the DeviceRetrievalHelper to send the response over BLE
+        RetrievalMethod.BLE -> {
+          deviceRetrievalHelper?.let { drh ->
+            drh.sendResponse(responseBytes, 0L)
+            promise.resolve(true)
+          } ?: run {
+            promise.reject(
+              ModuleErrorCodes.DRH_NOT_DEFINED, message = NOT_INITIALIZED_ERROR_MESSAGE
+            )
+          }
+        }
+
+        else -> {
+          promise.reject(
+            ModuleErrorCodes.SEND_RESPONSE_ERROR, message = "Invalid retrieval method"
+          )
+        }
+      }
+
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.SEND_RESPONSE_ERROR, e.message, e)
     }
@@ -246,37 +361,25 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    */
   @ReactMethod
   fun generateOID4VPDeviceResponse(
-    clientId: String, responseUri: String, authorizationRequestNonce: String,
-    mdocGeneratedNonce: String, documents: ReadableArray,
-    acceptedFields: ReadableMap, promise: Promise
+    clientId: String,
+    responseUri: String,
+    authorizationRequestNonce: String,
+    mdocGeneratedNonce: String,
+    documents: ReadableArray,
+    acceptedFields: ReadableMap,
+    promise: Promise
   ) {
     try {
-      val sessionTranscript =
-        OpenID4VP(
-          clientId,
-          responseUri,
-          authorizationRequestNonce,
-          mdocGeneratedNonce
-        ).createSessionTranscript()
+      val sessionTranscript = OpenID4VP(
+        clientId, responseUri, authorizationRequestNonce, mdocGeneratedNonce
+      ).createSessionTranscript()
 
-      val documentsParsed =
-        parseDocRequested(documents)
-
-      val parsedAcceptedFields = parseAcceptedFields(acceptedFields)
-
-      val responseGenerator = ResponseGenerator(sessionTranscript)
-      responseGenerator.createResponse(
-        documentsParsed,
-        parsedAcceptedFields,
-        object : ResponseGenerator.Response {
-          override fun onResponseGenerated(response: ByteArray) {
-            promise.resolve(Base64Utils.encodeBase64(response))
-          }
-
-          override fun onError(message: String) {
-            promise.reject(ModuleErrorCodes.GENERATE_OID4VP_RESPONSE_ERROR, message)
-          }
-        }
+      createAndResolveResponse(
+        sessionTranscript = sessionTranscript,
+        documents = documents,
+        acceptedFields = acceptedFields,
+        errorCode = ModuleErrorCodes.GENERATE_OID4VP_RESPONSE_ERROR,
+        promise = promise
       )
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.GENERATE_OID4VP_RESPONSE_ERROR, e.message, e)
@@ -293,12 +396,12 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * onError: Emitted when an error occurs. Carries a payload containing the error data.
    */
   private fun setupProximityHandler() {
-    qrEngagement?.withListener(object : QrEngagementListener {
+    qrEngagement?.withListener(object : EngagementListener {
       /**
        * This event currently doesn't get called due to an issue with the underlying native library.
        */
       override fun onDeviceConnecting() {
-        sendEvent("onDeviceConnecting", "")
+        sendEvent("onDeviceConnecting", null)
       }
 
       override fun onDeviceConnected(deviceRetrievalHelper: DeviceRetrievalHelperWrapper) {
@@ -313,8 +416,11 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       }
 
       override fun onDocumentRequestReceived(request: String?, sessionsTranscript: ByteArray) {
+        sessionRetrievalMethod = RetrievalMethod.BLE
+
         val data: WritableMap = Arguments.createMap()
-        data.putString("data", request)
+        data.putString("data", request ?: "")
+        data.putString("retrievalMethod", sessionRetrievalMethod?.bridgeValue)
         sendEvent("onDocumentRequestReceived", data)
       }
 
@@ -322,6 +428,90 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         sendEvent("onDeviceDisconnected", transportSpecificTermination.toString())
       }
     })
+  }
+
+  /**
+   * Sets the NFC handler along with the possible dispatched events and their callbacks.
+   * The events are then sent to React Native via `RCTEventEmitter`.
+   * onDeviceConnecting: Emitted when the device is connecting to the verifier app.
+   * onDeviceConnected: Emitted when the device is connected to the verifier app.
+   * onDocumentRequestReceived: Emitted when a document request is received from the verifier app. Carries a payload containing the request data.
+   * onDeviceDisconnected: Emitted when the device is disconnected from the verifier app.
+   * onError: Emitted when an error occurs. Carries a payload containing the error data.
+   * onNfcStopped: Emitted when the NFC handler is stopped.
+   */
+  private fun setupNfcHandler() {
+    nfcEventJob?.cancel()
+    nfcEventJob = nfcScope.launch {
+      NfcEngagementEventBus.events.collect { event ->
+        when (event) {
+          is NfcEngagementEvent.Connecting -> {
+            sendEvent("onDeviceConnecting", null)
+          }
+
+          is NfcEngagementEvent.Connected -> {
+            deviceRetrievalHelper = event.device
+            sendEvent("onDeviceConnected", null)
+          }
+
+          is NfcEngagementEvent.Error -> {
+            val data: WritableMap = Arguments.createMap()
+            data.putString("error", event.error.message ?: "")
+            sendEvent("onError", data)
+          }
+
+          is NfcEngagementEvent.Disconnected -> sendEvent(
+            "onDeviceDisconnected", null
+          )
+
+          is NfcEngagementEvent.DocumentRequestReceived -> {
+            sessionRetrievalMethod = if (event.onlyNfc) RetrievalMethod.NFC else RetrievalMethod.BLE
+            sessionTranscript = event.sessionTranscript
+
+            val data: WritableMap = Arguments.createMap()
+            data.putString("data", event.request)
+            data.putString("retrievalMethod", sessionRetrievalMethod?.bridgeValue)
+            sendEvent("onDocumentRequestReceived", data)
+          }
+
+          is NfcEngagementEvent.NotSupported -> sendEvent("onNfcStopped", null)
+
+          is NfcEngagementEvent.NfcOnlyEventListener -> { /* NOT HANDLED */
+          }
+
+          is NfcEngagementEvent.DocumentSent -> sendEvent("onDeviceDisconnected", null)
+        }
+      }
+    }
+  }
+
+  /**
+   * Utility function that generates the response using the ResponseGeneration from a session
+   * transcript
+   * @param sessionTranscript the session transcript to be used to generate the response
+   * @param documents the documents to be included in the response
+   * @param acceptedFields the accepted fields to be presented
+   * @param errorCode the error code to be used in case of error
+   * @param promise the promise which will be resolved in case of success or rejected in case of failure.
+   */
+  private fun createAndResolveResponse(
+    sessionTranscript: ByteArray,
+    documents: ReadableArray,
+    acceptedFields: ReadableMap,
+    errorCode: String,
+    promise: Promise
+  ) {
+    val docRequestedList = parseDocRequested(documents)
+    val parsedAcceptedFields = parseAcceptedFields(acceptedFields)
+    ResponseGenerator(sessionTranscript).createResponse(
+      docRequestedList, parsedAcceptedFields, object : ResponseGenerator.Response {
+        override fun onResponseGenerated(response: ByteArray) =
+          promise.resolve(Base64Utils.encodeBase64(response))
+
+        override fun onError(message: String) {
+          promise.reject(errorCode, message)
+        }
+      })
   }
 
   /**
@@ -334,31 +524,30 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       .emit(eventName, data)
   }
 
+  /**
+   * Keep: Required for RN built in Event Emitter Calls.
+   * This fixes the warning: `new NativeEventEmitter()` was called with a non-null argument without the required `removeListeners` method
+   */
   @ReactMethod
-  fun addListener(eventName: String?) {
-    /* Keep: Required for RN built in Event Emitter Calls.
-    This fixes the warning: `new NativeEventEmitter()` was called with a non-null argument without the required `removeListeners` method
-     */
-  }
+  fun addListener(eventName: String?) = Unit
 
+  /**
+   * Keep: Required for RN built in Event Emitter Calls.
+   * This fixes the warning: `new NativeEventEmitter()` was called with a non-null argument without the required `removeListeners` method
+   */
   @ReactMethod
-  fun removeListeners(count: Int?) {
-    /*Keep: Required for RN built in Event Emitter Calls.
-    This fixes the warning: `new NativeEventEmitter()` was called with a non-null argument without the required `removeListeners` method
-    */
-  }
+  fun removeListeners(count: Int?) = Unit
 
   companion object {
     const val NAME = "IoReactNativeIso18013"
-    const val NOT_INITIALIZED_ERROR_MESSAGE = "Resources not initialized properly, call the start method before this one."
+    const val NOT_INITIALIZED_ERROR_MESSAGE =
+      "Resources not initialized properly, call the start method before this one."
 
     // Errors which this module uses to reject a promise
     private object ModuleErrorCodes {
       // ISO18013-5 related errors
       const val DRH_NOT_DEFINED = "DRH_NOT_DEFINED"
-      const val QR_ENGAGEMENT_NOT_DEFINED = "QR_ENGAGEMENT_NOT_DEFINED"
       const val START_ERROR = "START_ERROR"
-      const val GET_QR_CODE_ERROR = "GET_QR_CODE_ERROR"
       const val GENERATE_RESPONSE_ERROR = "GENERATE_RESPONSE_ERROR"
       const val SEND_RESPONSE_ERROR = "SEND_RESPONSE_ERROR"
       const val SEND_ERROR_RESPONSE_ERROR = "SEND_ERROR_RESPONSE_ERROR"
@@ -390,7 +579,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
      * at least a credential type. If a namespace doesn't contain at least one value.
      * @returns String representation of [acceptedFields]
      */
-    fun parseAcceptedFields(acceptedFields: ReadableMap): String {
+    internal fun parseAcceptedFields(acceptedFields: ReadableMap): String {
       try {
         // Loop for each credential and throw if something different than map is found
         acceptedFields.entryIterator.forEach { credentialEntry ->
@@ -411,7 +600,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
             }
 
             // If no field is found then throw
-            if(!namespaceValue.entryIterator.hasNext()){
+            if (!namespaceValue.entryIterator.hasNext()) {
               throw IllegalArgumentException("Credential '$credentialName' with namespace `$namespaceName` must define at least one field")
             }
 
@@ -432,6 +621,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       }
     }
 
+
     /**
      * Utility function which extracts the document shape we expect to receive from the bridge
      * in the one expected by {DocRequested}.
@@ -451,18 +641,15 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           val issuerSignedContentStr = entry.getString("issuerSignedContent")
           val docType = entry.getString("docType")
 
-          if (
-            alias == null || entry.getType("alias") != ReadableType.String ||
-            issuerSignedContentStr == null || entry.getType("issuerSignedContent") != ReadableType.String ||
-            docType == null || entry.getType("docType") != ReadableType.String
+          if (alias == null || entry.getType("alias") != ReadableType.String || issuerSignedContentStr == null || entry.getType(
+              "issuerSignedContent"
+            ) != ReadableType.String || docType == null || entry.getType("docType") != ReadableType.String
           ) throw IllegalArgumentException("Unable to decode the provided documents at index $i")
 
           val issuerSignedContent = Base64Utils.decodeBase64AndBase64Url(issuerSignedContentStr)
 
           DocRequested(
-            issuerSignedContent,
-            alias,
-            docType
+            issuerSignedContent, alias, docType
           )
         }.toTypedArray()
       } catch (e: Exception) {
@@ -482,18 +669,22 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
        * can throw and if it does rethrow an exception with information on its position
        */
       (0 until certificates.size()).mapNotNull { chainIndex ->
-        val chain = runCatching { certificates.getArray(chainIndex) }
-          .getOrElse { throw IllegalArgumentException("Certificate chain at $chainIndex is not an array", it) }
-          ?: throw IllegalArgumentException("Certificate chain at index $chainIndex is null")
+        val chain = runCatching { certificates.getArray(chainIndex) }.getOrElse {
+          throw IllegalArgumentException(
+            "Certificate chain at $chainIndex is not an array", it
+          )
+        } ?: throw IllegalArgumentException("Certificate chain at index $chainIndex is null")
 
         /**
          * Map each chain certificate and remove null entries. On each certificate call the getString
          * method which can throw and if it does rethrow an exception with information on its position
          */
         (0 until chain.size()).mapNotNull { certIndex ->
-          val base64 = runCatching { chain.getString(certIndex) }
-            .getOrElse { throw IllegalArgumentException("Failed to get certificate string at chain $chainIndex, cert $certIndex", it) }
-            ?: throw java.lang.IllegalArgumentException("Certificate at index $certIndex is null")
+          val base64 = runCatching { chain.getString(certIndex) }.getOrElse {
+            throw IllegalArgumentException(
+              "Failed to get certificate string at chain $chainIndex, cert $certIndex", it
+            )
+          } ?: throw java.lang.IllegalArgumentException("Certificate at index $certIndex is null")
 
           /**
            * Decode the base64 string for each mapped certificate and if an error occurs rethrow
@@ -502,7 +693,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
           runCatching {
             Base64Utils.decodeBase64(base64)
           }.getOrElse {
-            throw IllegalArgumentException("Certificate at index $certIndex in the chain at index $chainIndex is not a valid base64 string", it)
+            throw IllegalArgumentException(
+              "Certificate at index $certIndex in the chain at index $chainIndex is not a valid base64 string",
+              it
+            )
           }
         }
       }
