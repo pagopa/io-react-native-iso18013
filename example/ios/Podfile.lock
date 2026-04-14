@@ -40,13 +40,15 @@ PODS:
     - Yoga
   - IOWalletCBOR (0.2.1)
   - IOWalletProximity (1.4.1)
-  - pagopa-io-react-native-crypto (1.0.1):
+  - OpenSSL-Universal (3.6.0000)
+  - pagopa-io-react-native-crypto (1.2.4):
     - boost
     - DoubleConversion
     - fast_float
     - fmt
     - glog
     - hermes-engine
+    - OpenSSL-Universal
     - RCT-Folly
     - RCT-Folly/Fabric
     - RCTRequired
@@ -2400,7 +2402,7 @@ PODS:
     - React-perflogger (= 0.81.5)
     - React-utils (= 0.81.5)
     - SocketRocket
-  - RNPermissions (5.4.1):
+  - RNPermissions (5.5.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2487,7 +2489,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNSVG (15.12.0):
+  - RNSVG (15.15.4):
     - boost
     - DoubleConversion
     - fast_float
@@ -2513,10 +2515,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNSVG/common (= 15.12.0)
+    - RNSVG/common (= 15.15.4)
     - SocketRocket
     - Yoga
-  - RNSVG/common (15.12.0):
+  - RNSVG/common (15.15.4):
     - boost
     - DoubleConversion
     - fast_float
@@ -2632,6 +2634,7 @@ SPEC REPOS:
   trunk:
     - IOWalletCBOR
     - IOWalletProximity
+    - OpenSSL-Universal
     - SocketRocket
 
 EXTERNAL SOURCES:
@@ -2802,7 +2805,8 @@ SPEC CHECKSUMS:
   IoReactNativeIso18013: efc3a6623463970575f986b6dc9b75fe9ba8b940
   IOWalletCBOR: 92742ef1cbd1b627ba153d0c7c11b81ad22f45cc
   IOWalletProximity: 1d8fc9acc9d97d34364c42927af3ac682448977e
-  pagopa-io-react-native-crypto: a380c9802ce98a84b277fced008f1970deed9bab
+  OpenSSL-Universal: 9110d21982bb7e8b22a962b6db56a8aa805afde7
+  pagopa-io-react-native-crypto: 8bd5ec4b5b6af1a03416f3c8267530eac9f6f724
   RCT-Folly: 846fda9475e61ec7bcbf8a3fe81edfcaeb090669
   RCTDeprecation: 5eb1d2eeff5fb91151e8a8eef45b6c7658b6c897
   RCTRequired: cebcf9442fc296c9b89ac791dfd463021d9f6f23
@@ -2867,9 +2871,9 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 1bcd3527ac0390a1c898c114f81ff954be35ed79
   ReactCodegen: 6c26f8c25d0b5ae66f86a1cce1777076ac8bcbd8
   ReactCommon: 5f0e5c09a64a2717215dd84380e1a747810406f2
-  RNPermissions: 2ffed8ef22c8af3163e418a1ee42520221105cf9
+  RNPermissions: 230e5eefd6adc0962f492967290435f88107e220
   RNScreens: 7f643ee0fd1407dc5085c7795460bd93da113b8f
-  RNSVG: d6b2fc2f4058b36a2fcbde615ef859f2913cdee4
+  RNSVG: 681be694d501c0af971615811d4f2ea9baf58966
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 728df40394d49f3f471688747cf558158b3a3bd1
 
