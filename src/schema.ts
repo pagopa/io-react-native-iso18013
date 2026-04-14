@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 const StackTraceElementSchema = z.object({
   lineNumber: z.number(),
-  file: z.string(),
+  file: z.string().nullable(),
   methodName: z.string(),
   class: z.string(),
 });

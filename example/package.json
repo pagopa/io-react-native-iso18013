@@ -10,31 +10,31 @@
     "build:ios": "react-native build-ios --scheme IoReactNativeIso18013Example --mode Debug --extra-params \"-sdk iphonesimulator CC=clang CPLUSPLUS=clang++ LD=clang LDPLUSPLUS=clang++ GCC_OPTIMIZATION_LEVEL=0 GCC_PRECOMPILE_PREFIX_HEADER=YES ASSETCATALOG_COMPILER_OPTIMIZATION=time DEBUG_INFORMATION_FORMAT=dwarf COMPILER_INDEX_STORE_ENABLE=NO\""
   },
   "dependencies": {
-    "@pagopa/io-react-native-crypto": "1.0.1",
-    "@react-navigation/bottom-tabs": "^7.4.2",
-    "@react-navigation/native": "^7.1.14",
-    "react": "19.0.0",
-    "react-native": "0.78.2",
-    "react-native-permissions": "^5.4.1",
-    "react-native-qrcode-svg": "^6.3.15",
-    "react-native-safe-area-context": "^5.5.0",
-    "react-native-screens": "^4.11.1",
-    "react-native-svg": "^15.12.0"
+    "@pagopa/io-react-native-crypto": "1.2.4",
+    "@react-navigation/bottom-tabs": "^7.15.9",
+    "@react-navigation/native": "^7.2.2",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-permissions": "^5.5.1",
+    "react-native-qrcode-svg": "^6.3.21",
+    "react-native-safe-area-context": "^5.7.0",
+    "react-native-screens": "^4.24.0",
+    "react-native-svg": "^15.15.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
-    "@react-native-community/cli": "15.0.1",
-    "@react-native-community/cli-platform-android": "15.0.1",
-    "@react-native-community/cli-platform-ios": "15.0.1",
-    "@react-native/babel-preset": "0.78.2",
-    "@react-native/metro-config": "0.78.2",
-    "@react-native/typescript-config": "0.78.2",
-    "@types/react": "^19.0.0",
+    "@react-native-community/cli": "20.0.0",
+    "@react-native-community/cli-platform-android": "20.0.0",
+    "@react-native-community/cli-platform-ios": "20.0.0",
+    "@react-native/babel-preset": "0.81.5",
+    "@react-native/metro-config": "0.81.5",
+    "@react-native/typescript-config": "0.81.5",
+    "@types/react": "^19.1.0",
     "react-native-builder-bob": "^0.40.12"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

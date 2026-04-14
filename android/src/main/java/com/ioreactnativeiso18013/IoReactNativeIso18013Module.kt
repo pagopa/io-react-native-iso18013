@@ -56,7 +56,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     nfcEventJob?.cancel()
     nfcEventJob = null
     nfcScope.coroutineContext[Job]?.cancel()
-    currentActivity?.let { NfcEngagementService.disable(it) }
+    reactApplicationContext.currentActivity?.let { NfcEngagementService.disable(it) }
   }
 
   /**
@@ -82,7 +82,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     promise: Promise
   ) {
     try {
-      val activity = checkNotNull(currentActivity) { "No activity available" }
+      val activity = checkNotNull(reactApplicationContext.currentActivity) { "No activity available" }
 
       val certificatesList = parseCertificates(certificates)
       val parsedEngagementModes = parseEngagementModes(enagementModes)
@@ -172,7 +172,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       sessionTranscript = null
       nfcEventJob?.cancel()
       nfcEventJob = null
-      currentActivity?.let { NfcEngagementService.disable(it) }
+      reactApplicationContext.currentActivity?.let { NfcEngagementService.disable(it) }
       promise.resolve(true)
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.CLOSE_ERROR, message = e.message, e)
