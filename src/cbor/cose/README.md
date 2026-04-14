@@ -75,7 +75,7 @@ The parsed object will contain properties from both iOS and Android platforms:
   userInfo?: Record<string, any> | null;
   nativeStackAndroid?: Array<{
     lineNumber: number;
-    file?: string;
+    file: string | null
     methodName: string;
     class: string;
   }>;
