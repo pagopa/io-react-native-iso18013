@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Inner data: a record of booleans with the attributes and the intent to retain flag
-const booleanFieldGroup = z.record(z.boolean());
+const booleanFieldGroup = z.record(z.string(), z.boolean());
 
 const credentialEntrySchema = z
   .object({
@@ -10,7 +10,7 @@ const credentialEntrySchema = z
   .catchall(booleanFieldGroup);
 
 const VerifierRequest = z.object({
-  request: z.record(credentialEntrySchema),
+  request: z.record(z.string(), credentialEntrySchema),
 });
 
 /**
