@@ -9,7 +9,6 @@ import {
   requestBlePermissions,
 } from '../../utils';
 import { KEYTAG, MDL_BASE64, WELL_KNOWN_CREDENTIALS } from '../mocks/proximity';
-import { useNfcTimers } from './useNfcTimers';
 
 /**
  * Proximity status enum to track the current state of the flow.
@@ -35,14 +34,6 @@ export const useProximityFlow = () => {
   >(null);
   const isNfcEnabled = useRef<boolean>(false);
 
-  const {
-    nfcSessionSecondsLeft,
-    nfcCooldownSecondsLeft,
-    startSessionTimer,
-    clearSessionTimer,
-    startCooldownTimer,
-  } = useNfcTimers();
-
   const handleQrCodeString = useCallback(
     (payload: ISO18013_5.EventsPayload['onQrCodeString']) => {
       console.log('onQrCodeString', payload);
@@ -53,16 +44,13 @@ export const useProximityFlow = () => {
 
   const handleNfcStarted = useCallback(() => {
     console.log('onNfcStarted');
-    startSessionTimer();
     isNfcEnabled.current = true;
-  }, [startSessionTimer]);
+  }, []);
 
   const handleNfcStopped = useCallback(() => {
     console.log('onNfcStopped');
-    clearSessionTimer();
-    startCooldownTimer();
     isNfcEnabled.current = false;
-  }, [clearSessionTimer, startCooldownTimer]);
+  }, []);
 
   const handleOnDeviceConnecting = useCallback(() => {
     console.log('onDeviceConnecting');
@@ -252,12 +240,6 @@ export const useProximityFlow = () => {
   );
 
   useEffect(() => {
-    if (nfcSessionSecondsLeft === 0) {
-      closeFlow();
-    }
-  }, [nfcSessionSecondsLeft, closeFlow]);
-
-  useEffect(() => {
     const listeners = [
       ISO18013_5.addListener('onQrCodeString', handleQrCodeString),
       ISO18013_5.addListener('onNfcStarted', handleNfcStarted),
@@ -307,8 +289,6 @@ export const useProximityFlow = () => {
     status,
     qrCode,
     request,
-    nfcSessionSecondsLeft,
-    nfcCooldownSecondsLeft,
     isNfcEnabled: isNfcEnabled.current,
     init,
     startFlow,

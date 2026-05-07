@@ -1,5 +1,5 @@
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-import { Button, Platform, ScrollView, Text } from 'react-native';
+import { Button, ScrollView, Text } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { styles } from '../styles';
 import { PROXIMITY_STATUS, useProximityFlow } from './hooks/useProximityFlow';
@@ -10,8 +10,6 @@ const Iso180135Screen: React.FC = () => {
     status,
     qrCode,
     request,
-    nfcSessionSecondsLeft,
-    nfcCooldownSecondsLeft,
     isNfcEnabled,
     init,
     startFlow,
@@ -19,9 +17,6 @@ const Iso180135Screen: React.FC = () => {
     sendDocument,
     sendError,
   } = useProximityFlow();
-
-  const isNfcUnavailable =
-    Platform.OS === 'ios' && nfcCooldownSecondsLeft !== null;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -37,26 +32,19 @@ const Iso180135Screen: React.FC = () => {
           <Button
             title={'Start QRCODE->NFC'}
             onPress={() => startFlow(['qrcode'], ['nfc'])}
-            disabled={isNfcUnavailable}
           />
           <Button
             title={'Start NFC->BLE'}
             onPress={() => startFlow(['nfc'], ['ble'])}
-            disabled={isNfcUnavailable}
           />
           <Button
             title={'Start NFC->NFC'}
             onPress={() => startFlow(['nfc'], ['nfc'])}
-            disabled={isNfcUnavailable}
           />
           <Button
             title={'Start QRCODE+NFC->BLE+NFC'}
             onPress={() => startFlow(['qrcode', 'nfc'], ['ble', 'nfc'])}
-            disabled={isNfcUnavailable}
           />
-          {isNfcUnavailable && (
-            <Text>NFC unavailable — please wait {nfcCooldownSecondsLeft}s</Text>
-          )}
         </>
       )}
       {status === PROXIMITY_STATUS.ENGAGEMENT && qrCode && (
@@ -68,11 +56,6 @@ const Iso180135Screen: React.FC = () => {
             NFC engagement active, tap the back of both devices toward each
             other and hold them together
           </Text>
-          {Platform.OS === 'ios' &&
-            nfcSessionSecondsLeft !== null &&
-            nfcSessionSecondsLeft > 0 && (
-              <Text>Session expires in {nfcSessionSecondsLeft}s</Text>
-            )}
         </>
       )}
       {status === PROXIMITY_STATUS.PRESENTING && request && (
