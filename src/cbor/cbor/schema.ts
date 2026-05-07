@@ -90,7 +90,7 @@ export const IssuerAuthPayload = z.object({
   validityInfo: IssuerAuthPayloadValidityInfo,
   digestAlgorithm: z.string().optional(),
   deviceKeyInfo: IssuerAuthPayloadDeviceKeyInfo,
-  valueDigests: z.record(z.any()),
+  valueDigests: z.record(z.string(), z.any()),
 });
 
 export type IssuerAuthPayload = z.infer<typeof IssuerAuthPayload>;
