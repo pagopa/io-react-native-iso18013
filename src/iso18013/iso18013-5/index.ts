@@ -20,6 +20,7 @@ export {
   generateResponse,
   sendErrorResponse,
   sendResponse,
+  setHceModalMessage,
 } from './proximity';
 
 export { type RequestedDocument, type AcceptedFields } from '../types';

@@ -34,6 +34,8 @@ RCT_EXTERN_METHOD(generateOID4VPDeviceResponse: (NSString *)clientId
                   withResolver: (RCTPromiseResolveBlock)resolve
                   withRejecter: (RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(setHceModalMessage:  (NSString)message)
+
 + (BOOL)requiresMainQueueSetup
 {
   return YES;

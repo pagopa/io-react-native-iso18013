@@ -54,10 +54,12 @@ export const useProximityFlow = () => {
 
   const handleOnDeviceConnecting = useCallback(() => {
     console.log('onDeviceConnecting');
+    ISO18013_5.setHceModalMessage('onDeviceConnecting');
   }, []);
 
   const handleOnDeviceConnected = useCallback(() => {
     console.log('onDeviceConnected');
+    ISO18013_5.setHceModalMessage('onDeviceConnected');
   }, []);
 
   const init = useCallback(async () => {
@@ -173,6 +175,7 @@ export const useProximityFlow = () => {
   const onDocumentRequestReceived = useCallback(
     async (payload: ISO18013_5.EventsPayload['onDocumentRequestReceived']) => {
       try {
+        ISO18013_5.setHceModalMessage('onDocumentRequestReceived');
         console.log('onDocumentRequestReceived', payload);
         if (!payload || !payload.data) {
           console.warn('Request does not contain a message.');
@@ -219,6 +222,7 @@ export const useProximityFlow = () => {
 
   const onDeviceDisconnected = useCallback(async () => {
     Alert.alert('Device disconnected', 'Check the verifier app');
+    ISO18013_5.setHceModalMessage('onDeviceDisconnected');
     await closeFlow();
   }, [closeFlow]);
 

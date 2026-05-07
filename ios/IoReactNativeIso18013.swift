@@ -494,6 +494,20 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
   }
   
   /**
+    Sets a custom message to be displayed in the NFC HCE modal during NFC engagement.
+ 
+    - Parameters:
+    - message: The custom message to be displayed in the NFC HCE modal. 
+  */
+  @objc func setHceModalMessage(
+    _ message: String
+  ) {
+    if #available(iOS 17.4, *) {
+        ISO18013.shared.setNfcHceMessage(message: message)
+    }
+  }
+  
+  /**
    Custom Error which is thrown when a parsing error occurs in our utility functions which converts data from the bridge to what
    our underlying functions expect.
    This is needed in order to provide a customized description which can include more debug information.
