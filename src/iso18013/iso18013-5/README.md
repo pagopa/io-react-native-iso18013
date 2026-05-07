@@ -249,14 +249,14 @@ ISO18013_5.addListener(
 
 Starts the proximity flow with the specified engagement and retrieval modes. By default enables both QR code and NFC engagement with both BLE and NFC retrieval. NFC engagement requires iOS 17.4+ on iOS and HCE support on Android.
 
-| Parameter           | Platform    | Default              | Description                                                                                                               |
-| ------------------- | ----------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `peripheralMode`    | Android     | `true`               | Whether the device is in peripheral mode                                                                                  |
-| `centralClientMode` | Android     | `false`              | Whether the device is in central client mode                                                                              |
-| `clearBleCache`     | Android     | `true`               | Whether the BLE cache should be cleared                                                                                   |
-| `certificates`      | Android/iOS | `[]`                 | Two-dimensional array of base64 strings representing DER encoded X.509 certificates used to authenticate the verifier app |
-| `engagementModes`   | Android/iOS | `['qrcode', 'nfc']`  | Array of engagement modes to activate (`'qrcode'` and/or `'nfc'`)                                                        |
-| `retrievalMethods`  | Android/iOS | `['ble', 'nfc']`     | Array of supported retrieval methods (`'ble'` and/or `'nfc'`)                                                             |
+| Parameter           | Platform    | Default             | Description                                                                                                               |
+| ------------------- | ----------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `peripheralMode`    | Android     | `true`              | Whether the device is in peripheral mode                                                                                  |
+| `centralClientMode` | Android     | `false`             | Whether the device is in central client mode                                                                              |
+| `clearBleCache`     | Android     | `true`              | Whether the BLE cache should be cleared                                                                                   |
+| `certificates`      | Android/iOS | `[]`                | Two-dimensional array of base64 strings representing DER encoded X.509 certificates used to authenticate the verifier app |
+| `engagementModes`   | Android/iOS | `['qrcode', 'nfc']` | Array of engagement modes to activate (`'qrcode'` and/or `'nfc'`)                                                         |
+| `retrievalMethods`  | Android/iOS | `['ble', 'nfc']`    | Array of supported retrieval methods (`'ble'` and/or `'nfc'`)                                                             |
 
 ```typescript
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
@@ -337,6 +337,16 @@ Before starting a new flow, it is necessary to call this method to ensure that t
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
 await ISO18013_5.close();
+```
+
+#### `setHceModalMessage` (iOS Only)
+
+Sets the message to display in the HCE system modal
+
+```typescript
+import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
+
+await ISO18013_5.setHceModalMessage('My custom message');
 ```
 
 ## Proximity Sequence Diagram

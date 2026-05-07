@@ -386,6 +386,11 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     }
   }
 
+  @ReactMethod
+  fun setHceModalMessage(message: String) {
+    // Android does not support alert messages for NFC reading
+  }
+
   /**
    * Sets the proximity handler along with the possible dispatched events and their callbacks.
    * The events are then sent to React Native via `RCTEventEmitter`.

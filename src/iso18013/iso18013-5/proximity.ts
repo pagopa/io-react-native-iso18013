@@ -165,3 +165,13 @@ export function addListener<E extends Events>(
 ) {
   return eventEmitter.addListener(event, callback);
 }
+
+/**
+ * **iOS only**
+ *
+ * Sets a custom message to be displayed in the NFC HCE modal during NFC engagement.
+ * @param message - The custom message to be displayed in the NFC HCE modal.
+ */
+export function setHceModalMessage(message: string): void {
+  IoReactNativeIso18013.setHceModalMessage(message);
+}
