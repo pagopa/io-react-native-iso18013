@@ -65,8 +65,8 @@ export type RetrievalMethod = 'ble' | 'nfc';
  * @param config.centralClientMode (Android only) - Whether the device is in central client mode. Defaults to false
  * @param config.clearBleCache (Android only) - Whether the BLE cache should be cleared. Defaults to true
  * @param config.certificates - Two-dimensional array of base64 strings representing DER encoded X.509 certificate which are used to authenticate the verifier app
- * @param config.engagementMethods - Array of engagements methods initiated. Defaults to ['qr', 'nfc']
- * @param config.retrievalMethods - Array of supported retrieval methods. Defaults to ['ble', 'nfc']
+ * @param config.engagementMethods - Array of engagements methods initiated. Defaults to ['qr']
+ * @param config.retrievalMethods - Array of supported retrieval methods. Defaults to ['ble']
  * @throws {ModuleError} in case of error which can be parsed with {@link ModuleErrorSchema}
  */
 export function startEngagement(
@@ -84,8 +84,8 @@ export function startEngagement(
     centralClientMode = false,
     clearBleCache = true,
     certificates = [],
-    engagementModes = ['qrcode', 'nfc'],
-    retrievalMethods = ['ble', 'nfc'],
+    engagementModes = ['qrcode'],
+    retrievalMethods = ['ble'],
   } = config;
 
   if (Platform.OS === 'ios') {
