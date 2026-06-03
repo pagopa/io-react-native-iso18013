@@ -14,7 +14,7 @@ internal enum class EngagementMode(val bridgeValue: String) {
 }
 
 internal fun parseEngagementModes(engagementModes: ReadableArray): List<EngagementMode> {
-  if (engagementModes.size() == 0) return listOf(EngagementMode.QR_CODE, EngagementMode.NFC)
+  if (engagementModes.size() == 0) return listOf(EngagementMode.QR_CODE)
   return (0 until engagementModes.size()).map { index ->
     val method = engagementModes.getString(index)
       ?: throw IllegalArgumentException("Engagement mode at index $index is null")
@@ -33,7 +33,7 @@ internal enum class RetrievalMethod(val bridgeValue: String) {
 }
 
 internal fun parseRetrievalMethods(retrievalMethods: ReadableArray): List<RetrievalMethod> {
-  if (retrievalMethods.size() == 0) return listOf(RetrievalMethod.BLE, RetrievalMethod.NFC)
+  if (retrievalMethods.size() == 0) return listOf(RetrievalMethod.BLE)
   return (0 until retrievalMethods.size()).map { index ->
     val method = retrievalMethods.getString(index)
       ?: throw IllegalArgumentException("Retrieval method at index $index is null")
