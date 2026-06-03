@@ -53,10 +53,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
   override fun invalidate() {
     super.invalidate()
-    nfcEventJob?.cancel()
-    nfcEventJob = null
-    nfcScope.coroutineContext[Job]?.cancel()
-    reactApplicationContext.currentActivity?.let { NfcEngagementService.disable(it) }
+    this.dispose()
   }
 
   /**
@@ -164,15 +161,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun close(promise: Promise) {
     try {
-      qrEngagement?.close()
-      qrEngagement = null
-      deviceRetrievalHelper?.disconnect()
-      deviceRetrievalHelper = null
-      sessionRetrievalMethod = null
-      sessionTranscript = null
-      nfcEventJob?.cancel()
-      nfcEventJob = null
-      reactApplicationContext.currentActivity?.let { NfcEngagementService.disable(it) }
+      this.dispose()
       promise.resolve(true)
     } catch (e: Exception) {
       promise.reject(ModuleErrorCodes.CLOSE_ERROR, message = e.message, e)
@@ -527,6 +516,21 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   private fun sendEvent(eventName: String, data: Any?) {
     reactApplicationContext.getJSModule(com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
       .emit(eventName, data)
+  }
+
+  /**
+   * Disposes the resources
+   */
+  private fun dispose() {
+    qrEngagement?.close()
+    qrEngagement = null
+    deviceRetrievalHelper?.disconnect()
+    deviceRetrievalHelper = null
+    sessionRetrievalMethod = null
+    sessionTranscript = null
+    nfcEventJob?.cancel()
+    nfcEventJob = null
+    reactApplicationContext.currentActivity?.let { NfcEngagementService.disable(it) }
   }
 
   /**
