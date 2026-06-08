@@ -60,11 +60,7 @@ const Iso180135Screen: React.FC = () => {
       )}
       {status === PROXIMITY_STATUS.PRESENTING && request && (
         <>
-          <View style={localStyles.requestInfoWrapper}>
-            {Object.entries(request).map(([doc, req], index) => (
-              <RequestInfo key={index} doc={doc} request={req} />
-            ))}
-          </View>
+          <RequestInfo request={request} />
           <Button
             title="Send document (base64)"
             onPress={() => sendDocument(request, MDL_BASE64)}
@@ -105,16 +101,18 @@ const Iso180135Screen: React.FC = () => {
 };
 
 const RequestInfo = ({
-  doc,
   request,
 }: {
-  doc: string;
-  request: ISO18013_5.VerifierRequest['request'][0];
+  request: ISO18013_5.VerifierRequest['request'];
 }) => {
   return (
-    <View style={localStyles.requestInfoContainer}>
-      <Text style={localStyles.requestInfoTitle}>Request for {doc}</Text>
-      <Text>{JSON.stringify(request, null, 2)}</Text>
+    <View style={localStyles.requestInfoWrapper}>
+      {Object.entries(request).map(([doc, req], index) => (
+        <View key={`request_${index}`} style={localStyles.requestInfoContainer}>
+          <Text style={localStyles.requestInfoTitle}>Request for {doc}</Text>
+          <Text>{JSON.stringify(req, null, 2)}</Text>
+        </View>
+      ))}
     </View>
   );
 };
