@@ -52,8 +52,8 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   }
 
   override fun invalidate() {
-    super.invalidate()
     this.dispose()
+    super.invalidate()
   }
 
   /**
