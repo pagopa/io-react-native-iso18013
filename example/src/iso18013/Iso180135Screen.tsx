@@ -1,5 +1,5 @@
 import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
-import { Button, ScrollView, Text } from 'react-native';
+import { Button, ScrollView, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { styles } from '../styles';
 import { PROXIMITY_STATUS, useProximityFlow } from './hooks/useProximityFlow';
@@ -60,6 +60,7 @@ const Iso180135Screen: React.FC = () => {
       )}
       {status === PROXIMITY_STATUS.PRESENTING && request && (
         <>
+          <RequestInfo request={request} />
           <Button
             title="Send document (base64)"
             onPress={() => sendDocument(request, MDL_BASE64)}
@@ -98,5 +99,39 @@ const Iso180135Screen: React.FC = () => {
     </ScrollView>
   );
 };
+
+const RequestInfo = ({
+  request,
+}: {
+  request: ISO18013_5.VerifierRequest['request'];
+}) => {
+  return (
+    <View style={localStyles.requestInfoWrapper}>
+      {Object.entries(request).map(([doc, req], index) => (
+        <View key={`request_${index}`} style={localStyles.requestInfoContainer}>
+          <Text style={localStyles.requestInfoTitle}>Request for {doc}</Text>
+          <Text>{JSON.stringify(req, null, 2)}</Text>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+const localStyles = StyleSheet.create({
+  requestInfoWrapper: {
+    gap: 16,
+    width: '100%',
+  },
+  requestInfoContainer: {
+    width: '100%',
+    marginVertical: 10,
+    backgroundColor: 'white',
+    padding: 16,
+    gap: 16,
+  },
+  requestInfoTitle: {
+    fontWeight: 'bold',
+  },
+});
 
 export default Iso180135Screen;
