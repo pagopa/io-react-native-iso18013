@@ -398,10 +398,10 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
   /**
    Converts a device requested from the `onDocumentRequestReceived` callback into a serializable JSON.
    - Parameters:
-   - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces and the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the data.
+   - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces, the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the data, and optional certificate data from the verifier X.509 certificate.
    - Returns: A JSON string representing the device request or nil if an error occurs.
    */
-  private func deviceRequestToJson(request: [(docType: String, nameSpaces: [String: [String: Bool]], isAuthenticated: Bool)]?) -> String? {
+  private func deviceRequestToJson(request: [(docType: String, nameSpaces: [String: [String: Bool]], isAuthenticated: Bool, certificateData: [String: String]?)]?) -> String? {
     var jsonRequest : [String: AnyHashable] = [:]
     request?.forEach({
       item in
@@ -412,6 +412,9 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
       })
       
       subReq["isAuthenticated"] = item.isAuthenticated
+      if let certData = item.certificateData {
+        subReq["certificateData"] = certData
+      }
       
       jsonRequest[item.docType] = subReq
     })

@@ -103,8 +103,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       // NFC engagement
 
       if (parsedEngagementModes.any { it == EngagementMode.NFC }) {
-        val readerTrustStore = certificatesList.takeIf { it.isNotEmpty() }
-          ?.map { chain -> chain.map<ByteArray, Any> { it } }
+        val readerTrustStore = certificatesList.map { chain -> chain.map<ByteArray, Any> { it } }
 
         check(
           NfcEngagementEventBus.setupNfcService(
@@ -124,9 +123,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
       if (parsedEngagementModes.any { it == EngagementMode.QR_CODE }) {
         qrEngagement = QrEngagement.build(reactApplicationContext, methods).apply {
-          if (certificatesList.isNotEmpty()) {
-            withReaderTrustStore(certificatesList)
-          }
+          withReaderTrustStore(certificatesList)
         }
         qrEngagement?.configure()
         setupProximityHandler()
