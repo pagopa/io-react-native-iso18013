@@ -7,6 +7,7 @@
         <service
             android:name="com.ioreactnativeiso18013.IoNfcEngagementService"
             android:exported="true"
+            android:enabled="false"
             android:permission="android.permission.BIND_NFC_SERVICE">
             <intent-filter>
                 <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE" />
