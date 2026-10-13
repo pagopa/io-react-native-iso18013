@@ -10,7 +10,16 @@ import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
 
 #### `generateOID4VPDeviceResponse`
 
-Returns a string containing the CBOR of the **Device Response** object.
+Returns a base64-encoded string containing the CBOR of the **Device Response** object.
+
+Uses the OpenID4VP 1.0 session transcript. The fourth argument replaces the former
+`mdocGeneratedNonce`: pass the base64url-encoded SHA-256 JWK thumbprint (RFC 7638)
+of the verifier key actually used to encrypt the authorization response, or `null`
+when the response is not encrypted. The native bridge decodes the thumbprint to
+32 bytes; do not pass the old nonce or a JWK JSON string. Include the client ID
+prefix in `clientId`.
+
+This is a breaking change for callers using the previous draft transcript.
 
 ```typescript
 import { ISO18013_7 } from '@pagopa/io-react-native-iso18013';
@@ -34,11 +43,14 @@ const acceptedFields = {
   },
 };
 
+// For an unencrypted response; otherwise supply the encryption key thumbprint.
+const jwkThumbprint = null;
+
 const result = await ISO18013_7.generateOID4VPDeviceResponse(
   clientId,
   responseUri,
   authorizationRequestNonce,
-  mdocGeneratedNonce,
+  jwkThumbprint,
   documents,
   acceptedFields
 );
