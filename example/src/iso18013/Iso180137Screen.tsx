@@ -21,7 +21,7 @@ const handleGenerateResponse = async (deviceRequest: DeviceRequest) => {
       deviceRequest.request.clientId,
       deviceRequest.request.responseUri,
       deviceRequest.request.authorizationRequestNonce,
-      deviceRequest.request.mdocGeneratedNonce,
+      deviceRequest.request.jwkThumbprint,
       deviceRequest.documents,
       deviceRequest.acceptedFields
     );
@@ -43,7 +43,7 @@ const handleGenerateResponseWrongDocRequested = async () => {
       WRONG_DOC_REQUEST.request.clientId,
       WRONG_DOC_REQUEST.request.responseUri,
       WRONG_DOC_REQUEST.request.authorizationRequestNonce,
-      WRONG_DOC_REQUEST.request.mdocGeneratedNonce,
+      WRONG_DOC_REQUEST.request.jwkThumbprint,
       WRONG_DOC_REQUEST.documents,
       WRONG_DOC_REQUEST.acceptedFields
     );
@@ -65,7 +65,7 @@ const handleGenerateResponseIncompleteDocRequested = async () => {
       INCOMPLETE_DOC_REQUEST.request.clientId,
       INCOMPLETE_DOC_REQUEST.request.responseUri,
       INCOMPLETE_DOC_REQUEST.request.authorizationRequestNonce,
-      INCOMPLETE_DOC_REQUEST.request.mdocGeneratedNonce,
+      INCOMPLETE_DOC_REQUEST.request.jwkThumbprint,
       //Cast needed to induce error scenario
       INCOMPLETE_DOC_REQUEST.documents as {
         alias: string;
@@ -93,7 +93,7 @@ const handleGenerateResponseEmptyAcceptedFields = async () => {
       EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.responseUri,
       EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request
         .authorizationRequestNonce,
-      EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.mdocGeneratedNonce,
+      EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.jwkThumbprint,
       EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.documents,
       EMPTY_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.acceptedFields
     );
@@ -116,7 +116,7 @@ const handleGenerateResponseWrongAcceptedFields = async () => {
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.responseUri,
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request
         .authorizationRequestNonce,
-      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.mdocGeneratedNonce,
+      WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.request.jwkThumbprint,
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.documents,
       WRONG_FIELD_REQUESTED_AND_ACCEPTED_REQUEST.acceptedFields as any // Cast needed to induce error scenario
     );
@@ -139,7 +139,7 @@ const handleGenerateResponseEmptyNamespaceAcceptedFields = async () => {
       EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.request.responseUri,
       EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.request
         .authorizationRequestNonce,
-      EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.request.mdocGeneratedNonce,
+      EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.request.jwkThumbprint,
       EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.documents,
       EMPTY_NAMESPACE_REQUESTED_AND_ACCEPTED_REQUEST.acceptedFields
     );

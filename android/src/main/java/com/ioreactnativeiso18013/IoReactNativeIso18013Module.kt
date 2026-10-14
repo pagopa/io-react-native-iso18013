@@ -324,7 +324,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @param clientId the client id extracted from OID4VP session
    * @param responseUri the response URI extracted from OID4VP session
    * @param authorizationRequestNonce the authorization request nonce extracted from OID4VP session
-   * @param mdocGeneratedNonce the mDoc generated nonce to be generated
+   * @param jwkThumbprint the base64url-encoded SHA-256 thumbprint (RFC 7638) of the response encryption key, or null for an unencrypted response
    * @param documents [ReadableArray] containing documents. Each document is defined as a map containing:
    * - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
    * - alias which is the alias of the key used to sign the credential;
@@ -350,14 +350,15 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     clientId: String,
     responseUri: String,
     authorizationRequestNonce: String,
-    mdocGeneratedNonce: String,
+    jwkThumbprint: String?,
     documents: ReadableArray,
     acceptedFields: ReadableMap,
     promise: Promise
   ) {
     try {
+      val thumbprintBytes = parseJwkThumbprint(jwkThumbprint)
       val sessionTranscript = OpenID4VP(
-        clientId, responseUri, authorizationRequestNonce, mdocGeneratedNonce
+        clientId, responseUri, authorizationRequestNonce, thumbprintBytes
       ).createSessionTranscript()
 
       createAndResolveResponse(
@@ -545,6 +546,13 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
   fun removeListeners(count: Int?) = Unit
 
   companion object {
+    internal fun parseJwkThumbprint(jwkThumbprint: String?): ByteArray? =
+      jwkThumbprint?.let {
+        Base64Utils.decodeBase64AndBase64Url(it).also { bytes ->
+          require(bytes.size == 32) { "jwkThumbprint must contain a SHA-256 digest (32 bytes)" }
+        }
+      }
+
     const val NAME = "IoReactNativeIso18013"
     const val NOT_INITIALIZED_ERROR_MESSAGE =
       "Resources not initialized properly, call the start method before this one."

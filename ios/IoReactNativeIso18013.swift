@@ -438,7 +438,7 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
    - clientId: The client id extracted from OID4VP session.
    - responseUri: The response URI extracted from OID4VP session.
    - authorizationRequestNonce - The authorization request nonce extracted from OID4VP session.
-   - mdocGeneratedNonce - the mdoc generated nonce to be generated.
+   - jwkThumbprint - the base64url-encoded SHA-256 thumbprint (RFC 7638) of the response encryption key, or null for an unencrypted response.
    - documents: An array containing documents. Each document is defined as a map containing:
    - issuerSignedContent which is a base64 or base64url encoded string representing the credential;
    - alias which is the alias of the key used to sign the credential;
@@ -462,12 +462,12 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
    - resolve: The promise to be resolved.
    - reject: The promise to be rejected.
    */
-  @objc(generateOID4VPDeviceResponse:withResponseUri:withAuthorizationRequestNonce:withMdocGeneratedNonce:withDocuments:withAcceptedFields:withResolver:withRejecter:)
+  @objc(generateOID4VPDeviceResponse:withResponseUri:withAuthorizationRequestNonce:withJwkThumbprint:withDocuments:withAcceptedFields:withResolver:withRejecter:)
   func generateOID4VPDeviceResponse(
     clientId: String,
     responseUri: String,
     authorizationRequestNonce: String,
-    mdocGeneratedNonce: String,
+    jwkThumbprint: String?,
     documents: [Any],
     acceptedFields: [AnyHashable: Any],
     resolver resolve: RCTPromiseResolveBlock,
@@ -475,11 +475,20 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
   ) {
     
     do {
+      let thumbprintBytes = try jwkThumbprint.map {
+        let bytes = try Base64Utils.decodeBase64OrBase64URL(base: $0)
+        guard bytes.count == 32 else {
+          throw NSError(domain: "IoReactNativeIso18013", code: 0, userInfo: [
+            NSLocalizedDescriptionKey: "jwkThumbprint must contain a SHA-256 digest (32 bytes)"
+          ])
+        }
+        return [UInt8](bytes)
+      }
       let sessionTranscript = ISO18013.shared.generateOID4VPSessionTranscriptCBOR(
         clientId: clientId,
         responseUri: responseUri,
         authorizationRequestNonce: authorizationRequestNonce,
-        mdocGeneratedNonce: mdocGeneratedNonce
+        jwkThumbprint: thumbprintBytes
       )
       
       let documentsAsProximityDocument = try parseDocuments(documents: documents)

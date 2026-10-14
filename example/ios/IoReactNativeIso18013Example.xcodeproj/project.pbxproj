@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0C80B921A6F3F58F76C31292 /* libPods-IoReactNativeIso18013Example.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-IoReactNativeIso18013Example.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		16575BCF71CED193619107F8 /* libPods-IoReactNativeIso18013Example.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 44945E201510FB47344268BE /* libPods-IoReactNativeIso18013Example.a */; };
 		4A8950CB74F5264B6639031A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -19,9 +19,9 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = IoReactNativeIso18013Example/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = IoReactNativeIso18013Example/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = IoReactNativeIso18013Example/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		3B4392A12AC88292D35C810B /* Pods-IoReactNativeIso18013Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-IoReactNativeIso18013Example.debug.xcconfig"; path = "Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example.debug.xcconfig"; sourceTree = "<group>"; };
-		5709B34CF0A7D63546082F79 /* Pods-IoReactNativeIso18013Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-IoReactNativeIso18013Example.release.xcconfig"; path = "Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example.release.xcconfig"; sourceTree = "<group>"; };
-		5DCACB8F33CDC322A6C60F78 /* libPods-IoReactNativeIso18013Example.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-IoReactNativeIso18013Example.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		23131657AD8D4BE8DC2B5AEA /* Pods-IoReactNativeIso18013Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-IoReactNativeIso18013Example.release.xcconfig"; path = "Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example.release.xcconfig"; sourceTree = "<group>"; };
+		3A3A939C1E6130944F92E97A /* Pods-IoReactNativeIso18013Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-IoReactNativeIso18013Example.debug.xcconfig"; path = "Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example.debug.xcconfig"; sourceTree = "<group>"; };
+		44945E201510FB47344268BE /* libPods-IoReactNativeIso18013Example.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-IoReactNativeIso18013Example.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = IoReactNativeIso18013Example/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = IoReactNativeIso18013Example/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		8A3E5C2D1B4F60AB9E7D3C21 /* IoReactNativeIso18013Example.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = IoReactNativeIso18013Example.entitlements; path = IoReactNativeIso18013Example/IoReactNativeIso18013Example.entitlements; sourceTree = "<group>"; };
@@ -33,7 +33,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C80B921A6F3F58F76C31292 /* libPods-IoReactNativeIso18013Example.a in Frameworks */,
+				16575BCF71CED193619107F8 /* libPods-IoReactNativeIso18013Example.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,7 +57,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				5DCACB8F33CDC322A6C60F78 /* libPods-IoReactNativeIso18013Example.a */,
+				44945E201510FB47344268BE /* libPods-IoReactNativeIso18013Example.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -94,8 +94,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				3B4392A12AC88292D35C810B /* Pods-IoReactNativeIso18013Example.debug.xcconfig */,
-				5709B34CF0A7D63546082F79 /* Pods-IoReactNativeIso18013Example.release.xcconfig */,
+				3A3A939C1E6130944F92E97A /* Pods-IoReactNativeIso18013Example.debug.xcconfig */,
+				23131657AD8D4BE8DC2B5AEA /* Pods-IoReactNativeIso18013Example.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -107,13 +107,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "IoReactNativeIso18013Example" */;
 			buildPhases = (
-				C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */,
+				767E17904D805112F13AF38D /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
-				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
+				78FC1049844428796F691E14 /* [CP] Embed Pods Frameworks */,
+				7F01EB7117DBB3EAA38AB574 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -185,24 +185,7 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
+		767E17904D805112F13AF38D /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -224,7 +207,24 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		E235C05ADACE081382539298 /* [CP] Copy Pods Resources */ = {
+		78FC1049844428796F691E14 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-IoReactNativeIso18013Example/Pods-IoReactNativeIso18013Example-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		7F01EB7117DBB3EAA38AB574 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -257,7 +257,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3B4392A12AC88292D35C810B /* Pods-IoReactNativeIso18013Example.debug.xcconfig */;
+			baseConfigurationReference = 3A3A939C1E6130944F92E97A /* Pods-IoReactNativeIso18013Example.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -287,7 +287,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5709B34CF0A7D63546082F79 /* Pods-IoReactNativeIso18013Example.release.xcconfig */;
+			baseConfigurationReference = 23131657AD8D4BE8DC2B5AEA /* Pods-IoReactNativeIso18013Example.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
