@@ -138,8 +138,7 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
           engagementModes: parsedEngagementModes,
           retrivalMethods: parsedRetrievalMethods,
           delegate: self,
-          isNfcLateEngagement: false,
-          startEmulationNow: true
+          isNfcLateEngagement: false
         )
       resolve(true)
     } catch let proximityError as ProximityError {

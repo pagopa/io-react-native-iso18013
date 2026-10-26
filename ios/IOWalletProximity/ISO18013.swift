@@ -91,15 +91,14 @@ public class ISO18013 : @unchecked Sendable {
         engagementModes: [ISO18013EngagementMode],
         retrivalMethods: [ISO18013DataTransferMode],
         delegate: ISO18013Delegate,
-        isNfcLateEngagement: Bool,
-        startEmulationNow: Bool) {
+        isNfcLateEngagement: Bool) {
             
         self.engagementModes = engagementModes
         self.retrivalMethods = retrivalMethods
         self.delegate = delegate
         self.isNfcLateEngagement = isNfcLateEngagement
         
-        _initializeEngagement(trustedCertificates, startEmulationNow: startEmulationNow)
+        _initializeEngagement(trustedCertificates)
     }
     
     //  Set native UI Host Card Emulation Message
@@ -124,7 +123,7 @@ public class ISO18013 : @unchecked Sendable {
     
     // Allow the caller to start NFC HCE after entering engagement phase.
     // Available only if start was with 'isNfcLateEngagement' = true
-    public func lateNfcInitialization(startEmulationNow: Bool) throws {
+    public func lateNfcInitialization() throws {
         if engagementModes.first(where: {
             engagementMode in
             if case .nfc = engagementMode {
@@ -142,7 +141,7 @@ public class ISO18013 : @unchecked Sendable {
                 throw ProximityError.nfcFailedToStart
             }
         }
-            _initializeNfcEngagement(isLate: false, startEmulationNow: startEmulationNow)
+            _initializeNfcEngagement(isLate: false)
         
     }
     
@@ -228,15 +227,12 @@ public class ISO18013 : @unchecked Sendable {
         case .onEngagementWithDisabledEngagement:
             triggerEvent(.error(ProximityError.nfcEngagementWihtEngagementDisabled))
             break
-        case .onError:
-            triggerEvent(.error(ProximityError.nfcFailedToStart))
-            break
         default:
             break
         }
     }
     
-    private func _initializeEngagement(_ trustedCertificates: [[Data]]? = nil, startEmulationNow: Bool) {
+    private func _initializeEngagement(_ trustedCertificates: [[Data]]? = nil) {
         
         Proximity.shared.proximityHandler = {
             event in
@@ -254,16 +250,16 @@ public class ISO18013 : @unchecked Sendable {
             engagementMode in
             switch(engagementMode) {
             case .qrCode:
-                _initializeQrCode(startEmulationNow: startEmulationNow)
+                _initializeQrCode()
             case .nfc:
                 if (!isNfcLateEngagement) {
-                    _initializeNfcEngagement(isLate: false, startEmulationNow: startEmulationNow)
+                    _initializeNfcEngagement(isLate: false)
                 }
             }
         })
     }
     
-    private func _initializeQrCode(startEmulationNow: Bool) {
+    private func _initializeQrCode() {
         do {
             
             var nfcEngagement = false
@@ -278,14 +274,14 @@ public class ISO18013 : @unchecked Sendable {
             }
             
             
-            let qrCode = try Proximity.shared.getQrCode(deviceRetrivalMethods: retrivalMethods, isNfcLateEngagement: isNfcLateEngagement, allowNfcEngagement: nfcEngagement, startEmulationNow: startEmulationNow)
+            let qrCode = try Proximity.shared.getQrCode(deviceRetrivalMethods: retrivalMethods, isNfcLateEngagement: isNfcLateEngagement, allowNfcEngagement: nfcEngagement)
             triggerEvent(.qrCode(qrCode))
         } catch {
             triggerEvent(.error(error))
         }
     }
     
-    private func _initializeNfcEngagement(isLate: Bool, startEmulationNow: Bool) {
+    private func _initializeNfcEngagement(isLate: Bool) {
         
         if !isNfcHostCardEmulationSupported() {
             triggerEvent(.error(ProximityError.nfcNotSupported))
@@ -313,7 +309,7 @@ public class ISO18013 : @unchecked Sendable {
                     return
                 }
                 print(isLate)
-                let success = try await Proximity.shared.startNfc(retrivalMethods, isLateNfc: isLate, allowEngagement: nfcEngagement, startEmulationNow: startEmulationNow)
+                let success = try await Proximity.shared.startNfc(retrivalMethods, isLateNfc: isLate, allowEngagement: nfcEngagement)
                 if !success {
                     throw ProximityError.nfcFailedToStart
                 }

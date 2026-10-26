@@ -22,8 +22,6 @@ public enum ProximityNfcEvents {
     
     case onEngagementWithDisabledEngagement
     
-    case onError
-    
 }
 
 @available(iOS 17.4, *)
@@ -38,20 +36,6 @@ class NFCDataTransfer : @unchecked Sendable, NFCCardEmulatorDelegate {
         switch(event) {
         case .sessionInvalidated(let reason):
             nfcHandler?(.onStop)
-            break
-        default:
-            break
-        }
-    }
-    
-    func cardSessionError(_ error: any Error) {
-        guard let error = error as? CardSession.Error else {
-            return
-        }
-        
-        switch(error) {
-        case .systemNotAvailable:
-            nfcHandler?(.onError)
             break
         default:
             break
@@ -247,8 +231,8 @@ class NFCDataTransfer : @unchecked Sendable, NFCCardEmulatorDelegate {
     }
     
     
-    func start(startEmulationNow: Bool) async throws -> Bool {
-        return try await cardEmulator.start(startEmulationNow: startEmulationNow)
+    func start() async throws -> Bool {
+        return try await cardEmulator.start()
     }
     
     func stop() async throws {
