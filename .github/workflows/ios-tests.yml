@@ -1,0 +1,45 @@
+name: iOS unit tests
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ios-unit-tests:
+    runs-on: macos-15
+
+    permissions:
+      contents: read # Needed for actions/checkout
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Javascript
+        uses: ./.github/actions/setup
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s '/Applications/Xcode_16.4.app'
+
+      - name: Restore cocoapods
+        id: cocoapods-cache
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        with:
+          path: |
+            **/ios/Pods
+          key: ${{ runner.os }}-cocoapods-${{ hashFiles('example/ios/Podfile.lock') }}
+
+      - name: Install cocoapods
+        if: steps.cocoapods-cache.outputs.cache-hit != 'true'
+        run: pod install
+        working-directory: example/ios
+
+      - name: Run module unit tests
+        run: |
+          xcodebuild test \
+            -workspace IoReactNativeIso18013Example.xcworkspace \
+            -scheme IoReactNativeIso18013-Unit-Tests \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO
+        working-directory: example/ios

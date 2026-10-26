@@ -36,6 +36,34 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
+  - IoReactNativeIso18013/Tests (0.8.6):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
   - OpenSSL-Universal (3.6.0000)
   - pagopa-io-react-native-crypto (1.2.4):
     - boost
@@ -2554,6 +2582,7 @@ DEPENDENCIES:
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - IoReactNativeIso18013 (from `../..`)
+  - IoReactNativeIso18013/Tests (from `../..`)
   - "pagopa-io-react-native-crypto (from `../node_modules/@pagopa/io-react-native-crypto`)"
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
@@ -2796,7 +2825,7 @@ SPEC CHECKSUMS:
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   hermes-engine: 9f4dfe93326146a1c99eb535b1cb0b857a3cd172
-  IoReactNativeIso18013: d81bb4b1e3a71188c4067f30a7b5ce2c21e70c1d
+  IoReactNativeIso18013: 10bc760c993c29a3c8bd7feaf8bf18782e3278df
   OpenSSL-Universal: 9110d21982bb7e8b22a962b6db56a8aa805afde7
   pagopa-io-react-native-crypto: f35cc2f38e8ab1b2b409e682e12063d9faa96cf7
   RCT-Folly: 846fda9475e61ec7bcbf8a3fe81edfcaeb090669
@@ -2869,6 +2898,6 @@ SPEC CHECKSUMS:
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 728df40394d49f3f471688747cf558158b3a3bd1
 
-PODFILE CHECKSUM: 61e355d8b4a908338e4489cce2c405e454a02446
+PODFILE CHECKSUM: 35f2bd55d7a6422a7f962a994c5bffaae78e1915
 
 COCOAPODS: 1.16.2

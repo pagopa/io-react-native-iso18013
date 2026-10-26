@@ -14,6 +14,16 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/pagopa/io-react-native-iso18013.git", :tag => "#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift}"
+  s.exclude_files = "ios/Tests/**/*"
+
+  # Unit tests of the vendored IOWalletCBOR and IOWalletProximity libraries.
+  s.test_spec "Tests" do |test_spec|
+    test_spec.source_files = "ios/Tests/**/*.swift"
+    test_spec.pod_target_xcconfig = {
+      # Makes the Swift Package Manager modules visible to the test target, as done by spm_dependency for the library.
+      "SWIFT_INCLUDE_PATHS" => "$(inherited) ${SYMROOT}/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}/"
+    }
+  end
 
   # The IOWalletProximity (https://github.com/pagopa/iso18013-ios) and IOWalletCBOR (https://github.com/pagopa/cbor-ios)
   # libraries are vendored as source code in ios/IOWalletProximity and ios/IOWalletCBOR.
