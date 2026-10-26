@@ -15,25 +15,23 @@ Pod::Spec.new do |s|
 
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
-  # Module dependencies
-  s.dependency "IOWalletCBOR", "0.2.1"
-
-  # The IOWalletProximity library (https://github.com/pagopa/iso18013-ios) is vendored as source code in ios/IOWalletProximity.
-  # Its Swift Package Manager dependencies are added with the same requirements used by the upstream Xcode project.
+  # The IOWalletProximity (https://github.com/pagopa/iso18013-ios) and IOWalletCBOR (https://github.com/pagopa/cbor-ios)
+  # libraries are vendored as source code in ios/IOWalletProximity and ios/IOWalletCBOR.
+  # Their Swift Package Manager dependencies are added with the requirements of the upstream Package.swift manifests.
   if respond_to?(:spm_dependency, true)
     spm_dependency(s,
       url: "https://github.com/niscy-eudiw/SwiftCBOR.git",
-      requirement: { kind: "exactVersion", version: "0.5.7" },
+      requirement: { kind: "upToNextMajorVersion", minimumVersion: "0.6.2" },
       products: ["SwiftCBOR"]
     )
     spm_dependency(s,
       url: "https://github.com/apple/swift-collections.git",
-      requirement: { kind: "upToNextMajorVersion", minimumVersion: "1.0.6" },
+      requirement: { kind: "upToNextMajorVersion", minimumVersion: "1.1.3" },
       products: ["OrderedCollections"]
     )
     spm_dependency(s,
       url: "https://github.com/kishikawakatsumi/KeychainAccess.git",
-      requirement: { kind: "upToNextMajorVersion", minimumVersion: "4.2.0" },
+      requirement: { kind: "upToNextMajorVersion", minimumVersion: "4.2.2" },
       products: ["KeychainAccess"]
     )
     spm_dependency(s,
