@@ -1,5 +1,4 @@
 import Foundation
-import IOWalletProximity
 import React
 
 @objc(IoReactNativeIso18013)
@@ -139,7 +138,8 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
           engagementModes: parsedEngagementModes,
           retrivalMethods: parsedRetrievalMethods,
           delegate: self,
-          isNfcLateEngagement: false
+          isNfcLateEngagement: false,
+          startEmulationNow: true
         )
       resolve(true)
     } catch let proximityError as ProximityError {
