@@ -93,3 +93,122 @@ extension CoseKey {
         )
     }
 }
+
+
+extension CoseKey {
+
+    internal func toJWKObj() -> [String: String]? {
+        let kty: String
+        let crv: String
+        let x: String
+        let y: String
+        
+        switch(self.kty)
+        {
+            case .EC2:
+                kty = "EC"
+            default:
+                //NOT SUPPORTED
+                return nil
+        }
+        
+        switch(self.crv) {
+            case .p256:
+                crv = "P-256"
+            case .p384:
+                crv = "P-384"
+            case .p521:
+                crv = "P-521"
+                
+        }
+        
+        x = self.x.data.base64UrlEncodedString()
+        y = self.y.data.base64UrlEncodedString()
+        
+        let jwkObj = [
+            "x": x,
+            "y": y,
+            "crv": crv,
+            "kty": kty
+        ]
+        
+        return jwkObj
+    }
+    
+    public func toJWK() -> String? {
+        guard let jwkObj = toJWKObj(),
+            let jwkData = try? JSONSerialization.data(withJSONObject: jwkObj, options: []),
+              let jwk = String(data: jwkData, encoding: String.Encoding.utf8) else {
+            return nil
+        }
+        
+        return jwk
+    }
+
+    // Initializes a CoseKey from a JWK String
+    public init?(jwk: String) {
+        guard let jwkData = jwk.data(using: .utf8),
+              let jwkObj = try? JSONSerialization.jsonObject(with: jwkData) as? Dictionary<String, String> else {
+            return nil
+        }
+        
+        guard let x = jwkObj["x"],
+              let xData = Data(base64UrlEncoded: x)?.bytes,
+              let y = jwkObj["y"],
+              let yData = Data(base64UrlEncoded: y)?.bytes,
+              let crv = jwkObj["crv"],
+              let kty = jwkObj["kty"] else {
+            return nil
+        }
+        
+        let curveType: ECCurveType
+        
+        switch(kty) {
+            case "EC":
+                curveType = .EC2
+            default:
+                //NOT SUPPORTED
+                return nil
+        }
+        
+        let curveName: ECCurveName
+        
+        switch(crv) {
+            case "P-256":
+                curveName = .p256
+            case "P-384":
+                curveName = .p384
+            case "P-521":
+                curveName = .p521
+            default:
+                //NOT SUPPORTED
+                return nil
+        }
+        
+        self.crv = curveName // Set curve name
+        self.kty = curveType // Set key type
+        
+        var tempX = xData
+        var tempY = yData
+        
+        
+        if (tempX.count % 2 != 0) {
+            if (tempX[0] == 0) {
+                tempX = tempX[1..<tempX.count].map({$0})
+            }
+        }
+        
+        if (tempY.count % 2 != 0) {
+            if (tempY[0] == 0) {
+                tempY = tempY[1..<tempY.count].map({$0})
+            }
+        }
+        
+        
+        
+        self.x = tempX// Set X coordinate
+        self.y = tempY// Set Y coordinate
+    }
+    
+    
+}

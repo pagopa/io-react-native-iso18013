@@ -11,24 +11,24 @@ import Foundation
 
 public class IOWalletCBORCoseKeyPrivate {
     
-    internal let coseKeyPrivate: CoseKeyPrivateImpl
+    internal let coseKeyPrivate: CoseKeyPrivate
     
-    internal init(_ coseKeyPrivate: CoseKeyPrivateImpl) {
+    internal init(_ coseKeyPrivate: CoseKeyPrivate) {
         self.coseKeyPrivate = coseKeyPrivate
     }
     
 }
 
 extension IOWalletCBORCoseKeyPrivate {
-    public convenience init(privateKeyx963Data: Data, crv: IOWalletCBORECCurveName = .p256) {
-        self.init(CoseKeyPrivateImpl(privateKeyx963Data: privateKeyx963Data, crv: crv))
+    public convenience init(privateKeyx963Data: Data, crv: ECCurveName = .p256) {
+        self.init(CoseKeyPrivate(privateKeyx963Data: privateKeyx963Data, crv: crv))
     }
     
-    public convenience init(crv: IOWalletCBORECCurveName) {
-        self.init(CoseKeyPrivateImpl(crv: crv))
+    public convenience init(crv: ECCurveName) {
+        self.init(CoseKeyPrivate(crv: crv))
     }
    
-    public convenience init?(crv: IOWalletCBORECCurveName, keyTag: String) {
+    public convenience init?(crv: ECCurveName, keyTag: String) {
         let getQuery: [String: Any] = [
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: keyTag,
@@ -47,30 +47,30 @@ extension IOWalletCBORCoseKeyPrivate {
       
     }
     
-    public convenience init?(crv: IOWalletCBORECCurveName, secKey: SecKey) {
-        guard let coseKeyPrivate = CoseKeyPrivateImpl(crv: crv, secKey: secKey) else {
+    public convenience init?(crv: ECCurveName, secKey: SecKey) {
+        guard let coseKeyPrivate = CoseKeyPrivate(crv: crv, secKey: secKey) else {
             return nil
         }
         self.init(coseKeyPrivate)
     }
     
     public convenience init(publicKeyx963Data: Data, secureEnclaveKeyID: Data) {
-        self.init(CoseKeyPrivateImpl(publicKeyx963Data: publicKeyx963Data, secureEnclaveKeyID: secureEnclaveKeyID))
+        self.init(CoseKeyPrivate(publicKeyx963Data: publicKeyx963Data, secureEnclaveKeyID: secureEnclaveKeyID))
     }
     
-    public convenience init(x: [UInt8], y: [UInt8], d: [UInt8], crv: IOWalletCBORECCurveName = .p256) {
-        self.init(CoseKeyPrivateImpl(x: x, y: y, d: d, crv: crv))
+    public convenience init(x: [UInt8], y: [UInt8], d: [UInt8], crv: ECCurveName = .p256) {
+        self.init(CoseKeyPrivate(x: x, y: y, d: d, crv: crv))
     }
     
     public convenience init?(data: [UInt8]) {
-        guard let coseKeyPrivate = CoseKeyPrivateImpl(data: data) else {
+        guard let coseKeyPrivate = try? CoseKeyPrivate(data: data) else {
             return nil
         }
         self.init(coseKeyPrivate)
     }
     
     public convenience init?(base64: String) {
-        guard let coseKeyPrivate = CoseKeyPrivateImpl(base64: base64) else {
+        guard let coseKeyPrivate = CoseKeyPrivate(base64: base64) else {
             return nil
         }
         self.init(coseKeyPrivate)

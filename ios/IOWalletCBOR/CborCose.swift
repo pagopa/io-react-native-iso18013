@@ -20,7 +20,7 @@ public class CborCose {
     //      - privateKey: IOWalletCBORCoseKeyPrivate instance representing the private key choosen to sign data
     //  - Returns: COSE-Sign1 structure with payload data included encoded as Data
     public static func sign(data: Data, privateKey: IOWalletCBORCoseKeyPrivate) -> Data {
-        let cose = try! IOWalletCBORCose.makeCoseSign1(payloadData: data, deviceKey: privateKey, alg: .es256)
+        let cose = try! Cose.makeCoseSign1(payloadData: data, deviceKey: privateKey.coseKeyPrivate, alg: .es256)
         
         return Data(cose.encode(options: CBOROptions()))
     }
@@ -32,7 +32,7 @@ public class CborCose {
     public static func verify(data: Data, publicKey: IOWalletCBORCoseKey) -> Bool {
         let coseCBOR = try? CBOR.decode(data.bytes)
         
-        let cose = IOWalletCBORCose.init(type: .sign1, cbor: coseCBOR!)!
+        let cose = Cose.init(type: .sign1, cbor: coseCBOR!)!
         
         return (try? cose.validateCoseSign1(publicKey_x963: publicKey.getx963Representation())) ?? false
     }
@@ -42,7 +42,7 @@ public class CborCose {
     //      - curve: Elliptic Curve Name
     //      - forceSecureEnclave: A boolean indicating if secure enclave must be used
     //  - Returns: A IOWalletCBORCoseKeyPrivate object if creation succeeds
-    public static func createSecurePrivateKey(curve: IOWalletCBORECCurveName = .p256, forceSecureEnclave: Bool = true) -> IOWalletCBORCoseKeyPrivate? {
+    public static func createSecurePrivateKey(curve: ECCurveName = .p256, forceSecureEnclave: Bool = true) -> IOWalletCBORCoseKeyPrivate? {
         if forceSecureEnclave {
             if !SecureEnclave.isAvailable {
                 //throw Error(description: "secureEnclaveNotSupported")
@@ -60,13 +60,13 @@ public class CborCose {
                 return nil
             }
             
-            return IOWalletCBORCoseKeyPrivate(CoseKeyPrivateImpl(
+            return IOWalletCBORCoseKeyPrivate(CoseKeyPrivate(
                 publicKeyx963Data: se256.publicKey.x963Representation,
                 secureEnclaveKeyID: se256.dataRepresentation))
         }
         
         //if force is disabled and secure enclave is not available use normal key generation
-        return IOWalletCBORCoseKeyPrivate(CoseKeyPrivateImpl(crv: curve))
+        return IOWalletCBORCoseKeyPrivate(CoseKeyPrivate(crv: curve))
     }
     
     //  Decode CBOR encoded documents (or document) to json object string
@@ -181,7 +181,7 @@ public class CborCose {
         return nil
     }
     
-    private static func decodeUnprotectedHeaders(issuerAuthCose: IOWalletCBORCose, _ properIssuerItem: Bool) -> AnyHashable? {
+    private static func decodeUnprotectedHeaders(issuerAuthCose: Cose, _ properIssuerItem: Bool) -> AnyHashable? {
         let val = issuerAuthCose.unprotectedHeader?.rawHeader?.asMap()?.map({
             keyPair in
             
@@ -189,7 +189,7 @@ public class CborCose {
             var value: AnyHashable? = cborToJson(cborObject: keyPair.value, isKey: false, properIssuerItem: properIssuerItem, decodeIssuerAuth: true)
             
             if let key = keyPair.key.asUInt64(),
-               let header = IOWalletCBORCose.CoseHeader.Headers(rawValue: Int(key)) {
+               let header = Cose.CoseHeader.Headers(rawValue: Int(key)) {
                 keyStr = "\(header)"
                 
                 switch(header) {
@@ -228,7 +228,7 @@ public class CborCose {
     
     private static func decodeIssuerAuthValue(_ issuerAuthValue: CBOR?, _ properIssuerItem: Bool) -> AnyHashable? {
         if let issuerAuthValue = issuerAuthValue,
-           let issuerAuthCose = IOWalletCBORCose.init(type: .sign1, cbor: issuerAuthValue),
+           let issuerAuthCose = Cose.init(type: .sign1, cbor: issuerAuthValue),
            let issuerAuthPayload = issuerAuthCose.payload.asBytes() {
             
             
@@ -276,7 +276,7 @@ public class CborCose {
                         if keyStr == "deviceKey",
                            decodeIssuerAuth,
                            let coseKeyValue = cborMap[key],
-                           let coseKey = CoseKeyImpl(cbor: coseKeyValue),
+                           let coseKey = CoseKey(cbor: coseKeyValue),
                            let coseKeyJwk = coseKey.toJWKObj()
                         {
                             map[keyStr] = AnyHashable(coseKeyJwk)

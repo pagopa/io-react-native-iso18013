@@ -5,17 +5,10 @@
 //  Created by Antonio on 02/10/24.
 //
 
-internal import SwiftCBOR
-internal import OrderedCollections
+import Foundation
 
-// Extension to add CBOR encoding and date formatting utilities for String
+// Extension to add date formatting and base64-url utilities for String
 extension String {
-    
-    // Computed property to encode the string as a tagged CBOR value for full dates
-    var fullDateEncoded: CBOR {
-        // Tag the string with the custom tag (1004) and encode it as a CBOR utf8String
-        return CBOR.tagged(CBOR.Tag(rawValue: 1004), .utf8String(self))
-    }
     
     // Function to format the string as a POSIX date (either ISO format or MM/DD/YYYY format)
     // - Parameter useIsoFormat: Boolean to indicate whether to use ISO format (default is true)
