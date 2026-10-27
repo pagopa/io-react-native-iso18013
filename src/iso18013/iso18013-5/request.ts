@@ -23,6 +23,14 @@ const credentialEntrySchema = z
   .object({
     isAuthenticated: z.boolean(),
     certificateData: certificateDataSchema.optional(),
+    // Whether the reader signature is valid, whether its certificate chain is trusted or not
+    isSignatureValid: z.boolean().optional(),
+    // Base64 encoded CBOR of the ReaderAuth COSE_Sign1, when the request is signed
+    readerAuth: z.string().optional(),
+    // Base64 encoded DER certificates of the ReaderAuth x5chain, starting with the leaf
+    readerCertificateChain: z.array(z.string()).optional(),
+    // Base64 encoded CBOR of the requestInfo of the ItemsRequest, e.g. with the registration certificate
+    requestInfo: z.string().optional(),
   })
   .catchall(booleanFieldGroup);
 
@@ -52,6 +60,10 @@ const VerifierRequest = z.object({
  *      }
  *    }
  *  }`
+ * When the request is signed, `isSignatureValid`, `readerAuth` and `readerCertificateChain` allow the caller to
+ * validate the reader certificate chain on its own, e.g. against a trusted list. `requestInfo` carries the
+ * additional information of the request, e.g. the document format and the registration certificate of the
+ * reader (ISO/IEC 18013-5 second edition, ETSI TS 119 472-2).
  * The request type can be also be used as input for the `generateResponse` method. The structure is the same, however the boolean value for each claim
  * indicates the willing to present the claim.
  */

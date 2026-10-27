@@ -1,6 +1,10 @@
 import { NativeEventEmitter, Platform } from 'react-native';
 import { IoReactNativeIso18013 } from '..';
-import type { AcceptedFields, RequestedDocument } from '../types';
+import type {
+  AcceptedFields,
+  OtherDocument,
+  RequestedDocument,
+} from '../types';
 
 const eventEmitter = new NativeEventEmitter(IoReactNativeIso18013);
 
@@ -11,7 +15,7 @@ const eventEmitter = new NativeEventEmitter(IoReactNativeIso18013);
  * - `onNfcStopped`: Emitted when NFC stops successfully.
  * - `onDeviceConnecting`: Emitted when the device is connecting to the verifier app (QR and NFC flows on both iOS and Android).
  * - `onDeviceConnected`: Emitted when the device is connected to the verifier app.
- * - `onDocumentRequestReceived`: Emitted when a document request is received from the verifier app. Carries a payload containing the request data and the retrieval method.
+ * - `onDocumentRequestReceived`: Emitted when a document request is received from the verifier app. Carries a payload containing the request data, the retrieval method and the base64 encoded SessionTranscript.
  * - `onDeviceDisconnected`: Emitted when the device is disconnected from the verifier app.
  * - `onError`: Emitted when an error occurs. Carries a payload containing the error data.
  */
@@ -23,7 +27,12 @@ export type EventsPayload = {
   onDeviceConnected: undefined;
   // The message payload is a JSON string that can be parsed into a `VerifierRequest` structure via `parseVerifierRequest`.
   // When the request cannot be parsed, `data` may be an empty string.
-  onDocumentRequestReceived: { data: string; retrievalMethod: RetrievalMethod };
+  // The SessionTranscript binds the presentation of documents in other formats to the session, e.g. the SD-JWT VC Key Binding JWT.
+  onDocumentRequestReceived: {
+    data: string;
+    retrievalMethod: RetrievalMethod;
+    sessionTranscript?: string;
+  };
   onDeviceDisconnected: undefined;
   onError: { error?: string } | undefined;
 };
@@ -132,14 +141,20 @@ export function sendErrorResponse(code: ErrorCode): Promise<boolean> {
  * Resolves with a base64 encoded response or rejects in case of error.
  * @param documents - An array of `RequestedDocument` which contains the requested data received from the `onDocumentRequestReceived` event
  * @param acceptedFields - The accepted fields which will be presented to the verifier app. See the type definition for more details.
+ * @param otherDocuments - The documents in formats other than mdoc, already presented, e.g. SD-JWT VC. When any, the response version is 1.1
  * @throws {ModuleError} in case of error which can be parsed with {@link ModuleErrorSchema}
  * @returns A base64 encoded response to be sent to the verifier app via `sendResponse`
  */
 export function generateResponse(
   documents: Array<RequestedDocument>,
-  acceptedFields: AcceptedFields
+  acceptedFields: AcceptedFields,
+  otherDocuments: Array<OtherDocument> = []
 ): Promise<string> {
-  return IoReactNativeIso18013.generateResponse(documents, acceptedFields);
+  return IoReactNativeIso18013.generateResponse(
+    documents,
+    acceptedFields,
+    otherDocuments
+  );
 }
 
 /**

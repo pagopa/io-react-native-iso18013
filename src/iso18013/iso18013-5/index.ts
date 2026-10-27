@@ -23,4 +23,8 @@ export {
   setHceModalMessage,
 } from './proximity';
 
-export { type RequestedDocument, type AcceptedFields } from '../types';
+export {
+  type RequestedDocument,
+  type AcceptedFields,
+  type OtherDocument,
+} from '../types';

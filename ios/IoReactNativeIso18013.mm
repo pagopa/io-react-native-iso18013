@@ -14,6 +14,7 @@ RCT_EXTERN_METHOD(close:(RCTPromiseResolveBlock)resolve
 
 RCT_EXTERN_METHOD(generateResponse:(NSArray *)documents
                   withAcceptedFields:(NSDictionary *)acceptedFields
+                  withOtherDocuments:(NSArray *)otherDocuments
                   withResolver:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject)
 

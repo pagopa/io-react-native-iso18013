@@ -61,7 +61,7 @@ This library emits the following events:
 | onNfcStopped | `undefined` | Event dispatched when NFC stops successfully. |
 | onDeviceConnecting | `undefined` | Event dispatched when the verifier app is connecting. |
 | onDeviceConnected | `undefined` | Event dispatched when the verifier app is connected. |
-| onDocumentRequestReceived | `{ data: string; retrievalMethod: RetrievalMethod }` | Event dispatched when the consumer app receives a new request. The `data` payload can be parsed via the `parseVerifierRequest` function. The `retrievalMethod` indicates whether BLE or NFC was used. |
+| onDocumentRequestReceived | `{ data: string; retrievalMethod: RetrievalMethod; sessionTranscript?: string }` | Event dispatched when the consumer app receives a new request. The `data` payload can be parsed via the `parseVerifierRequest` function. The `retrievalMethod` indicates whether BLE or NFC was used. The `sessionTranscript` is the base64 encoded CBOR `SessionTranscript`, which documents in other formats are bound to (e.g. the SD-JWT VC Key Binding JWT). |
 | onDeviceDisconnected | `undefined` | Event dispatched when the verifier app disconnects by sending the END (0x02) flag. |
 | onError | `{ error?: string } \| undefined` | Event dispatched when an error occurs which is contained in the error payload. It can be parsed with `ISO18013_5.OnErrorPayloadSchema`. |
 
@@ -209,6 +209,14 @@ ISO18013_5.addListener(
 );
 ```
 
+Besides the requested namespaces, each document request contains:
+
+- `isAuthenticated`: whether the reader signature is valid and its certificate chain is trusted by the `certificates` of `startEngagement`;
+- `isSignatureValid`: whether the reader signature is valid, whether its certificate chain is trusted or not;
+- `readerAuth`: the base64 encoded CBOR `ReaderAuth`, when the request is signed;
+- `readerCertificateChain`: the base64 encoded DER certificates of the `ReaderAuth` `x5chain`, starting with the leaf, to validate the reader on the app side (e.g. against a trusted list);
+- `requestInfo`: the base64 encoded CBOR `requestInfo` of the `ItemsRequest`, e.g. with the `docFormat` and `dataElementIdentifierMapping` of an SD-JWT VC request (ISO/IEC 18013-5 second edition) or the registration certificate of the reader (ETSI TS 119 472-2).
+
 #### `onDeviceDisconnected`
 
 ```typescript
@@ -306,6 +314,18 @@ const acceptedFields = {
 
 const response = await ISO18013_5.generateResponse(documents, acceptedFields);
 console.log(response);
+```
+
+Documents in formats other than mdoc, e.g. SD-JWT VC, are presented by the app and added as they are to the `otherDocuments` of the response, whose version becomes `1.1` (ISO/IEC 18013-5 second edition). The `data` is the base64 encoded document, compressed with zlib:
+
+```typescript
+const otherDocuments = [{ docFormat: 'dc+sd-jwt', data: 'base64-zlib-sd-jwt-kb' }];
+
+const response = await ISO18013_5.generateResponse(
+  documents,
+  acceptedFields,
+  otherDocuments
+);
 ```
 
 #### `sendResponse`

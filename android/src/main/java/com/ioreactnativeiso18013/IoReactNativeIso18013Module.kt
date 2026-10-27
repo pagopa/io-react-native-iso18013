@@ -19,6 +19,7 @@ import it.pagopa.io.wallet.proximity.nfc.NfcEngagementService
 import it.pagopa.io.wallet.proximity.nfc.NfcRetrievalMethod
 import it.pagopa.io.wallet.proximity.qr_code.QrEngagement
 import it.pagopa.io.wallet.proximity.request.DocRequested
+import it.pagopa.io.wallet.proximity.response.OtherDocument
 import it.pagopa.io.wallet.proximity.response.ResponseGenerator
 import it.pagopa.io.wallet.proximity.retrieval.sendErrorResponse
 import it.pagopa.io.wallet.proximity.session_data.SessionDataStatus
@@ -222,11 +223,15 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    *   {...}
    * }
    * ```
+   * @param otherDocuments [ReadableArray] containing documents in formats other than mdoc, already presented, e.g. SD-JWT VC.
+   * Each document is defined as a map containing:
+   * - docFormat which is the format of the document, e.g. dc+sd-jwt;
+   * - data which is a base64 encoded string representing the zlib compressed document.
    * @param promise The promise which will be resolved in case of success or rejected in case of failure.
    */
   @ReactMethod
   fun generateResponse(
-    documents: ReadableArray, acceptedFields: ReadableMap, promise: Promise
+    documents: ReadableArray, acceptedFields: ReadableMap, otherDocuments: ReadableArray, promise: Promise
   ) {
     try {
       when (sessionRetrievalMethod) {
@@ -238,6 +243,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
             sessionTranscript = sessionTranscript,
             documents = documents,
             acceptedFields = acceptedFields,
+            otherDocuments = parseOtherDocuments(otherDocuments),
             errorCode = ModuleErrorCodes.GENERATE_RESPONSE_ERROR,
             promise = promise
           )
@@ -250,6 +256,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
               sessionTranscript = drh.sessionTranscript(),
               documents = documents,
               acceptedFields = acceptedFields,
+              otherDocuments = parseOtherDocuments(otherDocuments),
               errorCode = ModuleErrorCodes.GENERATE_RESPONSE_ERROR,
               promise = promise
             )
@@ -413,6 +420,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         val data: WritableMap = Arguments.createMap()
         data.putString("data", request ?: "")
         data.putString("retrievalMethod", sessionRetrievalMethod?.bridgeValue)
+        data.putString("sessionTranscript", Base64Utils.encodeBase64(sessionsTranscript))
         sendEvent("onDocumentRequestReceived", data)
       }
 
@@ -463,6 +471,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
             val data: WritableMap = Arguments.createMap()
             data.putString("data", event.request)
             data.putString("retrievalMethod", sessionRetrievalMethod?.bridgeValue)
+            data.putString("sessionTranscript", Base64Utils.encodeBase64(event.sessionTranscript))
             sendEvent("onDocumentRequestReceived", data)
           }
 
@@ -483,6 +492,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * @param sessionTranscript the session transcript to be used to generate the response
    * @param documents the documents to be included in the response
    * @param acceptedFields the accepted fields to be presented
+   * @param otherDocuments the documents in formats other than mdoc to be included in the response
    * @param errorCode the error code to be used in case of error
    * @param promise the promise which will be resolved in case of success or rejected in case of failure.
    */
@@ -490,6 +500,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     sessionTranscript: ByteArray,
     documents: ReadableArray,
     acceptedFields: ReadableMap,
+    otherDocuments: List<OtherDocument> = emptyList(),
     errorCode: String,
     promise: Promise
   ) {
@@ -503,7 +514,7 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         override fun onError(message: String) {
           promise.reject(errorCode, message)
         }
-      })
+      }, otherDocuments)
   }
 
   /**
@@ -670,6 +681,27 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         throw IllegalArgumentException("Failed to parse documents: ${e.message}", e)
       }
     }
+
+    /**
+     * Utility function which extracts the documents in formats other than mdoc we expect to
+     * receive from the bridge in the one expected by {OtherDocument}.
+     * @param otherDocuments a {ReadableArray} containing documents. Each document is defined as a map containing:
+     * - docFormat which is the format of the document, e.g. dc+sd-jwt;
+     * - data which is a base64 encoded string representing the zlib compressed document.
+     * @returns a list containing an {OtherDocument} object for each document in {otherDocuments}
+     * @throws IllegalArgumentException if the provided document doesn't adhere to the expected format
+     */
+    fun parseOtherDocuments(otherDocuments: ReadableArray): List<OtherDocument> =
+      (0 until otherDocuments.size()).map { i ->
+        val entry = otherDocuments.getMap(i)
+          ?: throw IllegalArgumentException("Other document at index $i is null")
+        val docFormat = entry.getString("docFormat")
+        val data = entry.getString("data")
+        if (docFormat == null || data == null) {
+          throw IllegalArgumentException("Other document at index $i must have a docFormat and a data")
+        }
+        OtherDocument(docFormat, Base64Utils.decodeBase64(data))
+      }
 
     /**
      * Utility function to parse an array coming from the React Native Bridge into an ArrayList
