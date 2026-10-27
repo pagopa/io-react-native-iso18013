@@ -16,6 +16,17 @@ export type RequestedDocument = {
 };
 
 /**
+ * A document in a format other than mdoc, e.g. SD-JWT VC, already presented by the caller and added
+ * as it is to the `otherDocuments` of the DeviceResponse (ISO/IEC 18013-5 second edition).
+ * - docFormat: the format of the document, e.g. `dc+sd-jwt`;
+ * - data: the base64 encoded document, compressed with zlib (RFC 1950).
+ */
+export type OtherDocument = {
+  docFormat: string;
+  data: string;
+};
+
+/**
  * This is the type definition for the accepted fields that will be presented to the verifier app.
  * It contains of a nested object structure, where the outermost key represents the credential doctype.
  * The inner dictionary contains namespaces, and for each namespace, there is another dictionary mapping requested claims to a boolean value,

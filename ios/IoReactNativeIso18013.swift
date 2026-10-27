@@ -83,6 +83,9 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
         "data": args.request.flatMap { deviceRequestToJson(request: $0) } ?? "",
         "retrievalMethod": retrivalMethodToString(args.retrivalMethod)
       ]
+      if let sessionTranscript = args.sessionTranscript {
+        eventBody["sessionTranscript"] = Data(sessionTranscript).base64EncodedString()
+      }
       break
 
     case .dataTransferStopped:
@@ -139,7 +142,8 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
           engagementModes: parsedEngagementModes,
           retrivalMethods: parsedRetrievalMethods,
           delegate: self,
-          isNfcLateEngagement: false
+          isNfcLateEngagement: false,
+          startEmulationNow: false
         )
       resolve(true)
     } catch let proximityError as ProximityError {
@@ -267,6 +271,28 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
   }
   
   /**
+   Parses an array of documents in formats other than mdoc from the React Native bridge which doesn't have any typing to an array of ``IOWalletProximity.ProximityOtherDocument``.
+   It checks if each element in the array has `docFormat` and `data` properties, where `data` is a base64 encoded string.
+   - Parameters:
+   - otherDocuments: An array of documents, already presented, e.g. SD-JWT VC.
+   - Throws: `ParsingError` if an element doesn't adhere to the structure we expect.
+   - Returns: An array of `ProximityOtherDocument` to add to the response.
+   */
+  private func parseOtherDocuments(otherDocuments: [Any]) throws -> [ProximityOtherDocument] {
+    return try otherDocuments.map { element -> ProximityOtherDocument in
+      guard
+        let dict = element as? [String: Any],
+        let docFormat = dict["docFormat"] as? String,
+        let data = dict["data"] as? String,
+        let decodedData = Data(base64Encoded: data)
+      else {
+        throw ParsingError.documentsNotValid("The provided other document doesn't contain a docFormat and a base64 encoded data")
+      }
+      return ProximityOtherDocument(docFormat: docFormat, data: [UInt8](decodedData))
+    }
+  }
+  
+  /**
    Parses a dictionary of accepted fields for the presentation from the React Native bridge which doesn't have any typing to a ``AcceptedFieldsDict`` dictionary.
    It checks if each element in the array is a dictionary where the key is a string, and the value is another dictionary. This nested dictionary has a string as its key and a boolean as its value, then it appens it to the array.
    The result can be fed to ``IOWalletProximity.generateResponse``.
@@ -314,20 +340,25 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
    }
    }
    
+   - otherDocuments: An array of documents in formats other than mdoc, already presented, e.g. SD-JWT VC. Each document is defined as a map containing:
+   - docFormat which is the format of the document, e.g. dc+sd-jwt;
+   - data which is a base64 encoded string representing the zlib compressed document.
    - resolve: The promise to be resolved.
    - reject: The promise to be rejected.
    */
-  @objc(generateResponse:withAcceptedFields:withResolver:withRejecter:)
+  @objc(generateResponse:withAcceptedFields:withOtherDocuments:withResolver:withRejecter:)
   func generateResponse(
     documents: Array<Any>,
     acceptedFields: [AnyHashable: Any],
+    otherDocuments: Array<Any>,
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
     do {
       let parsedDocuments = try parseDocuments(documents: documents)
       let items = try parseAcceptedFields(acceptedFields: acceptedFields)
-      let deviceResponse = try ISO18013.shared.generateDeviceResponse(items: items, documents: parsedDocuments, sessionTranscript: nil)
+      let parsedOtherDocuments = try parseOtherDocuments(otherDocuments: otherDocuments)
+      let deviceResponse = try ISO18013.shared.generateDeviceResponse(items: items, documents: parsedDocuments, otherDocuments: parsedOtherDocuments, sessionTranscript: nil)
       let strDeviceResponse = Data(deviceResponse).base64EncodedString()
       resolve(strDeviceResponse)
     }
@@ -401,7 +432,7 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
    - request: The request returned from `onDocumentRequestReceived` which contains an array of tuples consists of a doctype, namespaces, the requested claims with a boolean value indicating wether or not the device which is making the request has an intent to retain the data, and optional certificate data from the verifier X.509 certificate.
    - Returns: A JSON string representing the device request or nil if an error occurs.
    */
-  private func deviceRequestToJson(request: [(docType: String, nameSpaces: [String: [String: Bool]], isAuthenticated: Bool, certificateData: [String: String]?)]?) -> String? {
+  private func deviceRequestToJson(request: [ISO18013DocumentRequest]?) -> String? {
     var jsonRequest : [String: AnyHashable] = [:]
     request?.forEach({
       item in
@@ -414,6 +445,17 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
       subReq["isAuthenticated"] = item.isAuthenticated
       if let certData = item.certificateData {
         subReq["certificateData"] = certData
+      }
+      subReq["isSignatureValid"] = item.isSignatureValid
+      if let readerAuth = item.readerAuth {
+        subReq["readerAuth"] = Data(readerAuth).base64EncodedString()
+      }
+      if let readerCertificateChain = item.readerCertificateChain {
+        subReq["readerCertificateChain"] = readerCertificateChain.map { Data($0).base64EncodedString() }
+      }
+      // Kept as CBOR, since it may carry byte strings, e.g. the registration certificate
+      if let requestInfo = item.requestInfo {
+        subReq["requestInfo"] = Data(requestInfo).base64EncodedString()
       }
       
       jsonRequest[item.docType] = subReq
