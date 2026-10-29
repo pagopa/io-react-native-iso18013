@@ -36,6 +36,9 @@ end
 target 'IoReactNativeIso18013Example' do
   config = use_native_modules!
 
+  # Enables the native unit tests of the library (scheme IoReactNativeIso18013-Unit-Tests)
+  pod 'IoReactNativeIso18013', :path => '../..', :testspecs => ['Tests']
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.

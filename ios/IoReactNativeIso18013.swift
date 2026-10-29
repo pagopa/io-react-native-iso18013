@@ -1,5 +1,4 @@
 import Foundation
-import IOWalletProximity
 import React
 
 @objc(IoReactNativeIso18013)
