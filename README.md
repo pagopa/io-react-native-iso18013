@@ -32,10 +32,16 @@ yarn test
 
 ### Android
 
+The Android unit tests are located in [android/src/test](android/src/test) and cover the bridge modules as well as the vendored `IOWallet CBOR` and `IOWallet Proximity` libraries.
+
 ```sh
 cd example/android
-./gradlew test
+./gradlew :pagopa_io-react-native-iso18013:testDebugUnitTest
 ```
+
+Alternatively, run `./gradlew test` to run the unit tests of every project, including the example app.
+
+To run a single test class, add `--tests <fully.qualified.TestClass>`.
 
 ### iOS
 
