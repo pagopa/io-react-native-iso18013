@@ -1,5 +1,3 @@
-import IOWalletCBOR
-import IOWalletProximity
 import CryptoKit
 
 @objc(IoReactNativeCbor)
@@ -112,7 +110,7 @@ class IoReactNativeCbor: NSObject {
         
         do{
           let buffer = try Base64Utils.decodeBase64OrBase64URL(base: data)
-          guard let coseKey = CoseKeyPrivate(crv: .p256, keyTag: keyTag) else {
+          guard let coseKey = IOWalletCBORCoseKeyPrivate(crv: .p256, keyTag: keyTag) else {
             // We don't have the exact error here as this method returns nil upon failure
             reject(ModuleErrorCodes.signError.rawValue, "Unable to create a private key with the given keytag: \(keyTag)", nil)
             return
@@ -146,7 +144,7 @@ class IoReactNativeCbor: NSObject {
       let buffer = try Base64Utils.decodeBase64OrBase64URL(base: data)
       let publicKeyJson = try JSONSerialization.data(withJSONObject: publicKey, options:[] )
       let publicKeyString = String(data: publicKeyJson, encoding: .utf8)!
-      let publicKey = CoseKey(jwk: publicKeyString)!
+      let publicKey = IOWalletCBORCoseKey(jwk: publicKeyString)!
       let verified = CborCose.verify(data: buffer, publicKey: publicKey)
       resolve(verified)
     } catch {
