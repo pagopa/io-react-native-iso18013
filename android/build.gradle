@@ -88,10 +88,7 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
 
-  // The IOWallet CBOR (https://github.com/pagopa/iso18013-android/tree/main/cbor) and IOWallet Proximity
-  // (https://github.com/pagopa/iso18013-android/tree/main/proximity) libraries are vendored as source code
-  // in src/main/java/it/pagopa/io/wallet/cbor and src/main/java/it/pagopa/io/wallet/proximity.
-  // Their dependencies are added with the versions of the upstream Gradle version catalog.
+  // Required for CBOR and Proximity libraries
   implementation "androidx.core:core-ktx:1.15.0"
   implementation "androidx.appcompat:appcompat:1.7.0"
   implementation "com.google.android.material:material:1.12.0"
