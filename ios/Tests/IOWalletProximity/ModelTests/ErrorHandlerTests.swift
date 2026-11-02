@@ -35,6 +35,20 @@ class ErrorHandlerTests: XCTestCase {
         XCTAssertEqual(ErrorHandler.unexpected_error.localizedDescription, "GENERIC_ERROR")
     }
     
+    // Errors reach the React Native bridge type-erased to `Error` (and bridged to `NSError`):
+    // `localizedDescription` must still return our messages instead of "The operation couldn’t be completed. (… error N.)".
+    func testLocalizedDescriptionWhenTypeErased() {
+        let errorHandler: Error = ErrorHandler.secureEnclaveNotSupported
+        XCTAssertEqual(errorHandler.localizedDescription, "Secure Enclave not supported on this device")
+        XCTAssertEqual((errorHandler as NSError).localizedDescription, "Secure Enclave not supported on this device")
+
+        let proximityError: Error = ProximityError.disconnectedWithoutProperSessionTermination
+        XCTAssertEqual(proximityError.localizedDescription, "Disconnected without proper Session Termination (END_REQUEST)")
+
+        let wrapped: Error = ProximityError.error(error: ErrorHandler.requestDecodeError)
+        XCTAssertEqual(wrapped.localizedDescription, "REQUEST_DECODE_ERROR")
+    }
+
 //    func testSecureEnclaveNotSupportedAlgorithmDescription() {
 //        let algorithm = ECCurveName.p256
 //        let error = ErrorHandler.secureEnclaveNotSupportedAlgorithm(algorithm: algorithm)
