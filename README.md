@@ -39,8 +39,6 @@ cd example/android
 
 Alternatively, run `./gradlew test` to run the unit tests of every project, including the example app.
 
-To run a single test class, add `--tests <fully.qualified.TestClass>`.
-
 ### iOS
 
 The iOS unit tests are located in [ios/Tests](ios/Tests) and cover the `IOWalletCBOR` and `IOWalletProximity` libraries. They are exposed as the `Tests` test spec of the podspec, which is enabled in the example app [Podfile](example/ios/Podfile) and generates the `IoReactNativeIso18013-Unit-Tests` scheme.
