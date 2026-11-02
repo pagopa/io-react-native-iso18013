@@ -34,8 +34,10 @@ yarn test
 
 ```sh
 cd example/android
-./gradlew test
+./gradlew :pagopa_io-react-native-iso18013:testDebugUnitTest
 ```
+
+Alternatively, run `./gradlew test` to run the unit tests of every project, including the example app.
 
 ### iOS
 
