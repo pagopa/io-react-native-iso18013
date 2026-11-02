@@ -141,10 +141,6 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
           isNfcLateEngagement: false
         )
       resolve(true)
-    } catch let proximityError as ProximityError {
-      reject(ModuleErrorCodes.startError.rawValue, proximityError.description, proximityError)
-    } catch let parsingError as ParsingError{
-      reject(ModuleErrorCodes.startError.rawValue, parsingError.description, parsingError)
     } catch {
       reject(ModuleErrorCodes.startError.rawValue, error.localizedDescription, error)
     }
@@ -330,12 +326,7 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
       let strDeviceResponse = Data(deviceResponse).base64EncodedString()
       resolve(strDeviceResponse)
     }
-    catch let proximityError as ProximityError {
-      reject(ModuleErrorCodes.generateResponseError.rawValue, proximityError.description, proximityError)
-    }
-    catch let parsingError as ParsingError {
-      reject(ModuleErrorCodes.generateResponseError.rawValue, parsingError.description, parsingError)
-    } catch {
+    catch {
       reject(ModuleErrorCodes.generateResponseError.rawValue, error.localizedDescription, error)
     }
   }
@@ -355,12 +346,13 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ){
+    guard let responseData = Data(base64Encoded: response) else {
+      reject(ModuleErrorCodes.sendResponseError.rawValue, "The provided response is not a valid base64 string", nil)
+      return
+    }
     do{
-      if let responseData = Data(base64Encoded: response) {
-        let decodedResponse = [UInt8](responseData)
-        try ISO18013.shared.dataPresentation(decodedResponse)
-        resolve(true)
-      }
+      try ISO18013.shared.dataPresentation([UInt8](responseData))
+      resolve(true)
     }catch let error {
       reject(ModuleErrorCodes.sendResponseError.rawValue, error.localizedDescription, error)
     }
@@ -382,12 +374,12 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
   @objc(sendErrorResponse:withResolver:withRejecter:)
   func sendErrorResponse(code: UInt64, _ resolve: @escaping RCTPromiseResolveBlock,
                          reject: @escaping RCTPromiseRejectBlock){
+    guard let statusEnum = SessionDataStatus(rawValue: code) else {
+      reject(ModuleErrorCodes.sendErrorResponseError.rawValue, "Invalid status code provided: \(code)", nil)
+      return
+    }
     do{
-      if let statusEnum = SessionDataStatus(rawValue: code) {
-        try ISO18013.shared.errorPresentation(statusEnum)
-      } else {
-        reject(ModuleErrorCodes.sendErrorResponseError.rawValue, "Invalid status code provided: \(code)", nil)
-      }
+      try ISO18013.shared.errorPresentation(statusEnum)
       resolve(true)
     }catch let error{
       reject(ModuleErrorCodes.sendErrorResponseError.rawValue, error.localizedDescription, error)
@@ -494,12 +486,7 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
       let items = try parseAcceptedFields(acceptedFields: acceptedFields)
       let response = try ISO18013.shared.generateDeviceResponse(items: items, documents: documentsAsProximityDocument, sessionTranscript: sessionTranscript)
       resolve(Data(response).base64EncodedString())
-    } catch let parsingError as ParsingError{
-      reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, parsingError.description, parsingError)
-    } catch let proximityError as ProximityError{
-      reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, proximityError.description, proximityError)
-    }
-    catch {
+    } catch {
       reject(ModuleErrorCodes.generateOID4VPResponseError.rawValue, error.localizedDescription, error)
     }
   }
@@ -523,7 +510,7 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
    our underlying functions expect.
    This is needed in order to provide a customized description which can include more debug information.
    */
-  enum ParsingError : Error, CustomStringConvertible {
+  enum ParsingError : LocalizedError, CustomStringConvertible {
     case documentsNotValid(String)
     case certificatesNotValid(String)
     case acceptedFieldsNotValid(String)
@@ -541,6 +528,8 @@ class IoReactNativeIso18013: RCTEventEmitter, ISO18013Delegate {
         return message
       }
     }
+    
+    var errorDescription: String? { description }
   }
   
   /**

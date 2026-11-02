@@ -7,7 +7,7 @@
 internal import SwiftCBOR
 import Foundation
 
-public enum ProximityError : Error, CustomStringConvertible {
+public enum ProximityError : LocalizedError, CustomStringConvertible {
     case nullObject(objectName: String)
     case decodingFailed(objectName: String)
     case error(error: Error)
@@ -37,6 +37,9 @@ public enum ProximityError : Error, CustomStringConvertible {
             return "Performing NFC Engagement with disabled engagement"
         }
     }
+    
+    // Exposes `description` through `localizedDescription` when the error is type-erased to `Error`.
+    public var errorDescription: String? { description }
 }
 
 public enum SessionDataStatus : UInt64 {

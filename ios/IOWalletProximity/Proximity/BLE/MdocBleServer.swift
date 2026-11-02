@@ -307,11 +307,14 @@ class MdocBleDelegate : NSObject, CBPeripheralManagerDelegate {
         let mdocCbc = MdocServiceCharacteristic(uuid: characteristic.uuid)
         print("Remote central \(central.identifier) disconnected for \(mdocCbc?.rawValue ?? "") characteristic")
         
-        if (server.status != .disconnected)  {
-            if (server.status == .error) {
-                return
-            }
-            
+        switch server.status {
+        case .disconnected, .error:
+            return
+        case .responseSent:
+            // The response SessionData already carries status 20 (session termination, ISO 18013-5 §9.1.1.4),
+            // so the reader is allowed to close the connection without sending the END command on the State characteristic.
+            server.status = .disconnected
+        default:
             server.error = ProximityError.disconnectedWithoutProperSessionTermination
         }
     }
