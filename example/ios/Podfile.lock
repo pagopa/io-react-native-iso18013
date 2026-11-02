@@ -8,7 +8,7 @@ PODS:
   - hermes-engine (0.81.5):
     - hermes-engine/Pre-built (= 0.81.5)
   - hermes-engine/Pre-built (0.81.5)
-  - IoReactNativeIso18013 (0.8.6):
+  - IoReactNativeIso18013 (0.9.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -36,7 +36,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - IoReactNativeIso18013/Tests (0.8.6):
+  - IoReactNativeIso18013/Tests (0.9.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2825,7 +2825,7 @@ SPEC CHECKSUMS:
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   hermes-engine: 9f4dfe93326146a1c99eb535b1cb0b857a3cd172
-  IoReactNativeIso18013: 54cec771902481e16e230a4f31225892c58077e1
+  IoReactNativeIso18013: 7f153ea0db4055d00c8de7a4d74a3d548697fd97
   OpenSSL-Universal: 9110d21982bb7e8b22a962b6db56a8aa805afde7
   pagopa-io-react-native-crypto: 8bd5ec4b5b6af1a03416f3c8267530eac9f6f724
   RCT-Folly: 846fda9475e61ec7bcbf8a3fe81edfcaeb090669
