@@ -7,9 +7,11 @@
 
 import Foundation
 
-// Error handling class to centralize error messages
-public enum ErrorHandler: Error {
-    public var localizedDescription: String {
+// Error handling class to centralize error messages.
+// Conforms to LocalizedError so that `localizedDescription` returns the messages below even when
+// the error is type-erased to `Error` (otherwise iOS falls back to "The operation couldn’t be completed. (… error N.)").
+public enum ErrorHandler: LocalizedError {
+    public var errorDescription: String? {
         switch self {
             case .invalidBase64EncodingError:
                 return "Invalid base64 encoding"
