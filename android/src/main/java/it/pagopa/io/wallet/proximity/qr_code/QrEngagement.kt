@@ -93,13 +93,8 @@ class QrEngagement private constructor(
     override fun close() {
         if (!checkQrEngagementInit())
             return
-        try {
-            if (deviceRetrievalHelper != null)
-                deviceRetrievalHelper!!.disconnect()
-            qrEngagement.close()
-        } catch (exception: RuntimeException) {
-            ProximityLogger.e(this.javaClass.name, "Error closing QR engagement $exception")
-        }
+        deviceRetrievalHelper?.disconnect()
+        qrEngagement.close()
     }
 
     /**

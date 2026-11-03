@@ -11,11 +11,21 @@ import it.pagopa.io.wallet.proximity.retrieval.DeviceRetrievalMethod
 import it.pagopa.io.wallet.proximity.retrieval.connectionMethods
 import it.pagopa.io.wallet.proximity.wrapper.DeviceRetrievalHelperWrapper
 
+internal fun Throwable.withNfcCleanupFailure(cleanupError: Exception): Throwable =
+    IllegalStateException(
+        "${message ?: javaClass.simpleName}; NFC cleanup failed: " +
+            (cleanupError.message ?: cleanupError.javaClass.simpleName),
+        this
+    ).apply { addSuppressed(cleanupError) }
+
 internal class NfcEngagement(
     context: Context
 ) : Engagement(context) {
     private lateinit var nfcEngagementBuilder: NfcEngagementHelperRefactor.Builder
     lateinit var nfcEngagementHelper: NfcEngagementHelperRefactor
+    private var shutdown = false
+    private var closing = 0
+    private var disconnecting: DeviceRetrievalHelperWrapper? = null
     override val nfcEngagementListener = object : NfcEngagementHelperRefactor.Listener {
         override fun onTwoWayEngagementDetected() {
             ProximityLogger.i(this@NfcEngagement.tag, "Two way engagement detected")
@@ -27,40 +37,44 @@ internal class NfcEngagement(
         }
 
         override fun onDeviceConnected(transport: DataTransport) {
-            ProximityLogger.i(this@NfcEngagement.tag, "Device connected")
-            if (deviceRetrievalHelper != null) {
+            synchronized(this@NfcEngagement) {
+                ProximityLogger.i(this@NfcEngagement.tag, "Device connected")
+                if (shutdown || closing > 0 || deviceRetrievalHelper != null) {
+                    transport.close()
+                    return
+                }
                 ProximityLogger.d(
                     this@NfcEngagement.tag,
-                    "OnDeviceConnected for NFC engagement -> ignoring due to active presentation"
+                    "OnDeviceConnected via NFC: qrEngagement=$nfcEngagementHelper"
                 )
-                return
+                val deviceRetrievalHelperBuilt = DeviceRetrievalHelper.Builder(
+                    this@NfcEngagement.context,
+                    deviceRetrievalHelperListener,
+                    this@NfcEngagement.context.mainExecutor(),
+                    eDevicePrivateKey,
+                ).useForwardEngagement(
+                    transport,
+                    nfcEngagementHelper.deviceEngagement,
+                    nfcEngagementHelper.handover,
+                ).build()
+                deviceRetrievalHelper = DeviceRetrievalHelperWrapper(deviceRetrievalHelperBuilt)
+                listener?.onDeviceConnected(
+                    requireNotNull(
+                        deviceRetrievalHelper
+                    )
+                )
             }
-            ProximityLogger.d(
-                this@NfcEngagement.tag,
-                "OnDeviceConnected via NFC: qrEngagement=$nfcEngagementHelper"
-            )
-            val deviceRetrievalHelperBuilt = DeviceRetrievalHelper.Builder(
-                this@NfcEngagement.context,
-                deviceRetrievalHelperListener,
-                this@NfcEngagement.context.mainExecutor(),
-                eDevicePrivateKey,
-            ).useForwardEngagement(
-                transport,
-                nfcEngagementHelper.deviceEngagement,
-                nfcEngagementHelper.handover,
-            ).build()
-            deviceRetrievalHelper = DeviceRetrievalHelperWrapper(deviceRetrievalHelperBuilt)
-            listener?.onDeviceConnected(
-                requireNotNull(
-                    deviceRetrievalHelper
-                )
-            )
         }
 
         override fun onError(error: Throwable) {
             ProximityLogger.e(this@NfcEngagement.tag, "Error: ${error.message}")
-            nfcEngagementHelper.close()
-            listener?.onError(error)
+            val reportedError = try {
+                nfcEngagementHelper.close()
+                error
+            } catch (cleanupError: Exception) {
+                error.withNfcCleanupFailure(cleanupError)
+            }
+            listener?.onError(reportedError)
         }
 
         override fun onHandoverSelectMessageSent() {
@@ -75,12 +89,32 @@ internal class NfcEngagement(
     override fun close() {
         ProximityLogger.i(NfcEngagement::class.java.name, "CLOSING NFC CONNECTION")
         try {
-            if (deviceRetrievalHelper != null)
-                deviceRetrievalHelper!!.disconnect()
-            nfcEngagementHelper.close()
-            deviceRetrievalHelper = null
+            closeResources()
         } catch (exception: RuntimeException) {
             ProximityLogger.e(this.javaClass.name, "Error closing NFC engagement $exception")
+        }
+    }
+
+    fun closeResources(permanent: Boolean = false) {
+        val retrievalHelper = synchronized(this) {
+            if (permanent) shutdown = true
+            closing++
+            if (disconnecting != null) null else deviceRetrievalHelper.also { disconnecting = it }
+        }
+        try {
+            if (permanent) nfcEngagementHelper.shutdown() else nfcEngagementHelper.close()
+        } finally {
+            try {
+                retrievalHelper?.disconnect()
+            } finally {
+                synchronized(this) {
+                    if (retrievalHelper != null) {
+                        deviceRetrievalHelper = null
+                        disconnecting = null
+                    }
+                    closing--
+                }
+            }
         }
     }
 

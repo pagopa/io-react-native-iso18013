@@ -76,6 +76,7 @@ class NfcEngagementHelperRefactor private constructor(
     internal var retrievalMethods: List<DeviceRetrievalMethod> = listOf()
     private var staticHandoverConnectionMethods: List<ConnectionMethod>? = null
     private var transports = mutableListOf<DataTransport>()
+    private var listeningConnectionMethods: List<ConnectionMethod>? = null
     private var envelopeBuffer = ByteArrayOutputStream()
     private var responseBuffer: ByteArray? = null   // DO'53' already TLV codified
     private var responseOffset: Int = 0
@@ -98,6 +99,9 @@ class NfcEngagementHelperRefactor private constructor(
     private var selectedNfcFile: ByteArray? = null
     private var eDeviceKeyFromQr: EcPrivateKey? = null
     private var peerConnected = false
+    private var shutdown = false
+    private var pendingTransport: DataTransport? = null
+    private var pendingDeliveryAllowed = false
     private var transportsSetupTimestamp: Long = 0
     private val options by lazy {
         this.retrievalMethods.transportOptions
@@ -157,41 +161,66 @@ class NfcEngagementHelperRefactor private constructor(
      *
      * This method is idempotent so it is safe to call multiple times.
      */
+    @Synchronized
     fun close() {
-        if (!transports.isEmpty()) {
-            var numTransportsClosed = 0
-            for (transport in transports) {
-                transport.close()
-                numTransportsClosed += 1
-            }
-            ProximityLogger.i(TAG, "Closed $numTransportsClosed transports")
-            transports.clear()
+        pendingDeliveryAllowed = false
+        pendingTransport?.let {
+            it.close()
+            pendingTransport = null
         }
+        closeTransports()
         resetApduDataRetrievalState()
         selectedNfcFile = null
         transportsSetupTimestamp = 0
     }
 
+    @Synchronized
+    internal fun shutdown() {
+        shutdown = true
+        close()
+    }
+
+    private fun closeTransports() {
+        while (transports.isNotEmpty()) {
+            closeListeningTransport(transports.first())
+        }
+    }
+
+    @Synchronized
+    private fun closeListeningTransport(transport: DataTransport): Boolean {
+        if (!transports.contains(transport)) return false
+        listeningConnectionMethods = null
+        transport.setListener(null, null)
+        transport.close()
+        transports.remove(transport)
+        return true
+    }
+
+    private fun finishListeningTransport(transport: DataTransport, error: Throwable? = null) {
+        val closed = try {
+            closeListeningTransport(transport)
+        } catch (cleanupError: Exception) {
+            reportError(error?.withNfcCleanupFailure(cleanupError) ?: cleanupError)
+            return
+        }
+        if (closed && error != null) reportError(error)
+    }
+
     // Used by both static and negotiated handover... safe to be called multiple times.
+    @Synchronized
     private fun setupTransports(connectionMethods: List<ConnectionMethod>): List<ConnectionMethod> {
+        if (transports.isNotEmpty() && listeningConnectionMethods == connectionMethods) {
+            ProximityLogger.i(TAG, "Reusing ${transports.size} listening transport(s)")
+            return transports.map { it.connectionMethodForTransport }
+        }
         val setupConnectionMethods = mutableListOf<ConnectionMethod>()
 
-        // IMPORTANTE: Chiudi tutti i trasporti esistenti prima di crearne di nuovi
-        // Questo previene duplicati quando NFC viene tappato multiple volte
         if (transports.isNotEmpty()) {
             ProximityLogger.i(
                 TAG,
                 "Closing ${transports.size} existing transport(s) before setting up new ones"
             )
-            for (transport in transports) {
-                try {
-                    transport.close()
-                } catch (e: Exception) {
-                    ProximityLogger.e(TAG, "Error closing existing transport: $e")
-                }
-            }
-            transports.clear()
-            ProximityLogger.i(TAG, "All existing transports closed and cleared")
+            closeTransports()
         }
 
         ProximityLogger.i(
@@ -223,7 +252,7 @@ class NfcEngagementHelperRefactor private constructor(
         // in another thread than we're in right now. For example this happens if using
         // ThreadPoolExecutor.
         //
-        for (transport in transports) {
+        for (transport in transports.toList()) {
             transport.setListener(object : DataTransport.Listener {
                 override fun onConnecting() {
                     ProximityLogger.i(TAG, "onConnecting for $transport")
@@ -237,12 +266,11 @@ class NfcEngagementHelperRefactor private constructor(
 
                 override fun onDisconnected() {
                     ProximityLogger.i(TAG, "onDisconnected for $transport")
-                    transport.close()
+                    finishListeningTransport(transport)
                 }
 
                 override fun onError(error: Throwable) {
-                    transport.close()
-                    reportError(error)
+                    finishListeningTransport(transport, error)
                 }
 
                 override fun onMessageReceived() {
@@ -251,7 +279,7 @@ class NfcEngagementHelperRefactor private constructor(
 
                 override fun onTransportSpecificSessionTermination() {
                     ProximityLogger.i(TAG, "Received transport-specific session termination")
-                    transport.close()
+                    finishListeningTransport(transport)
                 }
             }, executor)
             ProximityLogger.i(
@@ -273,6 +301,7 @@ class NfcEngagementHelperRefactor private constructor(
 
         // Salva il timestamp per calcolare quanto tempo è passato quando il verifier leggerà il file
         transportsSetupTimestamp = System.currentTimeMillis()
+        listeningConnectionMethods = connectionMethods.toList()
 
         return setupConnectionMethods
     }
@@ -286,6 +315,7 @@ class NfcEngagementHelperRefactor private constructor(
      * @param reason Either [android.nfc.cardemulation.HostApduService.DEACTIVATION_LINK_LOSS]
      * or [android.nfc.cardemulation.HostApduService.DEACTIVATION_DESELECTED].
      */
+    @Synchronized
     fun nfcOnDeactivated(reason: Int) {
         ProximityLogger.i(TAG, "nfcOnDeactivated reason $reason")
         this.resetAll()
@@ -301,7 +331,11 @@ class NfcEngagementHelperRefactor private constructor(
      * @param apdu The APDU that was received from the remote device.
      * @return a byte-array containing the response APDU a boolean which means if process is ended or not.
      */
+    @Synchronized
     fun nfcProcessCommandApdu(apdu: ByteArray): Pair<ByteArray?, Boolean> {
+        if (shutdown || peerConnected) {
+            return NfcUtil.STATUS_WORD_FILE_NOT_FOUND to true
+        }
         if (ProximityLogger.enabled) {
             ProximityLogger.d(TAG, "nfcProcessCommandApdu: apdu: ${Utils.bytesToHex(apdu)}")
         }
@@ -789,29 +823,34 @@ class NfcEngagementHelperRefactor private constructor(
         return NfcUtil.STATUS_WORD_OK
     }
 
+    @Synchronized
     fun peerIsConnecting() {
-        if (!reportedDeviceConnecting) {
+        if (!shutdown && !reportedDeviceConnecting) {
             reportedDeviceConnecting = true
             reportDeviceConnecting()
         }
     }
 
     fun peerHasConnected(transport: DataTransport) {
-        // stop listening on other transports
-        //
-        ProximityLogger.i(
-            TAG, "Peer has connected on transport " + transport
-                    + " - shutting down other transports"
-        )
-        for (t in transports) {
-            t.setListener(null, null)
-            if (t !== transport) {
-                t.close()
+        synchronized(this) {
+            if (shutdown || !transports.contains(transport)) return
+            ProximityLogger.i(
+                TAG, "Peer has connected on transport " + transport
+                        + " - shutting down other transports"
+            )
+            for (t in transports.toList()) {
+                if (t !== transport) {
+                    closeListeningTransport(t)
+                }
             }
+            transport.setListener(null, null)
+            transports.remove(transport)
+            listeningConnectionMethods = null
+            pendingTransport = transport
+            pendingDeliveryAllowed = true
+            peerConnected = true
         }
-        transports.clear()
         reportDeviceConnected(transport)
-        peerConnected = true
     }
 
     // Note: The report*() methods are safe to call from any thread.
@@ -1147,15 +1186,12 @@ class NfcEngagementHelperRefactor private constructor(
         ProximityLogger.i(TAG, "reportDeviceConnected: transport=$transport")
         ProximityLogger.i(TAG, "reportDeviceConnected: listener=$listener, executor=$executor")
         executor.execute {
-            ProximityLogger.i(
-                TAG,
-                "reportDeviceConnected: Calling listener.onDeviceConnected()"
-            )
-            listener.onDeviceConnected(transport)
-            ProximityLogger.i(
-                TAG,
-                "reportDeviceConnected: listener.onDeviceConnected() completed"
-            )
+            synchronized(this@NfcEngagementHelperRefactor) {
+                if (!pendingDeliveryAllowed || pendingTransport !== transport) return@synchronized
+                pendingTransport = null
+                pendingDeliveryAllowed = false
+                listener.onDeviceConnected(transport)
+            }
         }
     }
 
