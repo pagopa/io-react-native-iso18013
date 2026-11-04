@@ -265,6 +265,8 @@ import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
 // Starts both QR and NFC engagement with BLE and NFC retrieval (defaults)
 await ISO18013_5.startEngagement();
+// Keep the engagement open while the verifier connects and the exchange runs.
+// Close when the exchange ends or the flow is cancelled.
 await ISO18013_5.close();
 
 // QR code engagement only (BLE retrieval)
@@ -272,6 +274,7 @@ await ISO18013_5.startEngagement({
   engagementModes: ['qrcode'],
   retrievalMethods: ['ble'],
 });
+// Close when the exchange ends or the flow is cancelled.
 await ISO18013_5.close();
 
 // NFC engagement only, with both retrieval methods
