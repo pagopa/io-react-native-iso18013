@@ -87,9 +87,9 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     retrievalMethods: ReadableArray,
     promise: Promise
   ) {
-    var started = false
+    val wasActive = engagementActive
     try {
-      check(!engagementActive) { "Engagement already active. Call close() before starting again." }
+      check(!wasActive) { "Engagement already active. Call close() before starting again." }
       val activity = checkNotNull(reactApplicationContext.currentActivity) { "No activity available" }
 
       val certificatesList = parseCertificates(certificates)
@@ -112,7 +112,6 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
       }
 
       engagementActive = true
-      started = true
 
       // NFC engagement
 
@@ -146,16 +145,16 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
 
       promise.resolve(true)
     } catch (e: Exception) {
-      var message = e.message
-      if (started) {
+      val message = if (!wasActive && engagementActive) {
         try {
           dispose()
+          e.message
         } catch (cleanupError: Exception) {
           e.addSuppressed(cleanupError)
-          message = "${e.message ?: e.javaClass.simpleName}; cleanup failed: " +
+          "${e.message ?: e.javaClass.simpleName}; cleanup failed: " +
             (cleanupError.message ?: cleanupError.javaClass.simpleName)
         }
-      }
+      } else e.message
       promise.reject(ModuleErrorCodes.START_ERROR, message, e)
     }
   }
@@ -545,18 +544,18 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
    * Disposes the resources
    */
   private fun dispose() {
-    var cleanupError: Exception? = null
-    try {
+    val qrCleanupError = try {
       qrEngagement?.close()
       qrEngagement = null
+      null
     } catch (error: Exception) {
-      cleanupError = error
+      error
     }
     sessionRetrievalMethod = null
     sessionTranscript = null
     nfcEventJob?.cancel()
     nfcEventJob = null
-    try {
+    val cleanupError = try {
       nfcActivity?.let { activityRef ->
         val activity = checkNotNull(activityRef.get() ?: reactApplicationContext.currentActivity) {
           "No activity available to stop NFC engagement"
@@ -564,13 +563,13 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
         NfcEngagementService.disable(activity)
         nfcActivity = null
       }
+      qrCleanupError
     } catch (error: Exception) {
-      val firstError = cleanupError
-      cleanupError = if (firstError == null) error else {
+      if (qrCleanupError == null) error else {
         IllegalStateException(
-          "${firstError.message ?: firstError.javaClass.simpleName}; NFC cleanup failed: " +
+          "${qrCleanupError.message ?: qrCleanupError.javaClass.simpleName}; NFC cleanup failed: " +
             (error.message ?: error.javaClass.simpleName),
-          firstError
+          qrCleanupError
         ).apply { addSuppressed(error) }
       }
     }

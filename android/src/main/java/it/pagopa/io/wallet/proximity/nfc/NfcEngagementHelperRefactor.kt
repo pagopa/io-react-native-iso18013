@@ -73,6 +73,8 @@ class NfcEngagementHelperRefactor private constructor(
     private val listener: Listener,
     private val executor: Executor
 ) {
+    private data class PendingTransport(val transport: DataTransport, val deliveryAllowed: Boolean)
+
     internal var retrievalMethods: List<DeviceRetrievalMethod> = listOf()
     private var staticHandoverConnectionMethods: List<ConnectionMethod>? = null
     private var transports = mutableListOf<DataTransport>()
@@ -100,8 +102,7 @@ class NfcEngagementHelperRefactor private constructor(
     private var eDeviceKeyFromQr: EcPrivateKey? = null
     private var peerConnected = false
     private var shutdown = false
-    private var pendingTransport: DataTransport? = null
-    private var pendingDeliveryAllowed = false
+    private var pendingTransport: PendingTransport? = null
     private var transportsSetupTimestamp: Long = 0
     private val options by lazy {
         this.retrievalMethods.transportOptions
@@ -163,9 +164,9 @@ class NfcEngagementHelperRefactor private constructor(
      */
     @Synchronized
     fun close() {
-        pendingDeliveryAllowed = false
-        pendingTransport?.let {
-            it.close()
+        pendingTransport?.let { pending ->
+            pendingTransport = pending.copy(deliveryAllowed = false)
+            pending.transport.close()
             pendingTransport = null
         }
         closeTransports()
@@ -846,8 +847,7 @@ class NfcEngagementHelperRefactor private constructor(
             transport.setListener(null, null)
             transports.remove(transport)
             listeningConnectionMethods = null
-            pendingTransport = transport
-            pendingDeliveryAllowed = true
+            pendingTransport = PendingTransport(transport, deliveryAllowed = true)
             peerConnected = true
         }
         reportDeviceConnected(transport)
@@ -1187,9 +1187,9 @@ class NfcEngagementHelperRefactor private constructor(
         ProximityLogger.i(TAG, "reportDeviceConnected: listener=$listener, executor=$executor")
         executor.execute {
             synchronized(this@NfcEngagementHelperRefactor) {
-                if (!pendingDeliveryAllowed || pendingTransport !== transport) return@synchronized
+                val pending = pendingTransport ?: return@synchronized
+                if (!pending.deliveryAllowed || pending.transport !== transport) return@synchronized
                 pendingTransport = null
-                pendingDeliveryAllowed = false
                 listener.onDeviceConnected(transport)
             }
         }

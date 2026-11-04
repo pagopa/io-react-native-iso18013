@@ -111,11 +111,8 @@ class EngagementLifecycleTest {
 
   @Test
   fun `a failed start releases its resources and permits a retry`() {
-    var attempts = 0
-    every { qrEngagement.configure() } answers {
-      if (attempts++ == 0) throw IllegalStateException("configuration failed")
-      qrEngagement
-    }
+    every { qrEngagement.configure() } throws
+      IllegalStateException("configuration failed") andThen qrEngagement
     val failed = mockk<Promise>(relaxed = true)
     val retry = mockk<Promise>(relaxed = true)
 
