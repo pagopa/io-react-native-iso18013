@@ -147,10 +147,7 @@ abstract class NfcEngagementService : HostApduService() {
         @JvmStatic
         fun disable(activity: Activity) = synchronized(engagementLock) {
             ProximityLogger.i("NfcEngagementService", "disable")
-            activeService?.cancelInactivityTimeout()
-            NfcEngagementEventBus.resetSetup()
-            nfcEngagement?.closeResources(permanent = true)
-            nfcEngagement = null
+            shutdownEngagement()
             if (preferredServiceSet) {
                 unsetAsPreferredNfcEngagementService(activity)
                 preferredServiceSet = false
@@ -164,6 +161,13 @@ abstract class NfcEngagementService : HostApduService() {
                 )
             }
             serviceClass = null
+        }
+
+        internal fun shutdownEngagement() = synchronized(engagementLock) {
+            activeService?.cancelInactivityTimeout()
+            NfcEngagementEventBus.resetSetup()
+            nfcEngagement?.closeResources(permanent = true)
+            nfcEngagement = null
         }
 
         private fun Int.cardEmulationClearLog() = when (this) {

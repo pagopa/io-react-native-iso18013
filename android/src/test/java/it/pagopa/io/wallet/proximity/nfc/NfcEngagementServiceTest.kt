@@ -17,11 +17,13 @@ import it.pagopa.io.wallet.proximity.wrapper.DeviceRetrievalHelperWrapper
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 class NfcEngagementServiceTest {
   @Test
@@ -165,6 +167,166 @@ class NfcEngagementServiceTest {
     assertFalse(first.isAlive)
     assertFalse(second.isAlive)
     verify(exactly = 1) { retrievalHelper.disconnect() }
+  }
+
+  @Test
+  fun `disable waits for an in-flight transport disconnect`() {
+    val loggingWasEnabled = ProximityLogger.enabled
+    ProximityLogger.enabled = false
+    val engagement = NfcEngagement(mockk(relaxed = true))
+    val helper = mockk<NfcEngagementHelperRefactor>(relaxed = true)
+    engagement.nfcEngagementHelper = helper
+    val retrievalHelper = mockk<DeviceRetrievalHelperWrapper>()
+    val retrievalField = Engagement::class.java.getDeclaredField("deviceRetrievalHelper")
+    retrievalField.isAccessible = true
+    retrievalField.set(engagement, retrievalHelper)
+    val field = NfcEngagementService::class.java.getDeclaredField("nfcEngagement")
+    field.isAccessible = true
+    val previous = field.get(null)
+    field.set(null, engagement)
+    val disconnectStarted = CountDownLatch(1)
+    val finishDisconnect = CountDownLatch(1)
+    val shutdownStarted = CountDownLatch(1)
+    val disableFinished = CountDownLatch(1)
+    val failure = AtomicReference<Throwable?>()
+    every { helper.shutdown() } answers { shutdownStarted.countDown() }
+    every { retrievalHelper.disconnect() } answers {
+      disconnectStarted.countDown()
+      check(finishDisconnect.await(5, TimeUnit.SECONDS))
+    }
+    val first = Thread {
+      try {
+        engagement.closeResources()
+      } catch (error: Throwable) {
+        failure.set(error)
+      }
+    }
+    val second = Thread {
+      try {
+        NfcEngagementService.disable(mockk<Activity>(relaxed = true))
+      } catch (error: Throwable) {
+        failure.set(error)
+      } finally {
+        disableFinished.countDown()
+      }
+    }
+    try {
+      first.start()
+      assertTrue(disconnectStarted.await(5, TimeUnit.SECONDS))
+      second.start()
+      assertTrue(shutdownStarted.await(5, TimeUnit.SECONDS))
+      assertFalse("disable returned before disconnect finished", disableFinished.await(300, TimeUnit.MILLISECONDS))
+    } finally {
+      finishDisconnect.countDown()
+      first.join(5000)
+      second.join(5000)
+      field.set(null, previous)
+      ProximityLogger.enabled = loggingWasEnabled
+    }
+    assertFalse(first.isAlive)
+    assertFalse(second.isAlive)
+    assertNull(failure.get())
+    verify(exactly = 1) { retrievalHelper.disconnect() }
+  }
+
+  @Test
+  fun `disable permits a reentrant disconnect callback`() {
+    val loggingWasEnabled = ProximityLogger.enabled
+    ProximityLogger.enabled = false
+    val engagement = NfcEngagement(mockk(relaxed = true))
+    engagement.nfcEngagementHelper = mockk(relaxed = true)
+    val retrievalHelper = mockk<DeviceRetrievalHelperWrapper>()
+    val retrievalField = Engagement::class.java.getDeclaredField("deviceRetrievalHelper")
+    retrievalField.isAccessible = true
+    retrievalField.set(engagement, retrievalHelper)
+    every { retrievalHelper.disconnect() } answers { engagement.closeResources(permanent = true) }
+    val field = NfcEngagementService::class.java.getDeclaredField("nfcEngagement")
+    field.isAccessible = true
+    val previous = field.get(null)
+    field.set(null, engagement)
+    val finished = CountDownLatch(1)
+    val failure = AtomicReference<Throwable?>()
+    val thread = Thread {
+      try {
+        NfcEngagementService.disable(mockk<Activity>(relaxed = true))
+      } catch (error: Throwable) {
+        failure.set(error)
+      } finally {
+        finished.countDown()
+      }
+    }.apply { isDaemon = true }
+    try {
+      thread.start()
+      assertTrue("reentrant cleanup did not finish", finished.await(5, TimeUnit.SECONDS))
+      assertNull(failure.get())
+      verify(exactly = 1) { retrievalHelper.disconnect() }
+    } finally {
+      thread.interrupt()
+      thread.join(5000)
+      field.set(null, previous)
+      ProximityLogger.enabled = loggingWasEnabled
+    }
+  }
+
+  @Test
+  fun `disable reports an in-flight disconnect failure and allows a retry`() {
+    val loggingWasEnabled = ProximityLogger.enabled
+    ProximityLogger.enabled = false
+    val engagement = NfcEngagement(mockk(relaxed = true))
+    val helper = mockk<NfcEngagementHelperRefactor>(relaxed = true)
+    engagement.nfcEngagementHelper = helper
+    val retrievalHelper = mockk<DeviceRetrievalHelperWrapper>()
+    val retrievalField = Engagement::class.java.getDeclaredField("deviceRetrievalHelper")
+    retrievalField.isAccessible = true
+    retrievalField.set(engagement, retrievalHelper)
+    val field = NfcEngagementService::class.java.getDeclaredField("nfcEngagement")
+    field.isAccessible = true
+    val previous = field.get(null)
+    field.set(null, engagement)
+    val disconnectStarted = CountDownLatch(1)
+    val finishDisconnect = CountDownLatch(1)
+    val shutdownStarted = CountDownLatch(1)
+    val attempts = AtomicInteger()
+    val disconnectFailure = IllegalStateException("disconnect failed")
+    val disableFailure = AtomicReference<Exception?>()
+    every { helper.shutdown() } answers { shutdownStarted.countDown() }
+    every { retrievalHelper.disconnect() } answers {
+      if (attempts.getAndIncrement() == 0) {
+        disconnectStarted.countDown()
+        check(finishDisconnect.await(5, TimeUnit.SECONDS))
+        throw disconnectFailure
+      }
+    }
+    val first = Thread { engagement.close() }
+    val second = Thread {
+      try {
+        NfcEngagementService.disable(mockk<Activity>(relaxed = true))
+      } catch (error: Exception) {
+        disableFailure.set(error)
+      }
+    }
+    try {
+      first.start()
+      assertTrue(disconnectStarted.await(5, TimeUnit.SECONDS))
+      second.start()
+      assertTrue(shutdownStarted.await(5, TimeUnit.SECONDS))
+      finishDisconnect.countDown()
+      first.join(5000)
+      second.join(5000)
+      assertFalse(first.isAlive)
+      assertFalse(second.isAlive)
+      assertSame(disconnectFailure, disableFailure.get())
+      verify(exactly = 1) { retrievalHelper.disconnect() }
+
+      NfcEngagementService.disable(mockk<Activity>(relaxed = true))
+      verify(exactly = 2) { retrievalHelper.disconnect() }
+    } finally {
+      finishDisconnect.countDown()
+      first.join(5000)
+      second.join(5000)
+      field.set(null, previous)
+      ProximityLogger.enabled = loggingWasEnabled
+    }
   }
 
   @Test

@@ -557,8 +557,10 @@ class IoReactNativeIso18013Module(reactContext: ReactApplicationContext) :
     nfcEventJob = null
     val cleanupError = try {
       nfcActivity?.let { activityRef ->
-        val activity = checkNotNull(activityRef.get() ?: reactApplicationContext.currentActivity) {
-          "No activity available to stop NFC engagement"
+        val activity = activityRef.get() ?: reactApplicationContext.currentActivity
+        if (activity == null) {
+          NfcEngagementService.shutdownEngagement()
+          error("No activity available to stop NFC engagement")
         }
         NfcEngagementService.disable(activity)
         nfcActivity = null

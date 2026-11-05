@@ -17,15 +17,20 @@ import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import it.pagopa.io.wallet.proximity.ProximityLogger
+import it.pagopa.io.wallet.proximity.engagement.Engagement
 import it.pagopa.io.wallet.proximity.nfc.HceServiceStatus
+import it.pagopa.io.wallet.proximity.nfc.NfcEngagement
 import it.pagopa.io.wallet.proximity.nfc.NfcEngagementEventBus
 import it.pagopa.io.wallet.proximity.nfc.NfcEngagementService
 import it.pagopa.io.wallet.proximity.qr_code.QrEngagement
+import it.pagopa.io.wallet.proximity.wrapper.DeviceRetrievalHelperWrapper
 import org.junit.After
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.lang.ref.WeakReference
 
 class EngagementLifecycleTest {
   private val context = mockk<ReactApplicationContext>(relaxed = true)
@@ -168,6 +173,50 @@ class EngagementLifecycleTest {
 
     verify { NfcEngagementService.disable(activity) }
     verify { closed.resolve(true) }
+  }
+
+  @Test
+  fun `close releases the NFC transport when no activity is available`() {
+    start(mockk(relaxed = true), listOf("nfc"))
+    val engagement = NfcEngagement(mockk(relaxed = true))
+    engagement.nfcEngagementHelper = mockk(relaxed = true)
+    val retrievalHelper = mockk<DeviceRetrievalHelperWrapper>(relaxed = true)
+    val retrievalField = Engagement::class.java.getDeclaredField("deviceRetrievalHelper")
+    retrievalField.isAccessible = true
+    retrievalField.set(engagement, retrievalHelper)
+    val moduleRetrievalField = module.javaClass.getDeclaredField("deviceRetrievalHelper")
+    moduleRetrievalField.isAccessible = true
+    moduleRetrievalField.set(module, retrievalHelper)
+    val activityField = module.javaClass.getDeclaredField("nfcActivity")
+    activityField.isAccessible = true
+    (activityField.get(module) as WeakReference<*>).clear()
+    every { context.currentActivity } returns null
+    val serviceField = NfcEngagementService::class.java.getDeclaredField("nfcEngagement")
+    serviceField.isAccessible = true
+    val previous = serviceField.get(null)
+    serviceField.set(null, engagement)
+    val loggingWasEnabled = ProximityLogger.enabled
+    ProximityLogger.enabled = false
+    unmockkObject(NfcEngagementService.Companion)
+    try {
+      val closed = mockk<Promise>(relaxed = true)
+      module.close(closed)
+
+      verify(exactly = 1) { retrievalHelper.disconnect() }
+      verify {
+        closed.reject("CLOSE_ERROR", match { it.contains("No activity available") }, any<Throwable>())
+      }
+
+      every { context.currentActivity } returns activity
+      val retry = mockk<Promise>(relaxed = true)
+      module.close(retry)
+      verify { retry.resolve(true) }
+      verify(exactly = 1) { retrievalHelper.disconnect() }
+    } finally {
+      every { context.currentActivity } returns activity
+      serviceField.set(null, previous)
+      ProximityLogger.enabled = loggingWasEnabled
+    }
   }
 
   @Test

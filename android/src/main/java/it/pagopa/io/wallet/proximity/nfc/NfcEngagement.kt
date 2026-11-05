@@ -10,6 +10,7 @@ import it.pagopa.io.wallet.proximity.engagement.Engagement
 import it.pagopa.io.wallet.proximity.retrieval.DeviceRetrievalMethod
 import it.pagopa.io.wallet.proximity.retrieval.connectionMethods
 import it.pagopa.io.wallet.proximity.wrapper.DeviceRetrievalHelperWrapper
+import java.util.concurrent.CountDownLatch
 
 internal fun Throwable.withNfcCleanupFailure(cleanupError: Exception): Throwable =
     IllegalStateException(
@@ -21,11 +22,19 @@ internal fun Throwable.withNfcCleanupFailure(cleanupError: Exception): Throwable
 internal class NfcEngagement(
     context: Context
 ) : Engagement(context) {
+    private class Disconnect(
+        val helper: DeviceRetrievalHelperWrapper,
+        val owner: Thread
+    ) {
+        val finished = CountDownLatch(1)
+        var error: Exception? = null
+    }
+
     private lateinit var nfcEngagementBuilder: NfcEngagementHelperRefactor.Builder
     lateinit var nfcEngagementHelper: NfcEngagementHelperRefactor
     private var shutdown = false
     private var closing = 0
-    private var disconnecting: DeviceRetrievalHelperWrapper? = null
+    private var disconnecting: Disconnect? = null
     override val nfcEngagementListener = object : NfcEngagementHelperRefactor.Listener {
         override fun onTwoWayEngagementDetected() {
             ProximityLogger.i(this@NfcEngagement.tag, "Two way engagement detected")
@@ -96,21 +105,43 @@ internal class NfcEngagement(
     }
 
     fun closeResources(permanent: Boolean = false) {
-        val retrievalHelper = synchronized(this) {
+        val (ownedDisconnect, pendingDisconnect) = synchronized(this) {
             if (permanent) shutdown = true
             closing++
-            if (disconnecting != null) null else deviceRetrievalHelper.also { disconnecting = it }
+            val pending = disconnecting
+            if (pending != null) {
+                null to pending
+            } else {
+                val owned = deviceRetrievalHelper?.let { Disconnect(it, Thread.currentThread()) }
+                disconnecting = owned
+                owned to null
+            }
         }
+        var disconnected = false
         try {
             if (permanent) nfcEngagementHelper.shutdown() else nfcEngagementHelper.close()
         } finally {
             try {
-                retrievalHelper?.disconnect()
+                if (ownedDisconnect != null) {
+                    try {
+                        ownedDisconnect.helper.disconnect()
+                        disconnected = true
+                    } catch (error: Exception) {
+                        ownedDisconnect.error = error
+                        throw error
+                    }
+                } else if (permanent && pendingDisconnect != null &&
+                    pendingDisconnect.owner !== Thread.currentThread()
+                ) {
+                    pendingDisconnect.finished.await()
+                    pendingDisconnect.error?.let { throw it }
+                }
             } finally {
                 synchronized(this) {
-                    if (retrievalHelper != null) {
-                        deviceRetrievalHelper = null
+                    if (ownedDisconnect != null) {
+                        if (disconnected) deviceRetrievalHelper = null
                         disconnecting = null
+                        ownedDisconnect.finished.countDown()
                     }
                     closing--
                 }

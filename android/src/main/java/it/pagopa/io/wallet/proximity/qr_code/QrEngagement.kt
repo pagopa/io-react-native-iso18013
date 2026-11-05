@@ -21,6 +21,7 @@ class QrEngagement private constructor(
 ) : Engagement(context) {
     private lateinit var qrEngagementBuilder: QrEngagementHelper.Builder
     private lateinit var qrEngagement: QrEngagementHelper
+    private var retrievalHelperDisconnected = false
 
     private fun createDeviceRetrievalHelper(transport: DataTransport): DeviceRetrievalHelperWrapper {
         ProximityLogger.d(
@@ -93,7 +94,12 @@ class QrEngagement private constructor(
     override fun close() {
         if (!checkQrEngagementInit())
             return
-        deviceRetrievalHelper?.disconnect()
+        if (!retrievalHelperDisconnected) {
+            deviceRetrievalHelper?.let {
+                it.disconnect()
+                retrievalHelperDisconnected = true
+            }
+        }
         qrEngagement.close()
     }
 
