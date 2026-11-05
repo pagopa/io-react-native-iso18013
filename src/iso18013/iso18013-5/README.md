@@ -249,6 +249,8 @@ ISO18013_5.addListener(
 
 Starts the proximity flow with the specified engagement and retrieval modes. By default enables both QR code and NFC engagement with both BLE and NFC retrieval. NFC engagement requires iOS 17.4+ on iOS and HCE support on Android.
 
+On Android, starting another engagement while one is active rejects with `START_ERROR` and leaves the existing flow running. Call `close()` before starting again.
+
 | Parameter           | Platform    | Default             | Description                                                                                                               |
 | ------------------- | ----------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `peripheralMode`    | Android     | `true`              | Whether the device is in peripheral mode                                                                                  |
@@ -263,12 +265,17 @@ import { ISO18013_5 } from '@pagopa/io-react-native-iso18013';
 
 // Starts both QR and NFC engagement with BLE and NFC retrieval (defaults)
 await ISO18013_5.startEngagement();
+// Keep the engagement open while the verifier connects and the exchange runs.
+// Close when the exchange ends or the flow is cancelled.
+await ISO18013_5.close();
 
 // QR code engagement only (BLE retrieval)
 await ISO18013_5.startEngagement({
   engagementModes: ['qrcode'],
   retrievalMethods: ['ble'],
 });
+// Close when the exchange ends or the flow is cancelled.
+await ISO18013_5.close();
 
 // NFC engagement only, with both retrieval methods
 await ISO18013_5.startEngagement({
