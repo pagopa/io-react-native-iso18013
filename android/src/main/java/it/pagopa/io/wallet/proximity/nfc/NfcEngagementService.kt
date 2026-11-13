@@ -101,11 +101,15 @@ abstract class NfcEngagementService : HostApduService() {
 
     companion object {
         @SuppressLint("StaticFieldLeak")
+        @Volatile
         private var nfcEngagement: NfcEngagement? = null
         @SuppressLint("StaticFieldLeak")
+        @Volatile
         private var activeService: NfcEngagementService? = null
+        private val engagementLock = Any()
         private var inactivityTimeout = 15
         private var serviceClass: Class<out NfcEngagementService>? = null
+        private var preferredServiceSet = false
 
         val RESPONSE_GENERATION_ERROR = NfcUtil.STATUS_WORD_FILE_NOT_FOUND
 
@@ -141,13 +145,13 @@ abstract class NfcEngagementService : HostApduService() {
          * @param activity
          */
         @JvmStatic
-        fun disable(activity: Activity) {
+        fun disable(activity: Activity) = synchronized(engagementLock) {
             ProximityLogger.i("NfcEngagementService", "disable")
-            activeService?.cancelInactivityTimeout()
-            nfcEngagement?.nfcEngagementHelper?.close()
-            nfcEngagement = null
-            NfcEngagementEventBus.resetSetup()
-            unsetAsPreferredNfcEngagementService(activity)
+            shutdownEngagement()
+            if (preferredServiceSet) {
+                unsetAsPreferredNfcEngagementService(activity)
+                preferredServiceSet = false
+            }
             // Disable the service component programmatically
             serviceClass?.let {
                 activity.packageManager.setComponentEnabledSetting(
@@ -157,6 +161,13 @@ abstract class NfcEngagementService : HostApduService() {
                 )
             }
             serviceClass = null
+        }
+
+        internal fun shutdownEngagement() = synchronized(engagementLock) {
+            activeService?.cancelInactivityTimeout()
+            NfcEngagementEventBus.resetSetup()
+            nfcEngagement?.closeResources(permanent = true)
+            nfcEngagement = null
         }
 
         private fun Int.cardEmulationClearLog() = when (this) {
@@ -211,6 +222,7 @@ abstract class NfcEngagementService : HostApduService() {
                     activity,
                     nfcEngagementServiceClass,
                 )
+                preferredServiceSet = true
                 cardEmulation.setPreferredService(activity, hceComponentName)
                 val selectionMode =
                     cardEmulation.getSelectionModeForCategory(CardEmulation.CATEGORY_OTHER)
@@ -337,26 +349,29 @@ abstract class NfcEngagementService : HostApduService() {
         ProximityLogger.i("NfcEngagementService", "On Create")
         serviceScope.launch {
             NfcEngagementEventBus.setupEvent.filterNotNull().collectLatest { event ->
-                ProximityLogger.i("NfcEngagementService", "SetupReady: $event")
-                buildNfcEngagement(event.retrievalMethods)
-                inactivityTimeout = event.inactivityTimeout
-                val readerTrustStore = event.readerTrustStore
-                readerTrustStore?.firstOrNull()?.let { list ->
-                    list.firstOrNull()?.let {
-                        when (it) {
-                            is Int -> nfcEngagement?.withReaderTrustStore(readerTrustStore as List<List<Int>>)
-                            is ByteArray -> nfcEngagement?.withReaderTrustStore(
-                                readerTrustStore as List<List<ByteArray>>
-                            )
+                synchronized(engagementLock) {
+                    if (NfcEngagementEventBus.setupEvent.value !== event) return@collectLatest
+                    ProximityLogger.i("NfcEngagementService", "SetupReady: $event")
+                    buildNfcEngagement(event.retrievalMethods)
+                    inactivityTimeout = event.inactivityTimeout
+                    val readerTrustStore = event.readerTrustStore
+                    readerTrustStore?.firstOrNull()?.let { list ->
+                        list.firstOrNull()?.let {
+                            when (it) {
+                                is Int -> nfcEngagement?.withReaderTrustStore(readerTrustStore as List<List<Int>>)
+                                is ByteArray -> nfcEngagement?.withReaderTrustStore(
+                                    readerTrustStore as List<List<ByteArray>>
+                                )
 
-                            is String -> nfcEngagement?.withReaderTrustStore(
-                                readerTrustStore as List<List<String>>
-                            )
+                                is String -> nfcEngagement?.withReaderTrustStore(
+                                    readerTrustStore as List<List<String>>
+                                )
 
-                            else -> throw Exception("readerTrustStore type not supported")
+                                else -> throw Exception("readerTrustStore type not supported")
+                            }
+                        } ?: run {
+                            throw Exception("readerTrustStore type not supported")
                         }
-                    } ?: run {
-                        throw Exception("readerTrustStore type not supported")
                     }
                 }
             }
@@ -416,17 +431,28 @@ abstract class NfcEngagementService : HostApduService() {
     ): ByteArray? {
         serviceScope.launch {
             ProximityLogger.i("NfcEngagementService", "processCommandApdu: ${commandApdu.toHex()}")
-            if (nfcEngagement?.nfcEngagementHelper == null) {
-                NfcEngagementEventBus.tryEmit(
-                    NfcEngagementEvent.Error(
-                        Throwable("NFC Engagement setup not DONE")
+            val engagement = nfcEngagement
+            if (engagement == null) {
+                if (NfcEngagementEventBus.setupEvent.value != null) {
+                    NfcEngagementEventBus.tryEmit(
+                        NfcEngagementEvent.Error(
+                            Throwable("NFC Engagement setup not DONE")
+                        )
                     )
-                )
+                }
                 return@launch
             }
-            val (back, theEnd) = nfcEngagement?.nfcEngagementHelper?.nfcProcessCommandApdu(
-                commandApdu
-            ) ?: (null to true)
+            val (back, theEnd) = try {
+                engagement.nfcEngagementHelper.nfcProcessCommandApdu(commandApdu)
+            } catch (error: Exception) {
+                cancelInactivityTimeout()
+                NfcEngagementEventBus.tryEmit(NfcEngagementEvent.Error(error))
+                sendResponseApdu(RESPONSE_GENERATION_ERROR)
+                return@launch
+            }
+            if (nfcEngagement !== engagement || NfcEngagementEventBus.setupEvent.value == null) {
+                return@launch
+            }
             ProximityLogger.i("Giving back (theEnd=$theEnd)", back?.toHex().orEmpty())
             back?.let {
                 ProximityLogger.i(
@@ -435,7 +461,7 @@ abstract class NfcEngagementService : HostApduService() {
                 )
             }
             val ble =
-                nfcEngagement?.nfcEngagementHelper?.retrievalMethods?.any { it is BleRetrievalMethod } == true
+                engagement.nfcEngagementHelper.retrievalMethods.any { it is BleRetrievalMethod }
             cancelInactivityTimeout()
 
             if (theEnd) {
